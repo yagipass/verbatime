@@ -20,7 +20,7 @@ COPY examples/mybatis examples/mybatis
 RUN --mount=type=cache,id=verbatime-m2,target=/root/.m2/repository,sharing=locked \
     mvn -B -f examples/mybatis/pom.xml package -DskipTests
 
-FROM eclipse-temurin:25-jre-noble
+FROM eclipse-temurin:26-jre-noble
 WORKDIR /app
 COPY --from=agent /src/modules/agent/target/verbatime-agent.jar /app/verbatime-agent.jar
 COPY --from=app /src/examples/mybatis/target/app.jar /app/app.jar

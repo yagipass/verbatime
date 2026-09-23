@@ -46,7 +46,7 @@ the request count. A thread name only repeats when a keep-alive connection's nex
 already arrived by the time the previous response is written: Tomcat then serves it on the same
 thread, which the `load` profile triggers for a few percent of its requests. `Work.io` sleeps
 inside the workload, which unmounts the virtual thread and remounts it later, so the tree's wall
-time spans that gap. On JDK 25 the sleep does not pin the carrier thread.
+time spans that gap. On JDK 24 and later the sleep does not pin the carrier thread.
 
 ## Endpoints
 

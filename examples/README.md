@@ -135,7 +135,8 @@ the recording with it.
 
 ## Notes
 
-- All applications run on JDK 25. Open Liberty runs on OpenJ9.
+- Applications run on JDK 26. `tomcat-war`, `jetty-war`, `wildfly-war`, and `open-liberty-war` run
+  on JDK 25, because their server images ship only LTS JDKs. Open Liberty runs on OpenJ9.
 - The Kafka broker runs in its own JDK 21 container and is not recorded.
 - `jetty-war`, `wildfly-war`, and `open-liberty-war` have no sources of their own. They deploy
   the WAR built from `tomcat-war`.
