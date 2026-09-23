@@ -14,7 +14,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>25</maven.compiler.release>
-    <helidon.version>4.5.4</helidon.version>
+    <helidon.version>27.0.0</helidon.version>
   </properties>
 
   <dependencyManagement>
