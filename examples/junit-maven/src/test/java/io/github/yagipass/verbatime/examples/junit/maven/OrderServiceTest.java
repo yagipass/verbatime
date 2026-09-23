@@ -1,4 +1,4 @@
-package io.github.yagipass.verbatime.examples.junit;
+package io.github.yagipass.verbatime.examples.junit.maven;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
