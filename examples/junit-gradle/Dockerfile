@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM maven:3.9.16-eclipse-temurin-25-noble AS agent
+FROM maven:3-eclipse-temurin-26-noble AS agent
 WORKDIR /src
 COPY pom.xml LICENSE NOTICE ./
 COPY .mvn .mvn
