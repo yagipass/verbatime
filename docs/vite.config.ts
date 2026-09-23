@@ -3,10 +3,8 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { oxContent, defineTheme, defaultTheme } from "@ox-content/vite-plugin";
 
-// GitHub Pages serves the site under /verbatime/. Set DOCS_BASE for that build.
 const base = process.env.DOCS_BASE ?? "/";
 
-// Serve and publish the docs' own screenshots at /images/, next to the brand images in publicDir.
 function docsImages(): Plugin {
   const dir = join(import.meta.dirname, "content/images");
   return {
@@ -31,7 +29,6 @@ function docsImages(): Plugin {
 
 export default defineConfig({
   base,
-  // Serve brand images from the repository assets instead of copies.
   publicDir: "../assets",
   plugins: [
     docsImages(),
@@ -62,7 +59,6 @@ export default defineConfig({
           embed: {
             head: `<link rel="icon" href="${base}verbatime-icon.png" type="image/png">`,
           },
-          // Keep the header links clear of the site name, and screenshots inside the page.
           css: ".header-nav { margin-left: 2rem; } .content img { max-width: 100%; height: auto; }",
           socialLinks:{ github: "https://github.com/yagipass/verbatime" },
           sidebar: [
