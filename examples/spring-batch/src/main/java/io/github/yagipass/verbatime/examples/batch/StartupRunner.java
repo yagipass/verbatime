@@ -1,0 +1,25 @@
+package io.github.yagipass.verbatime.examples.batch;
+
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+
+import io.github.yagipass.verbatime.examples.workload.OrderService;
+
+@Component
+@Order(Ordered.HIGHEST_PRECEDENCE)
+public class StartupRunner implements ApplicationRunner {
+
+    private final OrderService orders;
+
+    StartupRunner(final OrderService orders) {
+        this.orders = orders;
+    }
+
+    @Override
+    public void run(final ApplicationArguments args) {
+        orders.placeOrder("warmup", 1);
+    }
+}

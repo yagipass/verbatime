@@ -1,0 +1,5 @@
+-javaagent:/config/verbatime-agent.jar=waitstart=60s,roots=com.ibm.ws.kernel.boot.cmdline.EnvCheck::main+com.ibm.ws.webcontainer.WebContainer::handleRequest
+-Dcom.sun.management.jmxremote.port=7091
+-Dcom.sun.management.jmxremote.rmi.port=7091
+-Dcom.sun.management.jmxremote.authenticate=false
+-Dcom.sun.management.jmxremote.ssl=false

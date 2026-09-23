@@ -1,0 +1,64 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      eclipse:
+        patterns: ["org.eclipse.platform:*", "org.osgi:*"]
+
+  - package-ecosystem: maven
+    directory: /examples
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      spring:
+        patterns: ["org.springframework*"]
+
+  - package-ecosystem: docker
+    directories: ["/examples/*"]
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      images:
+        patterns: ["*"]
+
+  - package-ecosystem: docker-compose
+    directories: ["/examples/*"]
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      images:
+        patterns: ["*"]
+
+  - package-ecosystem: gradle
+    directory: /examples/junit-gradle
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+      include: scope

@@ -1,0 +1,30 @@
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: examples/spring-boot-mvc/Dockerfile
+    ports:
+      - "8080:8080"
+      - "7091:7091"
+    environment:
+      JAVA_TOOL_OPTIONS: >-
+        -javaagent:/app/verbatime-agent.jar=waitstart=60s,roots=org.springframework.web.servlet.DispatcherServlet::doDispatch+org.springframework.boot.SpringApplication::run,${VERBATIME_EXTRA:-}
+        -Dcom.sun.management.jmxremote.port=7091
+        -Dcom.sun.management.jmxremote.rmi.port=7091
+        -Dcom.sun.management.jmxremote.authenticate=false
+        -Dcom.sun.management.jmxremote.ssl=false
+        -Djava.rmi.server.hostname=${JMX_HOST:-localhost}
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /healthz HTTP/1.0\\r\\n\\r\\n' >&3 && head -n1 <&3 | grep -q ' 200 '"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 90s
+
+  load:
+    image: ghcr.io/hatoo/oha:1.16
+    profiles: [load]
+    depends_on:
+      app:
+        condition: service_healthy
+    command: ["-z", "30s", "-c", "8", "--no-tui", "http://app:8080/orders?sku=widget&qty=3"]

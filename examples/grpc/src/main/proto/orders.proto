@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package verbatime;
+
+option java_package = "io.github.yagipass.verbatime.examples.grpc.proto";
+option java_multiple_files = true;
+
+service Orders {
+  rpc PlaceOrder (OrderRequest) returns (Receipt);
+}
+
+message OrderRequest {
+  string sku = 1;
+  int32 qty = 2;
+}
+
+message Receipt {
+  string sku = 1;
+  int32 qty = 2;
+  int64 cents = 3;
+  string tx_id = 4;
+}

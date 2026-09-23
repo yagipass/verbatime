@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U app -d app"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  app:
+    build:
+      context: ../..
+      dockerfile: examples/spring-batch/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./recordings:/work/recordings
+    environment:
+      JAVA_TOOL_OPTIONS: >-
+        -javaagent:/app/verbatime-agent.jar=record=startup,roots=org.springframework.boot.SpringApplication::run,out=/work/recordings/spring-batch.vbtm,${VERBATIME_EXTRA:-}

@@ -1,0 +1,91 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+
+jobs:
+  tagpr:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tagpr.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - id: tagpr
+        uses: Songmu/tagpr@7ebae2dcc300132baa7cc9dd108c8923b07fc366
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - if: steps.tagpr.outputs.tag != ''
+        uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+      - if: steps.tagpr.outputs.tag != ''
+        uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866
+        with:
+          name: verbatime
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - if: steps.tagpr.outputs.tag != ''
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.m2/repository
+          key: m2-release-${{ hashFiles('pom.xml', 'modules/format/pom.xml', 'modules/agent/pom.xml', 'modules/jmc/pom.xml', 'modules/cli/pom.xml') }}
+          restore-keys: |
+            m2-agent-
+            m2-jmc-
+            m2-cli-
+      - if: steps.tagpr.outputs.tag != ''
+        run: |
+          nix develop .#agent --command mvn -B -pl modules/agent -am verify
+          nix develop .#jmc   --command mvn -B -pl modules/jmc   -am verify
+          nix develop .#cli   --command mvn -B -pl modules/cli   -am verify
+      - if: steps.tagpr.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.tagpr.outputs.tag }}
+        run: |
+          gh release upload "$TAG" \
+            modules/agent/target/verbatime-agent.jar \
+            modules/jmc/target/verbatime-jmc-plugin.jar \
+            modules/cli/target/verbatime-cli.jar \
+            --clobber
+
+  cli-native:
+    needs: tagpr
+    if: needs.tagpr.outputs.tag != ''
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-amd64
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+          - os: macos-latest
+            platform: macos-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+      - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866
+        with:
+          name: verbatime
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.m2/repository
+          key: m2-cli-${{ matrix.platform }}-${{ hashFiles('pom.xml', 'modules/format/pom.xml', 'modules/cli/pom.xml') }}
+          restore-keys: m2-cli-
+      - run: nix develop .#cli --command mvn -B -pl modules/cli -am -Pnative -DskipTests package
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.tagpr.outputs.tag }}
+        run: |
+          cp modules/cli/target/vbtm "vbtm-${{ matrix.platform }}"
+          gh release upload "$TAG" "vbtm-${{ matrix.platform }}" --clobber

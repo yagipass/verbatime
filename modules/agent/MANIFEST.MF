@@ -1,0 +1,2 @@
+Premain-Class: io.github.yagipass.verbatime.agent.VerbatimeAgent
+Can-Retransform-Classes: false

@@ -1,0 +1,75 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+      - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866
+        with:
+          name: verbatime
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - run: nix flake check -L
+
+  agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+      - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866
+        with:
+          name: verbatime
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.m2/repository
+          key: m2-agent-${{ hashFiles('pom.xml', 'modules/format/pom.xml', 'modules/agent/pom.xml') }}
+          restore-keys: m2-agent-
+      - run: nix develop .#agent --command mvn -B -pl modules/agent -am verify
+
+  jmc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+      - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866
+        with:
+          name: verbatime
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.m2/repository
+          key: m2-jmc-${{ hashFiles('pom.xml', 'modules/format/pom.xml', 'modules/jmc/pom.xml') }}
+          restore-keys: m2-jmc-
+      - run: nix develop .#jmc --command mvn -B -pl modules/jmc -am verify
+
+  cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+      - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866
+        with:
+          name: verbatime
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.m2/repository
+          key: m2-cli-${{ hashFiles('pom.xml', 'modules/format/pom.xml', 'modules/cli/pom.xml') }}
+          restore-keys: m2-cli-
+      - run: nix develop .#cli --command mvn -B -pl modules/cli -am verify
+      - run: nix develop .#cli --command mvn -B -pl modules/cli -am -Pnative -DskipTests package
+      - run: modules/cli/target/vbtm --help

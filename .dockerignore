@@ -1,0 +1,12 @@
+.git
+**/target
+**/.direnv
+result
+modules/jmc
+!modules/jmc/pom.xml
+assets
+bench
+docs
+**/.DS_Store
+**/build
+**/recordings

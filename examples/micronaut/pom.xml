@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.micronaut.platform</groupId>
+    <artifactId>micronaut-parent</artifactId>
+    <version>5.1.4</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>io.github.yagipass</groupId>
+  <artifactId>verbatime-example-micronaut</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>${packaging}</packaging>
+
+  <name>verbatime-example-micronaut</name>
+  <description>Micronaut 5 HTTP server on Netty with build-time dependency injection</description>
+
+  <properties>
+    <packaging>jar</packaging>
+    <jdk.version>25</jdk.version>
+    <release.version>25</release.version>
+    <micronaut.runtime>netty</micronaut.runtime>
+    <exec.mainClass>io.github.yagipass.verbatime.examples.micronaut.Application</exec.mainClass>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.github.yagipass</groupId>
+      <artifactId>verbatime-examples-workload</artifactId>
+      <version>1.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>io.micronaut</groupId>
+      <artifactId>micronaut-http-server-netty</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micronaut.serde</groupId>
+      <artifactId>micronaut-serde-jackson</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>app</finalName>
+    <plugins>
+      <plugin>
+        <groupId>io.micronaut.maven</groupId>
+        <artifactId>micronaut-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>

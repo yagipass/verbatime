@@ -1,0 +1,1687 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Verbatime Trace</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: hsl(220, 20%, 97%);
+    --border: hsl(220, 10%, 85%);
+    --text: hsl(0, 0%, 13%);
+    --dim: hsl(0, 0%, 45%);
+    --ruler-line: rgba(0, 0, 0, 0.08);
+    --frame-text: hsl(0, 0%, 12%);
+    --dirt: hsl(220, 25%, 45%);
+    --hover-outline: rgba(0, 0, 0, 0.9);
+    --thrown: hsl(0, 80%, 45%);
+    --warn: hsl(25, 90%, 42%);
+    --select: hsl(210, 90%, 45%);
+    --gc: hsl(285, 55%, 42%);
+    --tooltip-bg: rgba(255, 255, 255, 0.97);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: hsl(220, 10%, 11%);
+      --panel: hsl(220, 10%, 15%);
+      --border: hsl(220, 8%, 25%);
+      --text: hsl(0, 0%, 88%);
+      --dim: hsl(0, 0%, 60%);
+      --ruler-line: rgba(255, 255, 255, 0.08);
+      --frame-text: hsl(0, 0%, 10%);
+      --dirt: hsl(220, 15%, 55%);
+      --hover-outline: rgba(255, 255, 255, 0.9);
+      --thrown: hsl(0, 75%, 55%);
+      --warn: hsl(32, 90%, 60%);
+      --select: hsl(210, 90%, 65%);
+      --gc: hsl(285, 65%, 70%);
+      --tooltip-bg: hsla(220, 10%, 18%, 0.97);
+    }
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
+    font-size: 12px;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  #toolbar {
+    height: 32px;
+    flex: none;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  #toolbar .stats {
+    color: var(--dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #toolbar .spacer {
+    flex: 1;
+  }
+
+  #loadState {
+    font-size: 11px;
+    color: var(--dim);
+  }
+
+  #loadState.err {
+    color: var(--thrown);
+  }
+
+  #matchInfo {
+    font-size: 11px;
+    color: var(--dim);
+  }
+
+  #search {
+    width: 200px;
+    font: inherit;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  #search:focus {
+    outline: none;
+    border-color: var(--hover-outline);
+  }
+
+  #search::placeholder {
+    color: var(--dim);
+  }
+
+  #export, #follow {
+    font: inherit;
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  #export:hover, #follow:hover:not(:disabled) {
+    border-color: var(--hover-outline);
+  }
+
+  #follow.on {
+    border-color: var(--hover-outline);
+    font-weight: 600;
+  }
+
+  #follow:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  #banner {
+    flex: none;
+    display: none;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border);
+    color: var(--warn);
+    font-size: 11px;
+  }
+
+  #banner.on {
+    display: block;
+    background: color-mix(in srgb, var(--warn) 12%, transparent);
+  }
+
+  #chips {
+    flex: none;
+    height: 26px;
+    display: none;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    padding: 0 8px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  #chips.on {
+    display: flex;
+  }
+
+  #chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chip {
+    flex: none;
+    padding: 1px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--dim);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .chip.warn {
+    border-color: var(--warn);
+    color: var(--warn);
+  }
+
+  .chip.on {
+    border-color: var(--select);
+    color: var(--text);
+    background: color-mix(in srgb, var(--select) 15%, transparent);
+  }
+
+  .chip.warn.on {
+    color: var(--warn);
+  }
+
+  #chips .more {
+    flex: none;
+    color: var(--dim);
+  }
+
+  #overviewWrap {
+    flex: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #overview {
+    display: block;
+    width: 100%;
+  }
+
+  #chartWrap {
+    flex: 1 1 0;
+    min-height: 60px;
+    position: relative;
+    overflow: hidden;
+    outline: none;
+  }
+
+  #chart {
+    display: block;
+    position: absolute;
+    inset: 0;
+  }
+
+  #tooltip {
+    position: absolute;
+    z-index: 30;
+    pointer-events: none;
+    display: none;
+    max-width: 360px;
+    padding: 8px;
+    background: var(--tooltip-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    color: var(--text);
+    font-size: 12px;
+    line-height: 1.5;
+    word-break: break-all;
+  }
+
+  #tooltip .l2 {
+    color: var(--dim);
+  }
+  #tooltip .gc {
+    color: var(--gc);
+  }
+  #tooltip .bar {
+    position: relative;
+    height: 3px;
+    margin: 2px 0 4px;
+    border-radius: 2px;
+    background: var(--border);
+    overflow: hidden;
+  }
+  #tooltip .bar .gcfill {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    background: var(--gc);
+  }
+
+  #tooltip .bar .fill {
+    height: 100%;
+    background: var(--dim);
+  }
+
+  #tooltip .wall {
+    white-space: nowrap;
+  }
+</style>
+
+<div id="app">
+  <div id="toolbar">
+    <span class="stats" id="stats"></span>
+    <span class="spacer"></span>
+    <span id="loadState"></span>
+    <span id="matchInfo"></span>
+    <input id="search" type="search" placeholder="Search methods, ⌘F" spellcheck="false" autocomplete="off">
+    <button id="follow" type="button" title="Follow the newest session while recording. Any zoom, pan or click stops following." hidden>Follow</button>
+    <button id="export" type="button" title="Export a session as a text file for AI agents" hidden>Export…</button>
+  </div>
+  <div id="banner"></div>
+  <div id="chips"></div>
+  <div id="overviewWrap"><canvas id="overview"></canvas></div>
+  <div id="chartWrap" tabindex="0">
+    <canvas id="chart"></canvas>
+    <div id="tooltip"></div>
+  </div>
+</div>
+
+<script id="vbtminit" type="application/json">__VBTMINIT__</script>
+<script id="vbtmhost">__VBTMHOST__</script>
+<script>
+  "use strict";
+  const INIT = JSON.parse(document.getElementById("vbtminit").textContent);
+  let META;
+
+  const NAMES = new Map(INIT.methodNames);
+  function nameOf(id) { return NAMES.get(id) || ("<unknown#" + id + ">"); }
+  const EXC_NAMES = new Map(INIT.exceptionNames);
+  function excNameOf(id) { return id === 0 ? "<unknown>" : (EXC_NAMES.get(id) || ("<unknown#" + id + ">")); }
+  function excShortNameOf(id) { const s = excNameOf(id); const d = s.lastIndexOf("."); return d < 0 ? s : s.slice(d + 1); }
+  const shortCache = new Map();
+  function setName(id, s) { NAMES.set(id, s); shortCache.delete(id); colorCache.delete(id); }
+  function shortNameOf(id) {
+    let s = shortCache.get(id);
+    if (s === undefined) { s = shortName(nameOf(id)); shortCache.set(id, s); }
+    return s;
+  }
+
+  function decodeCoverage(rle) {
+    if (!Array.isArray(rle)) return new Int16Array(0);
+    let n = 0;
+    for (let i = 1; i < rle.length; i += 2) n += rle[i];
+    const out = new Int16Array(n);
+    let b = 0;
+    for (let i = 0; i + 1 < rle.length; i += 2) {
+      if (rle[i]) out.fill(rle[i], b, b + rle[i + 1]);
+      b += rle[i + 1];
+    }
+    return out;
+  }
+
+  const threads = [];
+  const threadByTid = new Map();
+
+  let T_MIN = 0, T_MAX = 1;
+  let SPAN = 1;
+  let VIEW_MIN = 0, VIEW_MAX = 1;
+  const MIN_SPAN = 100;
+  let view = { t0: 0, t1: 1 };
+
+  const sessions = [];
+  let gcSorted = [], gcTotalNs = 0;
+  function applyGc(g) {
+    if (!g) return;
+    if (g.reset) gcSorted = [];
+    for (const it of g.items) gcSorted.push({ ts: it[0], dur: it[1], act: it[2], name: it[3], cause: it[4] });
+    gcTotalNs = g.totalNs;
+    gcSorted.sort((a, b) => a.ts - b.ts);
+  }
+  function gcOverlap(ts, dur) {
+    const end = ts + dur;
+    let lo = 0, hi = gcSorted.length;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (gcSorted[m].ts + gcSorted[m].dur <= ts) lo = m + 1; else hi = m; }
+    let ns = 0, n = 0;
+    for (let k = lo; k < gcSorted.length; k++) {
+      const g = gcSorted[k];
+      if (g.ts >= end) break;
+      const a = Math.max(g.ts, ts), b = Math.min(g.ts + g.dur, end);
+      if (b > a) { ns += b - a; n++; }
+    }
+    return { ns, n };
+  }
+  function gcKind(act) { return act === 1 ? "minor" : act === 2 ? "major" : ""; }
+  function applyMeta(meta) {
+    applyGc(meta.gc);
+    if (meta.sessionsReset) sessions.length = 0;
+    for (const s of meta.sessions) sessions[s.seq - 1] = s;
+    META = meta;
+    threads.length = 0;
+    for (const t of meta.threads) {
+      let th = threadByTid.get(t.tid);
+      if (!th) {
+        th = {
+          tid: t.tid, n: 0,
+          ts: new Float64Array(0), dur: new Float64Array(0), sf: new Float64Array(0),
+          nm: new Int32Array(0), dp: new Int16Array(0), fl: new Uint8Array(0), ex: new Int32Array(0), byDepth: [],
+        };
+        threadByTid.set(t.tid, th);
+      }
+      th.name = t.name; th.maxDepth = t.maxDepth; th.totalCalls = t.totalCalls;
+      th.coverage = decodeCoverage(t.coverage);
+      threads.push(th);
+    }
+    T_MIN = meta.minNs; T_MAX = meta.maxNs;
+    SPAN = Math.max(T_MAX - T_MIN, 1);
+    const pad = SPAN * 0.02;
+    VIEW_MIN = T_MIN - pad; VIEW_MAX = T_MAX + pad;
+    layoutTracks();
+  }
+
+  function fmtDur(ns) {
+    ns = Math.max(ns, 0);
+    if (ns < 1e3) return ns.toFixed(0) + " ns";
+    if (ns < 1e6) return (ns / 1e3).toFixed(2) + " µs";
+    if (ns < 1e9) return (ns / 1e6).toFixed(2) + " ms";
+    return (ns / 1e9).toFixed(3) + " s";
+  }
+  function fmtTs(ns) { return (ns / 1e9).toFixed(4) + " s"; }
+  function fmtPct(p) {
+    if (!(p > 0)) p = 0;
+    return (p >= 10 ? p.toFixed(0) : p >= 1 ? p.toFixed(1) : p.toFixed(2)) + "%";
+  }
+  function pad2(n) { return String(n).padStart(2, "0"); }
+  function fmtOffset() {
+    const s = META.utcOffsetSeconds, a = Math.abs(s);
+    return (s < 0 ? "-" : "+") + pad2(Math.floor(a / 3600)) + ":" + pad2(Math.floor(a / 60) % 60);
+  }
+  function fmtWall(ns, digits) {
+    const ms = META.startEpochMs + Math.floor(ns / 1e6);
+    const d = new Date(ms + META.utcOffsetSeconds * 1000);
+    const fracNs = (((ms % 1000) + 1000) % 1000) * 1e6 + ns % 1e6;
+    const frac = String(Math.floor(fracNs / 10 ** (9 - digits))).padStart(digits, "0");
+    return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())} ` +
+      `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(d.getUTCSeconds())}.${frac} ${fmtOffset()}`;
+  }
+  function fmtRuler(tNs, stepNs) {
+    let unit, name;
+    if (stepNs >= 1e9) { unit = 1e9; name = "s"; }
+    else if (stepNs >= 1e6) { unit = 1e6; name = "ms"; }
+    else if (stepNs >= 1e3) { unit = 1e3; name = "µs"; }
+    else { unit = 1; name = "ns"; }
+    let v = tNs / unit;
+    if (Math.abs(v) < 1e-9) v = 0;
+    return (Math.abs(v - Math.round(v)) < 1e-9 ? String(Math.round(v)) : v.toFixed(1)) + name;
+  }
+  function niceStep(target) {
+    let step = 100;
+    for (; ;) {
+      for (const m of [1, 2, 5]) {
+        if (step * m >= target) return step * m;
+      }
+      step *= 10;
+      if (step > 1e15) return step;
+    }
+  }
+  function fmtInt(x) { return x.toLocaleString("en-US"); }
+
+  function shortName(full) {
+    const p = full.indexOf("(");
+    const head = p < 0 ? full : full.slice(0, p);
+    const dots = [];
+    for (let i = 0; i < head.length; i++) if (head[i] === ".") dots.push(i);
+    return dots.length >= 2 ? head.slice(dots[dots.length - 2] + 1) : head;
+  }
+  function escapeHtml(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+  let isDark = false;
+  function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  let UI = {};
+  function readTheme() {
+    isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    UI = {
+      bg: cssVar("--bg"), panel: cssVar("--panel"), border: cssVar("--border"),
+      text: cssVar("--text"), dim: cssVar("--dim"), rulerLine: cssVar("--ruler-line"),
+      frameText: cssVar("--frame-text"), dirt: cssVar("--dirt"),
+      hoverOutline: cssVar("--hover-outline"), thrown: cssVar("--thrown"),
+      warn: cssVar("--warn"), select: cssVar("--select"), gc: cssVar("--gc"),
+    };
+  }
+  readTheme();
+
+  const colorCache = new Map();
+  function hashStr(s) {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+    return h >>> 0;
+  }
+  function frameColor(nameId) {
+    let c = colorCache.get(nameId);
+    if (c === undefined) {
+      const hue = hashStr(nameOf(nameId)) % 360;
+      c = isDark ? `hsl(${hue}, 45%, 60%)` : `hsl(${hue}, 55%, 74%)`;
+      colorCache.set(nameId, c);
+    }
+    return c;
+  }
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    readTheme();
+    colorCache.clear();
+    ovBands = null;
+    scheduleDraw();
+  });
+
+  const RULER_H = 22, HEADER_H = 22, ROW_H = 16, TRACK_GAP = 6;
+  const MIN_FRAME_PX = 1, MIN_LABEL_PX = 32, PX_PER_CHAR = 6.7;
+  const tracks = [];
+  let tracksH = 0;
+  let OVERVIEW_H = 36;
+  function layoutTracks() {
+    tracks.length = 0;
+    let y = 0;
+    for (const th of threads) {
+      const h = HEADER_H + (th.maxDepth + 1) * ROW_H + TRACK_GAP;
+      tracks.push({ th, headerY: y, rowsY: y + HEADER_H, h });
+      y += h;
+    }
+    tracksH = y;
+    OVERVIEW_H = Math.min(Math.max(threads.length * 12, 36), 100);
+  }
+  let scrollY = 0;
+  function maxScroll() { return Math.max(tracksH + RULER_H - chartH, 0); }
+
+  const chartWrap = document.getElementById("chartWrap");
+  const chart = document.getElementById("chart");
+  const overview = document.getElementById("overview");
+  const tooltip = document.getElementById("tooltip");
+  const searchBox = document.getElementById("search");
+  const chips = document.getElementById("chips");
+  const matchInfo = document.getElementById("matchInfo");
+  const loadState = document.getElementById("loadState");
+  let W = 800, chartH = 400;
+  let ovBands = null;
+  const DPR = () => window.devicePixelRatio || 1;
+
+  applyMeta(INIT.meta);
+  view = { t0: VIEW_MIN, t1: VIEW_MAX };
+
+  function sizeCanvases() {
+    overview.style.height = OVERVIEW_H + "px";
+    W = Math.max(chartWrap.clientWidth, 1);
+    chartH = Math.max(chartWrap.clientHeight, 1);
+    const d = DPR();
+    chart.width = Math.round(W * d); chart.height = Math.round(chartH * d);
+    chart.style.width = W + "px"; chart.style.height = chartH + "px";
+    overview.width = Math.round(W * d); overview.height = Math.round(OVERVIEW_H * d);
+    overview.style.width = W + "px";
+    ovBands = null;
+    setScroll(scrollY);
+  }
+
+  function bandH() { return tracks.length ? OVERVIEW_H / tracks.length : OVERVIEW_H; }
+  function trackY2ov(y) {
+    if (!tracks.length || y <= 0) return 0;
+    if (y >= tracksH) return OVERVIEW_H;
+    let k = tracks.length - 1;
+    while (k > 0 && tracks[k].headerY > y) k--;
+    return (k + (y - tracks[k].headerY) / tracks[k].h) * bandH();
+  }
+  function ovY2trackY(oy) {
+    if (!tracks.length) return 0;
+    const f = Math.min(Math.max(oy / bandH(), 0), tracks.length);
+    const k = Math.min(Math.floor(f), tracks.length - 1);
+    return tracks[k].headerY + (f - k) * tracks[k].h;
+  }
+  function bandAt(oy) {
+    const k = Math.floor(oy / bandH());
+    return tracks.length && k >= 0 && k < tracks.length ? k : -1;
+  }
+  function ovViewY() {
+    if (!tracks.length) return [0, OVERVIEW_H];
+    const y0 = trackY2ov(scrollY);
+    const y1 = trackY2ov(Math.min(scrollY + chartH - RULER_H, tracksH));
+    return [y0, Math.max(y1, y0 + 2)];
+  }
+
+  function span() { return view.t1 - view.t0; }
+  function t2x(t) { return (t - view.t0) / span() * W; }
+  function x2t(x) { return view.t0 + x / W * span(); }
+
+  function nodeAt(th, depth, t) {
+    if (depth < 0 || depth > th.maxDepth) return -1;
+    const idxs = th.byDepth[depth];
+    if (!idxs || !idxs.length) return -1;
+    let lo = 0, hi = idxs.length;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (th.ts[idxs[m]] <= t) lo = m + 1; else hi = m; }
+    const i = lo - 1;
+    if (i < 0) return -1;
+    const nd = idxs[i];
+    return (t <= th.ts[nd] + th.dur[nd]) ? nd : -1;
+  }
+
+  function clampView() {
+    const lo = VIEW_MIN, hi = VIEW_MAX;
+    let { t0, t1 } = view;
+    let s = t1 - t0;
+    if (s < MIN_SPAN) { const c = (t0 + t1) / 2; t0 = c - MIN_SPAN / 2; t1 = c + MIN_SPAN / 2; s = MIN_SPAN; }
+    if (s >= hi - lo) { view.t0 = lo; view.t1 = hi; return; }
+    if (t0 < lo) { t1 += lo - t0; t0 = lo; }
+    if (t1 > hi) { t0 -= t1 - hi; t1 = hi; }
+    view.t0 = t0; view.t1 = t1;
+  }
+  function setView(t0, t1) { view.t0 = t0; view.t1 = t1; clampView(); }
+  function clampScroll(y) { return Math.min(Math.max(y, 0), maxScroll()); }
+  function setScroll(y) { scrollY = clampScroll(y); }
+  function zoomAt(x, factor) {
+    const anchor = x2t(x);
+    const newSpan = Math.min(Math.max(span() * factor, MIN_SPAN), VIEW_MAX - VIEW_MIN);
+    const t0 = anchor - newSpan * x / W;
+    setView(t0, t0 + newSpan);
+    viewChanged();
+  }
+  function panBy(px) {
+    const dt = px / W * span();
+    setView(view.t0 + dt, view.t1 + dt);
+    viewChanged();
+  }
+  function zoomToFrame(th, i) { window.vbtmPageZoomTo(th.tid, th.ts[i], th.dur[i], th.dp[i]); }
+  window.vbtmPageZoomTo = function (tid, ts, dur, depth) {
+    const th = threadByTid.get(tid);
+    if (!th) return;
+    userNavigated();
+    const pad = dur * 0.05;
+    setView(ts - pad, ts + dur + pad);
+    ensureRowVisible(th, depth);
+    viewChanged();
+  };
+  function ensureRowVisible(th, depth) {
+    const tr = tracks.find(x => x.th === th);
+    if (!tr) return;
+    const y = tr.rowsY + depth * ROW_H;
+    const viewH = chartH - RULER_H;
+    if (y < scrollY || y + ROW_H > scrollY + viewH) {
+      setScroll(y - viewH / 2);
+    }
+  }
+
+  let reqSeq = 0, requestTimer = 0;
+  let pendingView = null;
+  function setLoadState(state, msg) {
+    loadState.classList.toggle("err", state === "err");
+    loadState.textContent = state === "load" ? "Extracting…" : state === "err" ? (msg || "Extraction error") : "";
+  }
+  function scheduleRequest() {
+    clearTimeout(requestTimer);
+    requestTimer = setTimeout(sendRequest, 100);
+  }
+  function sendRequest() {
+    if (typeof window.vbtmHostRequestWindow !== "function") return;
+    const id = ++reqSeq;
+    setLoadState("load");
+    const v = pendingView || view;
+    window.vbtmHostRequestWindow(id, Math.floor(v.t0), Math.ceil(v.t1), Math.max(W, 50));
+  }
+  function viewChanged() { scheduleDraw(); scheduleRequest(); }
+
+  window.vbtmPageWindow = function (resp) {
+    for (const [id, s] of resp.methodNames) setName(id, s);
+    for (const [id, s] of resp.exceptionNames) EXC_NAMES.set(id, s);
+    if (resp.reqId !== reqSeq) return;
+    setLoadState("");
+    if (pendingView) {
+      setView(pendingView.t0, pendingView.t1);
+      setScroll(pendingView.scrollY);
+      pendingView = null;
+    }
+    applyWindow(resp);
+  };
+  window.vbtmPageWindowError = function (reqId, msg) {
+    if (reqId !== reqSeq) return;
+    pendingView = null;
+    setLoadState("err", "Extraction error: " + msg);
+    scheduleDraw();
+  };
+
+  function isUnclosed(th, i) { return (th.fl[i] & 1) !== 0; }
+  function isThrown(th, i) { return (th.fl[i] & 2) !== 0; }
+
+  function applyWindow(resp) {
+    const seen = new Set();
+    for (const t of resp.threads) {
+      const th = threadByTid.get(t.tid);
+      if (!th) continue;
+      seen.add(t.tid);
+      const n = t.count;
+      th.n = n;
+      th.ts = new Float64Array(n); th.dur = new Float64Array(n); th.sf = new Float64Array(n);
+      th.nm = new Int32Array(n); th.dp = new Int16Array(n);
+      let acc = 0;
+      for (let i = 0; i < n; i++) {
+        acc += t.startDeltas[i];
+        th.ts[i] = acc; th.dur[i] = t.durNs[i]; th.nm[i] = t.methodIds[i]; th.dp[i] = t.depths[i]; th.sf[i] = t.selfNs[i];
+      }
+      const fl = new Uint8Array(n);
+      const ex = new Int32Array(n).fill(-1);
+      for (const i of t.unclosed) fl[i] |= 1;
+      for (let k = 0; k + 1 < t.exc.length; k += 2) { ex[t.exc[k]] = t.exc[k + 1]; fl[t.exc[k]] |= 2; }
+      th.fl = fl;
+      th.ex = ex;
+      rebuildByDepth(th);
+    }
+    for (const th of threads) {
+      if (!seen.has(th.tid) && th.n > 0) {
+        th.n = 0;
+        th.ts = new Float64Array(0); th.dur = new Float64Array(0); th.sf = new Float64Array(0);
+        th.nm = new Int32Array(0); th.dp = new Int16Array(0); th.fl = new Uint8Array(0); th.ex = new Int32Array(0);
+        th.byDepth = [];
+      }
+    }
+    reselect();
+    consumePendingSelect();
+    scheduleDraw();
+  }
+
+  function rebuildByDepth(th) {
+    const byDepth = [];
+    for (let d = 0; d <= th.maxDepth; d++) byDepth.push([]);
+    for (let i = 0; i < th.n; i++) byDepth[th.dp[i]].push(i);
+    th.byDepth = byDepth;
+  }
+
+  let searchSeq = 0, searchTimer = 0;
+  let query = "";
+  let emphasis = null;
+  let lastMatchPos = null;
+
+  function applySearch(q) {
+    query = q.trim();
+    lastMatchPos = null;
+    if (!query) {
+      emphasis = null;
+      matchInfo.textContent = "";
+      scheduleDraw();
+      return;
+    }
+    if (typeof window.vbtmHostRequestSearch !== "function") return;
+    window.vbtmHostRequestSearch(++searchSeq, query);
+  }
+  window.vbtmPageSearch = function (resp) {
+    if (resp.reqId !== searchSeq) return;
+    emphasis = new Set(resp.ids);
+    matchInfo.textContent =
+      `${fmtInt(resp.methods)} methods, ${fmtInt(resp.calls)} calls`;
+    scheduleDraw();
+  };
+
+  let matchSeq = 0;
+  let pendingSelect = null;
+
+  function jumpMatch(forward) {
+    if (!emphasis || !emphasis.size) return;
+    if (typeof window.vbtmHostRequestMatch !== "function") return;
+    const pos = lastMatchPos != null ? lastMatchPos : (view.t0 + view.t1) / 2;
+    window.vbtmHostRequestMatch(++matchSeq, forward ? 1 : -1, Math.round(pos));
+  }
+  window.vbtmPageMatch = function (resp) {
+    if (resp.reqId !== matchSeq) return;
+    const m = resp.match;
+    if (!m) return;
+    userNavigated();
+    lastMatchPos = m.startNs;
+    const s = m.startNs, e = m.startNs + m.durNs;
+    const mid = (s + e) / 2;
+    const framePx = (e - s) / span() * W;
+    const half = framePx < 3 ? Math.max((e - s) * 20, 1000) / 2 : span() / 2;
+    setView(mid - half, mid + half);
+    pendingSelect = { tid: m.tid, ts: m.startNs, dur: m.durNs, depth: m.depth, nm: m.methodId };
+    const th = threadByTid.get(m.tid);
+    if (th) ensureRowVisible(th, m.depth);
+    viewChanged();
+  };
+  function consumePendingSelect() {
+    if (!pendingSelect) return;
+    const th = threadByTid.get(pendingSelect.tid);
+    if (!th) { pendingSelect = null; return; }
+    const i = findFrame(th, pendingSelect.ts, pendingSelect.depth, pendingSelect.nm, pendingSelect.dur);
+    if (i >= 0) { pendingSelect = null; select(th, i); }
+  }
+  function findFrame(th, ts, depth, nm, dur) {
+    const idxs = th.byDepth[depth];
+    if (!idxs || !idxs.length) return -1;
+    let lo = 0, hi = idxs.length;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (th.ts[idxs[m]] < ts) lo = m + 1; else hi = m; }
+    for (; lo < idxs.length && th.ts[idxs[lo]] === ts; lo++) {
+      if (th.nm[idxs[lo]] === nm && (dur == null || th.dur[idxs[lo]] === dur)) return idxs[lo];
+    }
+    return -1;
+  }
+  function highlightMethod(nameId) {
+    const name = nameOf(nameId);
+    searchBox.value = name;
+    applySearch(name);
+  }
+  window.vbtmPageSearchFor = function (methodId, name) {
+    if (typeof name === "string") setName(methodId, name);
+    highlightMethod(methodId);
+  };
+
+  let selected = null;
+  let selectedSession = -1;
+
+  function notifySelect() {
+    if (typeof window.vbtmHostSelect !== "function") return;
+    if (!selected) { window.vbtmHostSelect(); return; }
+    const { th, i } = selected;
+    const chain = [];
+    for (let d = th.dp[i] - 1; d >= 0; d--) {
+      const p = nodeAt(th, d, th.ts[i]);
+      if (p < 0) break;
+      chain.push(Math.round(th.ts[p]), Math.round(th.dur[p]), th.nm[p]);
+    }
+    const ancestors = [];
+    for (let k = chain.length - 3; k >= 0; k -= 3) ancestors.push(chain[k], chain[k + 1], chain[k + 2]);
+    window.vbtmHostSelect(th.tid, Math.round(th.ts[i]), Math.round(th.dur[i]), Math.round(th.sf[i]),
+      th.dp[i], th.nm[i], th.ex[i], isUnclosed(th, i), ancestors);
+  }
+  function select(th, i) {
+    pendingSelect = null;
+    if (th == null || i < 0) {
+      selected = null;
+      selectedSession = -1;
+    } else {
+      selected = {
+        th, i,
+        info: { nm: th.nm[i], ts: th.ts[i], dur: th.dur[i], depth: th.dp[i], unclosed: isUnclosed(th, i) },
+      };
+      selectedSession = sessionOf(th.tid, th.ts[i]);
+    }
+    updateChips();
+    scheduleDraw();
+    notifySelect();
+  }
+  function reselect() {
+    if (!selected) return;
+    const { th, info } = selected;
+    let i = findFrame(th, info.ts, info.depth, info.nm, info.dur);
+    if (i < 0 && info.unclosed) {
+      i = findFrame(th, info.ts, info.depth, info.nm, null);
+      if (i >= 0) {
+        info.dur = th.dur[i];
+        info.unclosed = isUnclosed(th, i);
+        selected.i = i;
+        notifySelect();
+        return;
+      }
+    }
+    selected.i = i;
+  }
+
+  let drawScheduled = false, ovScheduled = false, ovPending = false;
+  let hover = null;
+
+  function drawOverviewIfPending() {
+    if (!ovPending) return;
+    ovPending = false;
+    drawOverview();
+  }
+  function scheduleDraw(chartOnly) {
+    if (!chartOnly) ovPending = true;
+    if (drawScheduled) return;
+    drawScheduled = true;
+    requestAnimationFrame(() => { drawScheduled = false; drawChart(); drawOverviewIfPending(); });
+  }
+  function scheduleOverview() {
+    ovPending = true;
+    if (drawScheduled || ovScheduled) return;
+    ovScheduled = true;
+    requestAnimationFrame(() => { ovScheduled = false; drawOverviewIfPending(); });
+  }
+
+  const fillBatches = new Map();
+  const thrownBuf = [], unclosedBuf = [], labelBuf = [];
+
+  function strokeRounded(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
+    else ctx.rect(x, y, w, h);
+    ctx.stroke();
+  }
+
+  function hatch(ctx, x0, x1, y, h, spacing) {
+    for (let k = x0 - h; k < x1; k += spacing) {
+      const xs = Math.max(k, x0);
+      const ys = y + h - (xs - k);
+      const xe = Math.min(k + h, x1);
+      const ye = y + h - (xe - k);
+      if (xe > xs) { ctx.moveTo(xs, ys); ctx.lineTo(xe, ye); }
+    }
+  }
+
+  function drawChart() {
+    const ctx = chart.getContext("2d");
+    const d = DPR();
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+    ctx.textBaseline = "middle";
+    const mono = '11px ui-monospace, Menlo, Consolas, monospace';
+    ctx.font = mono;
+
+    ctx.fillStyle = UI.bg;
+    ctx.fillRect(0, 0, W, chartH);
+    ctx.fillStyle = UI.panel;
+    ctx.fillRect(0, 0, W, RULER_H);
+
+    const step = niceStep(span() / W * 90);
+    const first = Math.ceil(view.t0 / step) * step;
+    for (let t = first; t <= view.t1; t += step) {
+      const x = t2x(t);
+      if (x < 0 || x > W) continue;
+      ctx.fillStyle = UI.rulerLine;
+      ctx.fillRect(Math.round(x), RULER_H, 1, chartH - RULER_H);
+      ctx.fillStyle = UI.dim;
+      ctx.fillText(fmtRuler(t, step), x + 4, 11);
+    }
+
+    if (gcSorted.length) {
+      const scale = W / span();
+      ctx.fillStyle = UI.gc;
+      let lastCol = -10;
+      for (const g of gcSorted) {
+        if (g.ts > view.t1) break;
+        if (g.ts + g.dur < view.t0) continue;
+        const x0 = (g.ts - view.t0) * scale;
+        const w = Math.max(g.dur * scale, 1);
+        const col = Math.floor(x0);
+        if (w <= 1 && col === lastCol) continue;
+        lastCol = col;
+        const fx0 = Math.max(x0, 0), fx1 = Math.min(x0 + w, W);
+        if (fx1 <= fx0) continue;
+        ctx.globalAlpha = 0.16;
+        ctx.fillRect(fx0, RULER_H, fx1 - fx0, chartH - RULER_H);
+        if (fx1 - fx0 >= 3) {
+          ctx.globalAlpha = 0.45;
+          ctx.fillRect(fx0, RULER_H, 1, chartH - RULER_H);
+          ctx.fillRect(fx1 - 1, RULER_H, 1, chartH - RULER_H);
+        }
+        ctx.globalAlpha = 1;
+        ctx.fillRect(fx0, RULER_H - 4, Math.max(fx1 - fx0, 2), 4);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    if (META.truncated || META.corrupt) {
+      const covX = t2x(META.maxNs);
+      if (covX < W) {
+        const x0 = Math.max(covX, 0);
+        ctx.globalAlpha = 0.08;
+        ctx.fillStyle = UI.warn;
+        ctx.fillRect(x0, RULER_H, W - x0, chartH - RULER_H);
+        ctx.globalAlpha = 0.25;
+        ctx.strokeStyle = UI.warn;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        hatch(ctx, x0, W, RULER_H, chartH - RULER_H, 14);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    const nsPerPx = span() / W;
+    const selTh = selected ? selected.th : null;
+    const selIdx = selected ? selected.i : -1;
+    const hovTh = hover ? hover.th : null;
+    const hovIdx = hover ? hover.i : -1;
+    let thrownN = 0, unclosedN = 0, labelN = 0;
+    let hovRx = 0, hovRy = 0, hovRw = -1;
+    let selRx = 0, selRy = 0, selRw = -1;
+
+    for (const tr of tracks) {
+      const th = tr.th;
+      const headerY = RULER_H + tr.headerY - scrollY;
+      const bodyH = (th.maxDepth + 1) * ROW_H;
+      if (headerY > chartH || headerY + HEADER_H + bodyH < RULER_H) continue;
+
+      if (headerY + HEADER_H > RULER_H && headerY < chartH) {
+        ctx.fillStyle = UI.panel;
+        ctx.fillRect(0, headerY, W, HEADER_H);
+        ctx.fillStyle = UI.border;
+        ctx.fillRect(0, headerY + HEADER_H - 1, W, 1);
+        ctx.fillStyle = UI.text;
+        ctx.font = mono;
+        ctx.fillText(`${th.name}, tid ${th.tid}, ${fmtInt(th.totalCalls)} calls`, 6,
+          headerY + HEADER_H / 2 + 1);
+      }
+
+      const rowsY = RULER_H + tr.rowsY - scrollY;
+      const dMin = Math.max(0, Math.floor((RULER_H - rowsY) / ROW_H));
+      const dMax = Math.min(th.maxDepth, Math.ceil((chartH - rowsY) / ROW_H));
+      if (dMax < dMin || !th.byDepth.length) continue;
+
+      const { ts, dur, nm } = th;
+      const t0 = view.t0, t1 = view.t1;
+      const scale = W / (t1 - t0);
+      const fl = th.fl;
+      ctx.fillStyle = UI.dirt;
+
+      for (let depth = dMin; depth <= dMax; depth++) {
+        const idxs = th.byDepth[depth];
+        if (!idxs || !idxs.length) continue;
+        const y = rowsY + depth * ROW_H;
+        let lo = 0, hi = idxs.length;
+        while (lo < hi) { const m = (lo + hi) >> 1; if (ts[idxs[m]] + dur[idxs[m]] < t0) lo = m + 1; else hi = m; }
+        let dirtCol = -1, dirtCovered = 0;
+        const flushDirt = () => {
+          if (dirtCol < 0) return;
+          let a = Math.min(Math.max(dirtCovered / nsPerPx, 0.18), 1);
+          if (emphasis) a *= 0.35;
+          ctx.globalAlpha = a;
+          ctx.fillRect(dirtCol, y + 1, 1, ROW_H - 2);
+          ctx.globalAlpha = 1;
+          dirtCol = -1; dirtCovered = 0;
+        };
+        for (let k = lo; k < idxs.length; k++) {
+          const i = idxs[k];
+          if (ts[i] > t1) break;
+          const x0 = (ts[i] - t0) * scale;
+          const x1 = x0 + dur[i] * scale;
+          if (x1 - x0 < MIN_FRAME_PX) {
+            const col = Math.max(Math.floor(x0), 0);
+            if (col !== dirtCol) { flushDirt(); dirtCol = col; }
+            dirtCovered += dur[i];
+            continue;
+          }
+          flushDirt();
+          const fx0 = Math.max(x0, -2);
+          const fx1 = Math.min(x1, W + 2);
+          let w = Math.max(fx1 - fx0, 0.5);
+          if (w > 2) w -= 0.5;
+          const miss = emphasis && !emphasis.has(nm[i]);
+          const key = nm[i] * 2 + (miss ? 1 : 0);
+          let batch = fillBatches.get(key);
+          if (batch === undefined) { batch = { n: 0, a: [] }; fillBatches.set(key, batch); }
+          batch.a[batch.n++] = fx0; batch.a[batch.n++] = y + 1; batch.a[batch.n++] = w;
+          const f = fl[i];
+          if (f & 1) { unclosedBuf[unclosedN++] = fx0; unclosedBuf[unclosedN++] = fx1; unclosedBuf[unclosedN++] = y; }
+          if (f & 2) { thrownBuf[thrownN++] = fx0; thrownBuf[thrownN++] = y + ROW_H - 3; thrownBuf[thrownN++] = w; }
+          if (hovTh === th && hovIdx === i) { hovRx = fx0; hovRy = y; hovRw = w; }
+          if (selTh === th && selIdx === i) { selRx = fx0; selRy = y; selRw = w; }
+          if (x1 - x0 >= MIN_LABEL_PX && !miss) {
+            const avail = Math.min(x1, W) - Math.max(x0, 0) - 6;
+            if (avail > 0) {
+              labelBuf[labelN++] = Math.max(x0, 0) + 3; labelBuf[labelN++] = y + ROW_H / 2 + 0.5;
+              labelBuf[labelN++] = nm[i]; labelBuf[labelN++] = avail;
+            }
+          }
+        }
+        flushDirt();
+      }
+    }
+
+    for (const [key, batch] of fillBatches) {
+      if (batch.n === 0) continue;
+      const a = batch.a, n = batch.n;
+      ctx.fillStyle = frameColor(key >> 1);
+      ctx.globalAlpha = (key & 1) ? 0.22 : 1;
+      for (let k = 0; k < n; k += 3) ctx.fillRect(a[k], a[k + 1], a[k + 2], ROW_H - 2);
+      batch.n = 0;
+    }
+    ctx.globalAlpha = 1;
+    if (thrownN) {
+      ctx.fillStyle = UI.thrown;
+      for (let k = 0; k < thrownN; k += 3) ctx.fillRect(thrownBuf[k], thrownBuf[k + 1], thrownBuf[k + 2], 2);
+    }
+    if (hovRw >= 0) {
+      ctx.strokeStyle = UI.hoverOutline;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(hovRx + 0.5, hovRy + 1, hovRw - 1, ROW_H - 2);
+    }
+    if (selRw >= 0) {
+      ctx.strokeStyle = UI.hoverOutline;
+      ctx.lineWidth = 2;
+      strokeRounded(ctx, selRx - 0.5 + 1, selRy + 1, selRw + 1 - 2, ROW_H - 2, 2);
+    }
+    if (unclosedN) {
+      ctx.globalAlpha = 0.55;
+      ctx.strokeStyle = UI.warn;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let k = 0; k < unclosedN; k += 3) hatch(ctx, unclosedBuf[k], unclosedBuf[k + 1], unclosedBuf[k + 2] + 1, ROW_H - 2, 5);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.font = mono;
+    ctx.fillStyle = UI.frameText;
+    for (let k = 0; k < labelN; k += 4) {
+      const label = shortNameOf(labelBuf[k + 2]);
+      const maxChars = Math.floor(labelBuf[k + 3] / PX_PER_CHAR);
+      if (maxChars < 1) continue;
+      const text = label.length > maxChars ? label.slice(0, Math.max(1, maxChars - 1)) + "…" : label;
+      ctx.fillText(text, labelBuf[k], labelBuf[k + 1]);
+    }
+  }
+
+  function bandInner() {
+    const bh = bandH();
+    const pad = Math.min(3, Math.round(bh / 12));
+    return { bh, pad, usable: Math.max(bh - 2 * pad, 1) };
+  }
+
+  function bandsCanvas() {
+    if (ovBands) return ovBands;
+    const d = DPR();
+    const c = document.createElement("canvas");
+    c.width = Math.round(W * d); c.height = Math.round(OVERVIEW_H * d);
+    const ctx = c.getContext("2d");
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+    ctx.fillStyle = UI.panel;
+    ctx.fillRect(0, 0, W, OVERVIEW_H);
+
+    const n = tracks.length, { bh, pad, usable } = bandInner();
+    ctx.fillStyle = UI.dirt;
+    ctx.globalAlpha = 0.85;
+    for (let k = 0; k < n; k++) {
+      const coverage = tracks[k].th.coverage, nb = coverage.length;
+      if (!nb) continue;
+      const barW = Math.max(W / nb, 1), y0 = k * bh + pad;
+      for (let b = 0; b < nb; b++) {
+        if (!coverage[b]) continue;
+        const frac = Math.min(Math.max(coverage[b] / 100, 0.04), 1);
+        const hh = Math.max(usable * frac, 1);
+        ctx.fillRect(b / nb * W, y0 + (usable - hh), barW, hh);
+      }
+    }
+    ctx.globalAlpha = 1;
+    if (bh >= 3) {
+      ctx.fillStyle = UI.border;
+      for (let k = 1; k < n; k++) ctx.fillRect(0, Math.round(k * bh), W, 1);
+    }
+    if (bh >= 10) {
+      ctx.font = "10px ui-monospace, Menlo, Consolas, monospace";
+      ctx.textBaseline = "middle";
+      const maxChars = Math.max(Math.floor(Math.min(W / 3, 240) / 6), 4);
+      for (let k = 0; k < n; k++) {
+        const name = tracks[k].th.name;
+        const text = name.length > maxChars ? name.slice(0, maxChars - 1) + "…" : name;
+        ctx.globalAlpha = 0.75;
+        ctx.fillStyle = UI.panel;
+        ctx.fillRect(2, k * bh + pad, ctx.measureText(text).width + 4, usable);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = UI.dim;
+        ctx.fillText(text, 4, k * bh + bh / 2 + 0.5);
+      }
+    }
+    const ovX = t => (t - T_MIN) / SPAN * W;
+    if (gcSorted.length) {
+      ctx.fillStyle = UI.gc;
+      for (const g of gcSorted) {
+        const x0 = ovX(g.ts), w = Math.max(ovX(g.ts + g.dur) - x0, 1);
+        if (x0 + w < 0 || x0 > W) continue;
+        ctx.globalAlpha = 0.35;
+        ctx.fillRect(x0, 0, w, OVERVIEW_H);
+        ctx.globalAlpha = 1;
+        ctx.fillRect(x0, 0, Math.max(w, 2), 3);
+      }
+    }
+    if (META.truncated || META.corrupt) {
+      const x0 = Math.max(ovX(META.maxNs), 0);
+      if (x0 < W) {
+        ctx.globalAlpha = 0.15;
+        ctx.fillStyle = UI.warn;
+        ctx.fillRect(x0, 0, W - x0, OVERVIEW_H);
+        ctx.globalAlpha = 1;
+      }
+    }
+    ovBands = c;
+    return c;
+  }
+
+  function drawOverview() {
+    const ctx = overview.getContext("2d");
+    const d = DPR();
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+    const h = OVERVIEW_H;
+    ctx.drawImage(bandsCanvas(), 0, 0, W, h);
+
+    const ovX = t => (t - T_MIN) / SPAN * W;
+    if (selectedSession >= 0) {
+      const s = sessions[selectedSession];
+      const k = tracks.findIndex(t => t.th.tid === s.tid);
+      if (k >= 0) {
+        const { bh, pad, usable } = bandInner();
+        const sx0 = Math.min(Math.max(ovX(s.startNs), 0), W - 2);
+        const sw = Math.max(Math.min(ovX(s.startNs + s.durNs), W) - sx0, 2);
+        const sy = k * bh + pad;
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = UI.select;
+        ctx.fillRect(sx0, sy, sw, usable);
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = UI.select;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(sx0 + 0.5, sy + 0.5, sw - 1, Math.max(usable - 1, 0));
+      }
+    }
+    const ww = Math.max(Math.min(Math.max(ovX(view.t1), 0), W) - Math.max(ovX(view.t0), 0), 2);
+    const wx0 = Math.min(Math.max(ovX(view.t0), 0), W - ww);
+    const [vy0, vy1] = ovViewY();
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = UI.hoverOutline;
+    ctx.fillRect(wx0, vy0, ww, vy1 - vy0);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = UI.hoverOutline;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(wx0 + 0.5, vy0 + 0.5, ww - 1, vy1 - vy0 - 1);
+  }
+
+  function gcAt(x) {
+    const t = x2t(x), tol = 3 * span() / W;
+    let best = null, bestDist = Infinity;
+    for (const g of gcSorted) {
+      if (g.ts > t + tol) break;
+      const dist = t < g.ts ? g.ts - t : t > g.ts + g.dur ? t - (g.ts + g.dur) : 0;
+      if (dist <= tol && dist <= bestDist) { best = g; bestDist = dist; }
+    }
+    return best ? { gc: best } : null;
+  }
+  function hitTest(x, y) {
+    if (y < RULER_H) return gcAt(x);
+    const ly = y - RULER_H + scrollY;
+    for (const tr of tracks) {
+      const rowsEnd = tr.rowsY + (tr.th.maxDepth + 1) * ROW_H;
+      if (ly < tr.rowsY || ly >= rowsEnd) continue;
+      const depth = Math.floor((ly - tr.rowsY) / ROW_H);
+      const i = nodeAt(tr.th, depth, x2t(x));
+      return i >= 0 ? { th: tr.th, i } : null;
+    }
+    return null;
+  }
+
+  const DRAG_PX = 3;
+  function installDrag(target, h) {
+    let drag = null;
+    target.addEventListener("mousedown", e => {
+      if (e.button !== 0) return;
+      chartWrap.focus();
+      userNavigated();
+      drag = { st: h.down(e), downX: e.clientX, downY: e.clientY, moved: false };
+    });
+    window.addEventListener("mousemove", e => {
+      if (!drag) return;
+      if (!drag.moved && Math.abs(e.clientX - drag.downX) <= DRAG_PX && Math.abs(e.clientY - drag.downY) <= DRAG_PX) return;
+      drag.moved = true;
+      h.move(e, drag.st);
+    });
+    window.addEventListener("mouseup", e => {
+      if (!drag) return;
+      const d = drag;
+      drag = null;
+      if (!d.moved) h.click(e, d.st);
+    });
+    return () => drag !== null && drag.moved;
+  }
+
+  const chartDragging = installDrag(chart, {
+    down: e => ({ lastX: e.clientX, lastY: e.clientY, detail: e.detail }),
+    move: (e, st) => {
+      const dx = e.clientX - st.lastX, dy = e.clientY - st.lastY;
+      st.lastX = e.clientX; st.lastY = e.clientY;
+      const dt = -dx / W * span();
+      setView(view.t0 + dt, view.t1 + dt);
+      setScroll(scrollY - dy);
+      setHover(null);
+      viewChanged();
+    },
+    click: (e, st) => {
+      const r = chart.getBoundingClientRect();
+      const hit = hitTest(e.clientX - r.left, e.clientY - r.top);
+      if (hit && hit.gc) return;
+      if (hit) {
+        select(hit.th, hit.i);
+        if (st.detail >= 2) zoomToFrame(hit.th, hit.i);
+      } else {
+        select(null, -1);
+      }
+    },
+  });
+  chart.addEventListener("wheel", e => {
+    e.preventDefault();
+    userNavigated();
+    const r = chart.getBoundingClientRect();
+    if (e.ctrlKey || e.metaKey) {
+      const factor = Math.min(Math.max(1 + e.deltaY / 240, 0.4), 2.5);
+      zoomAt(e.clientX - r.left, factor);
+    } else {
+      if (e.deltaX !== 0) panBy(e.deltaX);
+      if (e.deltaY !== 0) {
+        setScroll(scrollY + e.deltaY);
+        scheduleDraw(true);
+      }
+    }
+    updateHover(e);
+  }, { passive: false });
+
+  let hoverX = null;
+  chart.addEventListener("mousemove", updateHover);
+  chart.addEventListener("mouseleave", () => { hoverX = null; setHover(null); });
+
+  function hoverKey(h) { return !h ? "" : h.gc ? "gc:" + h.gc.ts : h.th.tid + ":" + h.i; }
+  function placeTooltip(e) {
+    tooltip.style.display = "block";
+    const x = Math.max(Math.min(e.chartX + 14, W - tooltip.offsetWidth), 0);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = (e.chartY + 18) + "px";
+  }
+  function setHover(hit, e) {
+    const before = hoverKey(hover), after = hoverKey(hit);
+    hover = hit;
+    if (before !== after) scheduleDraw(true);
+    if (!hit) { tooltip.style.display = "none"; return; }
+    if (hit.gc) {
+      const g = hit.gc;
+      const kind = gcKind(g.act);
+      const l2 = `${fmtDur(g.dur)}, start ${fmtTs(g.ts)}${kind ? ", " + kind : ""}, cause ${g.cause}`;
+      tooltip.innerHTML =
+        `<div class="gc">GC pause, ${escapeHtml(g.name)}</div><div class="l2">${escapeHtml(l2)}</div>` +
+        `<div class="l2">stops every thread</div><div class="l2 wall">${fmtWall(g.ts, 3)}</div>`;
+      placeTooltip(e);
+      return;
+    }
+    const { th, i } = hit;
+    const dur = th.dur[i], self = th.sf[i];
+    let l2 = `${fmtDur(dur)}, self ${fmtDur(self)}, start ${fmtTs(th.ts[i])}, depth ${th.dp[i]}`;
+    if (isThrown(th, i)) l2 += `, throws ${excShortNameOf(th.ex[i])}`;
+    if (isUnclosed(th, i)) l2 += ", unclosed";
+    const selfFrac = dur > 0 ? Math.min(Math.max(self / dur, 0), 1) : 0;
+    const parent = nodeAt(th, th.dp[i] - 1, th.ts[i]);
+    const six = sessionOf(th.tid, th.ts[i]);
+    const s = six >= 0 ? sessions[six] : null;
+    const shares = [];
+    if (parent >= 0 && th.dur[parent] > 0) {
+      shares.push(`${fmtPct(dur / th.dur[parent] * 100)} of parent ${shortNameOf(th.nm[parent])}`);
+    }
+    if (s) {
+      if (th.dp[i] === 0) shares.push(`root of session #${s.seq}`);
+      else if (s.durNs > 0) shares.push(`${fmtPct(dur / s.durNs * 100)} of session #${s.seq}`);
+    }
+    const l3 = shares.length ? `<div class="l2">${escapeHtml(shares.join(", "))}</div>` : "";
+    const gc = gcOverlap(th.ts[i], dur);
+    const gcFrac = gc.n && dur > 0 ? Math.min(gc.ns / dur, 1) : 0;
+    const gcFill = gc.n ? `<div class="gcfill" style="width:${(gcFrac * 100).toFixed(1)}%"></div>` : "";
+    const l4 = gc.n
+      ? `<div class="gc">${escapeHtml(`GC ${fmtDur(gc.ns)} in ${gc.n} pause${gc.n > 1 ? "s" : ""}, ${fmtPct(gcFrac * 100)} of total`)}</div>`
+      : "";
+    tooltip.innerHTML =
+      `<div>${escapeHtml(nameOf(th.nm[i]))}</div><div class="l2">${escapeHtml(l2)}</div>` +
+      `<div class="bar"><div class="fill" style="width:${(selfFrac * 100).toFixed(1)}%"></div>${gcFill}</div>` +
+      l3 + l4 + `<div class="l2 wall">${fmtWall(th.ts[i], 4)}</div>`;
+    placeTooltip(e);
+  }
+  function updateHover(e) {
+    const r = chart.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    hoverX = x;
+    if (chartDragging()) { setHover(null); return; }
+    const hit = hitTest(x, y);
+    setHover(hit, hit ? { chartX: x, chartY: y } : undefined);
+  }
+
+  window.addEventListener("keydown", e => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f") {
+      e.preventDefault();
+      searchBox.focus();
+      return;
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "r") {
+      e.preventDefault();
+      if (typeof window.vbtmHostReload === "function") window.vbtmHostReload();
+      return;
+    }
+    if (e.target.tagName === "INPUT") {
+      if (e.key === "Enter") { e.preventDefault(); jumpMatch(!e.shiftKey); }
+      if (e.key === "Escape") {
+        e.target.value = "";
+        applySearch("");
+        e.target.blur();
+      }
+      return;
+    }
+    const k = e.key.toLowerCase();
+    if ("wsad0f".includes(k) || k === "enter") userNavigated();
+    if (k === "w") zoomAt(hoverX != null ? hoverX : W / 2, 0.75);
+    else if (k === "s") zoomAt(hoverX != null ? hoverX : W / 2, 1 / 0.75);
+    else if (k === "a") panBy(-W * 0.2);
+    else if (k === "d") panBy(W * 0.2);
+    else if (k === "0") { view.t0 = VIEW_MIN; view.t1 = VIEW_MAX; scrollY = 0; viewChanged(); }
+    else if (k === "f") { if (selected && selected.i >= 0) zoomToFrame(selected.th, selected.i); }
+    else if (k === "enter") jumpMatch(!e.shiftKey);
+    else if (k === "escape") {
+      select(null, -1);
+      if (query) { searchBox.value = ""; applySearch(""); }
+    }
+  });
+
+  function ovPos(e) {
+    const r = overview.getBoundingClientRect();
+    return {
+      x: Math.min(Math.max(e.clientX - r.left, 0), W),
+      y: Math.min(Math.max(e.clientY - r.top, 0), OVERVIEW_H),
+    };
+  }
+  function ovT(x) { return T_MIN + x / W * SPAN; }
+  function sessionNear(tid, t, tolNs) {
+    let best = -1, bestD = Infinity;
+    sessions.forEach((s, ix) => {
+      if (s.tid !== tid) return;
+      const a = s.startNs, b = a + s.durNs;
+      const d = t < a ? a - t : t > b ? t - b : 0;
+      if (d <= tolNs && d < bestD) { best = ix; bestD = d; }
+    });
+    return best;
+  }
+  const OV_HIT_PX = 3;
+  function sessionAt(k, t) { return k < 0 ? -1 : sessionNear(tracks[k].th.tid, t, OV_HIT_PX * SPAN / W); }
+  function sessionOf(tid, ts) { return sessionNear(tid, ts, 0); }
+  installDrag(overview, {
+    down: e => {
+      const p = ovPos(e), t = ovT(p.x);
+      const [vy0, vy1] = ovViewY();
+      const inside = t > view.t0 && t < view.t1 && p.y >= vy0 && p.y <= vy1;
+      e.preventDefault();
+      return inside ? { mode: "move", grabDt: t - view.t0, grabDy: p.y - vy0 } : { mode: "brush", anchor: t };
+    },
+    move: (e, st) => {
+      const p = ovPos(e), t = ovT(p.x);
+      if (st.mode === "move") {
+        const s = span();
+        setView(t - st.grabDt, t - st.grabDt + s);
+        setScroll(ovY2trackY(p.y - st.grabDy));
+      } else {
+        const a = Math.min(t, st.anchor), b = Math.max(t, st.anchor);
+        setView(a, Math.max(b, a + 1000));
+      }
+      viewChanged();
+    },
+    click: e => {
+      const p = ovPos(e), k = bandAt(p.y);
+      if (k < 0) return;
+      const ix = sessionAt(k, ovT(p.x));
+      if (ix >= 0) { zoomSession(ix); return; }
+      const tr = tracks[k], viewH = chartH - RULER_H;
+      if (tr.headerY < scrollY || tr.headerY + tr.h - TRACK_GAP > scrollY + viewH) {
+        setScroll(tr.headerY);
+        scheduleDraw(true);
+      }
+    },
+  });
+  overview.addEventListener("mousemove", e => {
+    const p = ovPos(e), k = bandAt(p.y);
+    const ix = sessionAt(k, ovT(p.x));
+    const name = ix >= 0 ? sessionLabel(sessions[ix]) : k >= 0 ? tracks[k].th.name : "";
+    if (overview.title !== name) overview.title = name;
+    overview.style.cursor = ix >= 0 ? "pointer" : "";
+  });
+
+  function renderStats() {
+    document.title = META.source;
+    document.getElementById("stats").textContent =
+      `${fmtInt(META.totalCalls)} calls, ${META.threads.length} threads, ` +
+      `${sessions.length} sessions, ${fmtInt(META.totalMethods)} methods, ${fmtDur(SPAN)}, ` +
+      (gcSorted.length ? `${fmtInt(gcSorted.length)} GC pauses ${fmtDur(gcTotalNs)}, ` : "") +
+      `recorded ${fmtWall(0, 3)}`;
+  }
+  renderStats();
+  {
+    const exportBtn = document.getElementById("export");
+    if (typeof window.vbtmHostExportSession === "function") {
+      exportBtn.hidden = false;
+      exportBtn.addEventListener("mousedown", e => e.preventDefault());
+      exportBtn.addEventListener("click", () => {
+        window.vbtmHostExportSession();
+        chartWrap.focus();
+      });
+    }
+  }
+  searchBox.addEventListener("input", e => {
+    clearTimeout(searchTimer);
+    const v = e.target.value;
+    if (!v.trim()) { applySearch(""); return; }
+    searchTimer = setTimeout(() => applySearch(v), 250);
+  });
+
+  function renderBanner() {
+    const warns = [];
+    if (META.truncated) {
+      warns.push("The log is truncated, possibly by a killed JVM. The region after the cut is hatched");
+    }
+    if (META.corrupt) {
+      warns.push(`The file is corrupt at offset ${fmtInt(META.corruptOffset)}: ${META.corruptReason || ""}. Data before it is shown`);
+    }
+    const banner = document.getElementById("banner");
+    banner.textContent = warns.join(". ");
+    banner.classList.toggle("on", warns.length > 0);
+  }
+  renderBanner();
+  function rootName(s) { return s.rootId >= 0 ? nameOf(s.rootId) : "<no enter>"; }
+  function threadName(tid) { const th = threadByTid.get(tid); return th ? th.name : "tid-" + tid; }
+  function sessionLabel(s) {
+    return `#${s.seq} ${shortName(rootName(s))} on ${threadName(s.tid)}, ${fmtDur(s.durNs)}`;
+  }
+  const MAX_CHIPS = 100;
+  const chipEls = [];
+  let extraChip = null;
+  let litChip = null;
+  function refreshChip(chip, s) {
+    chip.classList.toggle("warn", s.unclosed === true);
+    chip.textContent = sessionLabel(s);
+    chip.title = rootName(s);
+  }
+  function makeChip(s, ix) {
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    refreshChip(chip, s);
+    chip.addEventListener("click", () => zoomSession(ix));
+    return chip;
+  }
+  function renderMore() {
+    let more = chips.querySelector(".more");
+    const extra = sessions.length - MAX_CHIPS;
+    if (extra <= 0) { if (more) more.remove(); return; }
+    if (!more) {
+      more = document.createElement("span");
+      more.className = "more";
+      chips.appendChild(more);
+    }
+    more.textContent = `and ${extra} more sessions`;
+  }
+  function renderChips() {
+    chips.textContent = "";
+    chipEls.length = 0;
+    extraChip = null;
+    litChip = null;
+    chips.classList.toggle("on", sessions.length > 0);
+    if (!sessions.length) return;
+    sessions.slice(0, MAX_CHIPS).forEach((s, ix) => chips.appendChild(chipEls[ix] = makeChip(s, ix)));
+    renderMore();
+    updateChips();
+  }
+  function patchChips(emitted) {
+    if (!sessions.length) return;
+    chips.classList.add("on");
+    for (const s of emitted) {
+      const ix = s.seq - 1;
+      if (ix < MAX_CHIPS) {
+        if (chipEls[ix]) {
+          refreshChip(chipEls[ix], s);
+        } else {
+          const chip = makeChip(s, ix);
+          chips.insertBefore(chip, chips.querySelector(".more"));
+          chipEls[ix] = chip;
+        }
+      } else if (extraChip && extraChip.ix === ix) {
+        refreshChip(extraChip.el, s);
+      }
+    }
+    renderMore();
+    updateChips();
+  }
+  function updateChips() {
+    chipEls.forEach((c, ix) => c.classList.toggle("on", ix === selectedSession));
+    if (extraChip && extraChip.ix !== selectedSession) { extraChip.el.remove(); extraChip = null; }
+    if (selectedSession >= chipEls.length && !extraChip) {
+      const el = makeChip(sessions[selectedSession], selectedSession);
+      el.classList.add("on");
+      chips.insertBefore(el, chips.querySelector(".more"));
+      extraChip = { ix: selectedSession, el };
+    }
+    const lit = selectedSession < 0 ? null : selectedSession < chipEls.length ? chipEls[selectedSession]
+      : extraChip && extraChip.el;
+    if (lit && lit !== litChip) lit.scrollIntoView({ block: "nearest", inline: "nearest" });
+    litChip = lit;
+  }
+  function sessionView(s) {
+    const a = s.startNs, b = s.startNs + Math.max(s.durNs, 100);
+    const pad = (b - a) * 0.02;
+    const tr = tracks.find(t => t.th.tid === s.tid);
+    return { t0: a - pad, t1: b + pad, scrollY: tr ? clampScroll(tr.headerY) : scrollY };
+  }
+  function focusSession(ix) {
+    const s = sessions[ix];
+    if (!s) return false;
+    const v = sessionView(s);
+    setView(v.t0, v.t1);
+    scrollY = v.scrollY;
+    return true;
+  }
+  function rootSelection(s) { return { tid: s.tid, ts: s.startNs, dur: s.durNs, depth: 0, nm: s.rootId }; }
+  function selectRoot(s) {
+    if (s.rootId >= 0) {
+      pendingSelect = rootSelection(s);
+      consumePendingSelect();
+    } else {
+      select(null, -1);
+    }
+  }
+  function zoomSession(ix) {
+    userNavigated();
+    if (!focusSession(ix)) return;
+    selectRoot(sessions[ix]);
+    viewChanged();
+  }
+  function longestSession() {
+    let best = -1;
+    sessions.forEach((s, ix) => { if (best < 0 || s.durNs > sessions[best].durNs) best = ix; });
+    return best;
+  }
+  renderChips();
+
+  let follow = false;
+  let followSeen = false;
+  let followTarget = -1;
+  let followUpdates = 0;
+  let followEnded = false;
+  const followBtn = document.getElementById("follow");
+  function setFollow(on) {
+    follow = on;
+    followBtn.classList.toggle("on", on);
+    if (on) followTarget = -1;
+  }
+  function userNavigated() { if (follow) setFollow(false); pendingView = null; }
+  function pickFollowTarget() {
+    const ss = sessions;
+    const cur = followTarget >= 0 && followTarget < ss.length ? ss[followTarget] : null;
+    if (cur && cur.unclosed && followUpdates < 2) return followTarget;
+    let best = -1;
+    ss.forEach((s, ix) => {
+      if (best < 0) { best = ix; return; }
+      const b = ss[best];
+      if (s.unclosed !== b.unclosed) { if (s.unclosed) best = ix; return; }
+      const k = s.unclosed ? s.startNs : s.startNs + s.durNs;
+      const bk = b.unclosed ? b.startNs : b.startNs + b.durNs;
+      if (k > bk || (k === bk && s.seq > b.seq)) best = ix;
+    });
+    return best;
+  }
+  function applyFollow() {
+    if (!follow) return;
+    const ix = pickFollowTarget();
+    if (ix < 0) return;
+    const s = sessions[ix];
+    const switched = ix !== followTarget;
+    if (switched) { followTarget = ix; followUpdates = 1; } else followUpdates++;
+    if (switched || s.unclosed || !followEnded) {
+      pendingView = sessionView(s);
+      followEnded = !s.unclosed;
+    }
+    if (switched) selectRoot(s);
+  }
+  followBtn.addEventListener("mousedown", e => e.preventDefault());
+  followBtn.addEventListener("click", () => {
+    setFollow(!follow);
+    if (follow) { applyFollow(); viewChanged(); }
+    chartWrap.focus();
+  });
+
+  window.vbtmPageUpdate = function (payload, live) {
+    const reset = payload.meta.sessionsReset === true;
+    const emitted = payload.meta.sessions;
+    if (reset) { NAMES.clear(); EXC_NAMES.clear(); shortCache.clear(); colorCache.clear(); }
+    for (const [id, s] of payload.methodNames) setName(id, s);
+    for (const [id, s] of payload.exceptionNames) EXC_NAMES.set(id, s);
+    const prevOverviewH = OVERVIEW_H;
+    applyMeta(payload.meta);
+    const resized = OVERVIEW_H !== prevOverviewH;
+    if (resized) sizeCanvases(); else ovBands = null;
+    renderStats();
+    renderBanner();
+    if (reset) {
+      followTarget = -1;
+      followUpdates = 0;
+      pendingSelect = null;
+      select(null, -1);
+      renderChips();
+    } else {
+      patchChips(emitted);
+    }
+    clampView();
+    if (live === true) {
+      if (!followSeen) { followSeen = true; followBtn.hidden = false; setFollow(true); }
+    } else if (followSeen) {
+      setFollow(false);
+      followBtn.disabled = true;
+    }
+    applyFollow();
+    setScroll(scrollY);
+    scheduleRequest();
+    if (resized) scheduleDraw(); else scheduleOverview();
+  };
+
+  window.addEventListener("resize", () => { sizeCanvases(); scheduleDraw(); scheduleRequest(); });
+  sizeCanvases();
+  {
+    const ix = longestSession();
+    if (focusSession(ix) && sessions[ix].rootId >= 0) pendingSelect = rootSelection(sessions[ix]);
+  }
+  scheduleDraw();
+  sendRequest();
+</script>
+<script>
+  if (typeof window.vbtmHostReady === "function") window.vbtmHostReady();
+</script>

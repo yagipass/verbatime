@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<server description="verbatime example">
+  <featureManager>
+    <feature>servlet-6.1</feature>
+  </featureManager>
+
+  <httpEndpoint id="defaultHttpEndpoint" host="*" httpPort="8080" httpsPort="-1"/>
+
+  <webApplication id="root" location="ROOT.war" contextRoot="/"/>
+</server>

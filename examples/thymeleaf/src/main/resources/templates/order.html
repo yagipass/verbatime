@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title th:text="'Order ' + ${receipt.txId()}">Order</title>
+</head>
+<body>
+  <h1>Order placed</h1>
+  <table>
+    <tr><th>SKU</th><td th:text="${receipt.sku()}">widget</td></tr>
+    <tr><th>Quantity</th><td th:text="${receipt.qty()}">1</td></tr>
+    <tr><th>Total (cents)</th><td th:text="${receipt.cents()}">0</td></tr>
+    <tr><th>Transaction</th><td th:text="${receipt.txId()}">tx</td></tr>
+  </table>
+  <ul>
+    <li th:each="i : ${#numbers.sequence(1, receipt.qty())}" th:text="'Line ' + ${i} + ' of ' + ${receipt.sku()}">Line</li>
+  </ul>
+</body>
+</html>

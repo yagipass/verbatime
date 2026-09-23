@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin>
+   <extension point="org.eclipse.ui.editors">
+      <editor class="io.github.yagipass.verbatime.jmc.RecordingEditor" extensions="vbtm" icon="icons/verbatime.png" id="io.github.yagipass.verbatime.jmc.editor" name="Verbatime Recording"/>
+   </extension>
+
+   <extension point="org.eclipse.ui.views">
+      <category id="io.github.yagipass.verbatime.jmc.category" name="Verbatime"/>
+      <view category="io.github.yagipass.verbatime.jmc.category" class="io.github.yagipass.verbatime.jmc.control.ControlView" icon="icons/verbatime.png" id="io.github.yagipass.verbatime.jmc.controlView" name="Verbatime Control"/>
+      <view category="io.github.yagipass.verbatime.jmc.category" class="io.github.yagipass.verbatime.jmc.recordings.RecordingsView" icon="icons/verbatime.png" id="io.github.yagipass.verbatime.jmc.recordingsView" name="Verbatime Recordings"/>
+      <view category="io.github.yagipass.verbatime.jmc.category" class="io.github.yagipass.verbatime.jmc.views.CallDetailsView" icon="icons/verbatime.png" id="io.github.yagipass.verbatime.jmc.frameDetailsView" name="Verbatime Call Details"/>
+      <view category="io.github.yagipass.verbatime.jmc.category" class="io.github.yagipass.verbatime.jmc.views.BottomUpView" icon="icons/verbatime.png" id="io.github.yagipass.verbatime.jmc.bottomUpView" name="Verbatime Bottom-up"/>
+      <view category="io.github.yagipass.verbatime.jmc.category" class="io.github.yagipass.verbatime.jmc.views.TopDownView" icon="icons/verbatime.png" id="io.github.yagipass.verbatime.jmc.topDownView" name="Verbatime Top-down"/>
+   </extension>
+
+   <extension point="org.eclipse.ui.preferencePages">
+      <page category="org.openjdk.jmc.ui.preferences.MissionControlPage" class="io.github.yagipass.verbatime.jmc.VerbatimePreferencePage" id="io.github.yagipass.verbatime.jmc.preferencePage" name="Verbatime"/>
+   </extension>
+
+   <extension point="org.eclipse.ui.perspectives">
+      <perspective class="io.github.yagipass.verbatime.jmc.VerbatimePerspective" icon="icons/verbatime.png" id="io.github.yagipass.verbatime.jmc.perspective" name="Verbatime"/>
+   </extension>
+
+   <extension point="org.eclipse.ui.menus">
+      <menuContribution locationURI="menu:window?after=additions">
+         <command commandId="org.eclipse.ui.perspectives.showPerspective" icon="icons/verbatime.png" label="Verbatime" style="push">
+            <parameter name="org.eclipse.ui.perspectives.showPerspective.perspectiveId" value="io.github.yagipass.verbatime.jmc.perspective"/>
+         </command>
+      </menuContribution>
+   </extension>
+</plugin>

@@ -1,0 +1,38 @@
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: examples/grpc/Dockerfile
+    ports:
+      - "8080:8080"
+      - "7091:7091"
+    environment:
+      JAVA_TOOL_OPTIONS: >-
+        -javaagent:/app/verbatime-agent.jar=waitstart=60s,roots=io.github.yagipass.verbatime.examples.grpc.Main::main+io.grpc.stub.ServerCalls$$UnaryServerCallHandler$$UnaryServerCallListener::onHalfClose,${VERBATIME_EXTRA:-}
+        -Dcom.sun.management.jmxremote.port=7091
+        -Dcom.sun.management.jmxremote.rmi.port=7091
+        -Dcom.sun.management.jmxremote.authenticate=false
+        -Dcom.sun.management.jmxremote.ssl=false
+        -Djava.rmi.server.hostname=${JMX_HOST:-localhost}
+        --enable-native-access=ALL-UNNAMED
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 90s
+
+  load:
+    image: fullstorydev/grpcurl:v1.9.3-alpine
+    profiles: [load]
+    depends_on:
+      app:
+        condition: service_healthy
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        end=$$(( $$(date +%s) + 30 )); n=0
+        while [ "$$(date +%s)" -lt "$$end" ]; do
+          grpcurl -plaintext -d '{"sku":"widget","qty":3}' app:8080 verbatime.Orders/PlaceOrder >/dev/null && n=$$((n+1))
+        done
+        echo "$$n calls in 30 s"

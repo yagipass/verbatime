@@ -1,0 +1,11 @@
+services:
+  db:
+    cpuset: ${BENCH_CPUS_DB}
+
+  app:
+    cpuset: ${BENCH_CPUS_APP}
+    environment:
+      JAVA_TOOL_OPTIONS: ${BENCH_JAVA_TOOL_OPTIONS}
+
+  load:
+    cpuset: ${BENCH_CPUS_LOAD}

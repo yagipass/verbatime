@@ -1,0 +1,12 @@
+.direnv/
+.DS_Store
+.pre-commit-config.yaml
+result
+target/
+bench/results/
+examples/*/recordings/*.vbtm
+examples/junit-gradle/build/
+examples/junit-gradle/.gradle/
+docs/node_modules/
+docs/dist/
+notes/
