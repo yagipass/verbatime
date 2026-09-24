@@ -3,8 +3,8 @@
 The same two JUnit 6 tests as [`junit-maven`](../junit-maven/), run by Gradle 9.7 with the agent
 attached to the test worker JVM. The unit of work is one test method, or one whole test run. The
 worker exits as soon as the tests are done, too fast for anyone to start a recording by hand, so the
-agent records the run by itself with `record=startup` and writes it to a file on the host, which is
-then opened in JMC from disk. No JMX and no JMC are involved while the tests run.
+agent alone records the run with `record=startup` and writes it to a file on the host, which is then
+opened in JMC from disk. No JMX port is needed.
 
 ## Run
 

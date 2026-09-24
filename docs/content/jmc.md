@@ -1,7 +1,7 @@
 # JMC plugin
 
 The JDK Mission Control plugin starts and stops recordings, and shows them as a timeline flame
-chart. For how to record, see [Recording with JDK Mission Control](../guide/recording-with-jmc.md).
+chart.
 
 ## Install
 
@@ -21,15 +21,30 @@ cp verbatime-jmc-plugin.jar <jmc>/dropins/
 
 :::
 
-To uninstall, delete the file and restart. If a new jar does not take effect, start JDK Mission
-Control once with `-clean`.
+To uninstall, delete the file and restart.
 
-## Views
+## Record
 
-Choose `Window > Verbatime` to show the views. When a recording opens, JDK Mission Control
-switches to the Verbatime perspective.
+Start the application with the agent and the [JMX flags](./agent/setup.md#jmx-flags). Then choose
+`Window > Verbatime`, and in the Verbatime Control view:
 
-![The timeline flame chart, zoomed in to a few hundred microseconds](/images/viewer-overview.png)
+1. Enter `localhost:7091` and press Connect.
+2. Under Instrumentation roots, type part of a method name and pick a match, or type
+   `pkg.Class::method`. A green dot means the root is instrumented. A yellow dot means its class
+   has not loaded yet.
+3. Press Start recording, use the application, then press Stop recording.
+
+<img src="/images/control-view.png" width="423" alt="The Verbatime Control view, connected to localhost:7091 with two roots">
+
+The recording is saved on your machine and opens right away. Roots cannot be changed while
+recording.
+
+## View
+
+<img src="/images/recordings-view.png" width="421" alt="The Verbatime Recordings view, listing the recordings saved on this machine">
+
+Open a recording from the Verbatime Recordings view, or with `File > Open`. Select a session to
+show its flame chart, then click a call.
 
 | View | Shows |
 |---|---|

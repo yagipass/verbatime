@@ -5,7 +5,7 @@ Ready-to-run applications in
 one runs in Docker Compose and builds the agent from the repository.
 
 You need Docker with Compose v2, and JDK Mission Control with the
-[Verbatime plugin](./reference/jmc-plugin.md).
+[Verbatime plugin](./jmc.md).
 
 ## Try one
 
@@ -76,7 +76,7 @@ Each of these starts PostgreSQL in its own container.
 ### Tests and batch jobs
 
 These record from startup to exit and write the recording to their `recordings/` directory. See
-[Recording without JDK Mission Control](./guide/recording-without-jmc.md).
+[Agent alone](./quick-start.md#agent-alone).
 
 | Example | What it shows |
 |---|---|

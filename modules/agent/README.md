@@ -35,11 +35,11 @@ Then, in the Verbatime Control view of JDK Mission Control, connect to `localhos
 root methods, and press Start recording and Stop recording. The
 [root README](../../README.md#quick-start) shows how to install the plugin.
 
-### Recording without JDK Mission Control
+### Recording with the agent alone
 
 A test run or a batch job may finish before you can press Start recording. With `record=startup`,
-the agent records from startup until the JVM exits and writes the recording to `out=`. No JMX port
-is needed.
+the agent alone records from startup until the JVM exits and writes the recording to `out=`. No JMX
+port is needed.
 
 ```text
 -javaagent:/path/to/verbatime-agent.jar=record=startup,roots=com.example.app.Job::run,out=trace.vbtm
