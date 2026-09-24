@@ -1,5 +1,5 @@
 {
-  description = "Verbatime - lossless timeline method tracing for the JVM (agent + JMC plugin)";
+  description = "Verbatime - lossless timeline method tracing for the JVM (agent, JMC plugin, vbtm CLI)";
 
   nixConfig = {
     extra-substituters = [ "https://verbatime.cachix.org" ];
@@ -30,6 +30,14 @@
         "aarch64-linux"
       ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f (import nixpkgs { inherit system; }));
+      nativeSystems = [
+        "aarch64-darwin"
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
+      forNativeSystems =
+        f: nixpkgs.lib.genAttrs nativeSystems (system: f (import nixpkgs { inherit system; }));
+      version = "0.7.0";
       systemOf = pkgs: pkgs.stdenv.hostPlatform.system;
 
       preCommitFor =
@@ -111,8 +119,56 @@
             echo "[verbatime-docs] node $(node --version)"
           '';
         };
+
+      mkVbtm =
+        pkgs:
+        let
+          graalvm = pkgs.graalvmPackages.graalvm-ce;
+          fs = pkgs.lib.fileset;
+          cliJar = (pkgs.maven.override { jdk_headless = graalvm; }).buildMavenPackage {
+            pname = "verbatime-cli";
+            inherit version;
+            src = fs.toSource {
+              root = ./.;
+              fileset = fs.unions [
+                ./pom.xml
+                ./.mvn
+                ./eclipse-formatter.xml
+                ./modules/agent/pom.xml
+                ./modules/jmc/pom.xml
+                ./modules/format/pom.xml
+                ./modules/format/src/main
+                ./modules/cli/pom.xml
+                ./modules/cli/src/main
+              ];
+            };
+            mvnHash = "sha256-4xDflENOFSi7VvXmzsAhN0pMONvK/HJT44oExIy40m8=";
+            mvnParameters = "-pl modules/cli -am";
+            doCheck = false;
+            installPhase = ''
+              install -Dm644 modules/cli/target/verbatime-cli.jar $out/verbatime-cli.jar
+            '';
+          };
+        in
+        pkgs.buildGraalvmNativeImage {
+          pname = "vbtm";
+          inherit version;
+          src = "${cliJar}/verbatime-cli.jar";
+          graalvmDrv = graalvm;
+          extraNativeImageBuildArgs = [ "-O2" ];
+          meta = {
+            description = "Reads .vbtm recordings and shows where the time went";
+            license = pkgs.lib.licenses.asl20;
+            mainProgram = "vbtm";
+          };
+        };
     in
     {
+      packages = forNativeSystems (pkgs: rec {
+        vbtm = mkVbtm pkgs;
+        default = vbtm;
+      });
+
       checks = forAllSystems (pkgs: {
         pre-commit = preCommitFor pkgs;
       });

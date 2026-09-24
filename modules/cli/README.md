@@ -15,10 +15,8 @@ caused it.
 
 ## Usage
 
-Download `vbtm-linux-amd64`, `vbtm-linux-arm64`, or `vbtm-macos-arm64` from the
-[GitHub releases page](https://github.com/yagipass/verbatime/releases), rename it to `vbtm`, and
-make it executable. On other platforms, download `verbatime-cli.jar` and run it with
-`java -jar verbatime-cli.jar` on Java 17 or later.
+Install `vbtm` from the [GitHub releases page](https://github.com/yagipass/verbatime/releases)
+or with Nix.
 
 ### Finding a slow call
 
