@@ -9,4 +9,5 @@ examples/junit-gradle/build/
 examples/junit-gradle/.gradle/
 docs/node_modules/
 docs/dist/
+docs/.wrangler/
 notes/
