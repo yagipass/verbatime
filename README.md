@@ -60,8 +60,8 @@ Spring Boot, Tomcat, Quarkus, a batch job, JUnit runs, and more.
 
 ### Recording a test run or a batch job
 
-When the JVM finishes before you can press Start recording, record from startup to exit and write
-the result to a file. No JMX port is needed.
+When the JVM finishes before you can press Start recording, let the agent alone record from startup
+to exit and write the result to a file. No JMX port is needed.
 
 ```text
 -javaagent:/path/to/verbatime-agent.jar=record=startup,roots=com.example.app.Job::run,out=trace.vbtm

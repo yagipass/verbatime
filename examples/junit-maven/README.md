@@ -2,9 +2,9 @@
 
 Two JUnit 6 tests of the workload, run by Maven Surefire 3.6 with the agent attached to the forked
 test JVM. The unit of work is one test method, or one whole test run. The fork exits as soon as the
-tests are done, too fast for anyone to start a recording by hand, so the agent records the run by
-itself with `record=startup` and writes it to a file on the host, which is then opened in JMC from
-disk. No JMX and no JMC are involved while the tests run.
+tests are done, too fast for anyone to start a recording by hand, so the agent alone records the run
+with `record=startup` and writes it to a file on the host, which is then opened in JMC from disk. No
+JMX port is needed.
 
 ## Run
 

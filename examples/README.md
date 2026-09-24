@@ -88,15 +88,19 @@ These record by themselves and write the recording to a file. See
 
 Each server reads JVM options from its own place. The examples show where.
 
-| Server | Where |
-|---|---|
-| Fat jar, or plain `java` | `JAVA_TOOL_OPTIONS` |
-| Tomcat | `CATALINA_OPTS` |
-| Jetty | `JAVA_OPTIONS` |
-| WildFly | `JAVA_OPTS` |
-| Open Liberty | `jvm.options` |
-| Maven Surefire | `argLine` |
-| Gradle | `tasks.test.jvmArgs` |
+| Server | Where | Example |
+|---|---|---|
+| Fat jar, or plain `java` | `JAVA_TOOL_OPTIONS` | [`plain-httpserver`](plain-httpserver/README.md#agent-settings) |
+| Spring Boot | `JAVA_TOOL_OPTIONS` | [`spring-boot-mvc`](spring-boot-mvc/README.md#how-the-agent-is-added) |
+| Helidon SE | `JAVA_TOOL_OPTIONS` | [`helidon-se`](helidon-se/README.md#agent-settings) |
+| Quarkus | `JAVA_TOOL_OPTIONS` | [`quarkus`](quarkus/README.md#agent-settings) |
+| Micronaut | `JAVA_TOOL_OPTIONS` | [`micronaut`](micronaut/README.md#agent-settings) |
+| Tomcat | `CATALINA_OPTS` | [`tomcat-war`](tomcat-war/README.md#agent-settings) |
+| Jetty | `JAVA_OPTIONS` | [`jetty-war`](jetty-war/README.md#agent-settings) |
+| WildFly | `JAVA_OPTS` | [`wildfly-war`](wildfly-war/README.md#agent-settings) |
+| Open Liberty | `jvm.options` | [`open-liberty-war`](open-liberty-war/README.md#agent-settings) |
+| Maven Surefire | `argLine` | [`junit-maven`](junit-maven/README.md#agent-settings) |
+| Gradle | `tasks.test.jvmArgs` | [`junit-gradle`](junit-gradle/README.md#agent-settings) |
 
 The JMX flags from [Quick start](../README.md#quick-start) and `roots=` go in the same place. By
 default, everything except the JDK and the agent is instrumented, including the server and the
@@ -105,8 +109,8 @@ framework.
 ## Recording tests and batch jobs
 
 In `junit-maven`, `junit-gradle`, and `spring-batch`, the JVM exits as soon as its work is done.
-That is too fast to press Start recording, so the agent records from startup to exit by itself.
-JMC is not used while it runs.
+That is too fast to press Start recording, so the agent alone records from startup to exit. No JMX
+port is needed.
 
 - `record=startup` starts the recording before `main()` and stops it when the JVM exits.
 - `roots=` names the methods to record.

@@ -4,9 +4,8 @@ Spring Boot 4.1 with Spring Batch 6, packaged as a fat jar and run with `java -j
 one chunk-oriented step that reads five order lines, runs the workload for each in the processor,
 and writes the receipts to Postgres in chunks of two. There is no HTTP server: the JVM starts, runs
 the job, and exits, so the unit of work is the job or one step. The run is over too quickly to start
-a recording by hand, so the agent records it by itself with `record=startup` and writes it to a file
-on the host, which is then opened in JMC from disk. No JMX and no JMC are involved while the job
-runs.
+a recording by hand, so the agent alone records it with `record=startup` and writes it to a file on
+the host, which is then opened in JMC from disk. No JMX port is needed.
 
 ## Run
 
