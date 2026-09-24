@@ -28,7 +28,7 @@ Records everything from startup until the JVM exits.
    ```
 
 2. When the JVM exits, read `trace.vbtm` with [vbtm](./cli.md), or open it in
-   [JDK Mission Control](./jmc.md) with **File > Open**.
+   [JDK Mission Control](./jmc.md) with `File > Open`.
 
    ```sh
    vbtm sessions trace.vbtm --sort dur
@@ -59,7 +59,7 @@ Starts and stops recording at any time while the application runs.
    These flags turn off JMX authentication.
    :::
 
-3. In JDK Mission Control, choose **Window > Verbatime**. Connect to `localhost:7091`, and add the
+3. In JDK Mission Control, choose `Window > Verbatime`. Connect to `localhost:7091`, and add the
    methods to record under Instrumentation roots.
 
 4. Press Start recording, use the application, then press Stop recording.
