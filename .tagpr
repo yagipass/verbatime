@@ -1,6 +1,6 @@
 [tagpr]
 	vPrefix = true
 	releaseBranch = main
-	versionFile = modules/jmc/META-INF/MANIFEST.MF,pom.xml,modules/format/pom.xml,modules/agent/pom.xml,modules/jmc/pom.xml,modules/cli/pom.xml
+	versionFile = flake.nix,modules/jmc/META-INF/MANIFEST.MF,pom.xml,modules/format/pom.xml,modules/agent/pom.xml,modules/jmc/pom.xml,modules/cli/pom.xml
 	changelog = true
 	release = true

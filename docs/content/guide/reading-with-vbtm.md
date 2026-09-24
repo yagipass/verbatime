@@ -13,10 +13,36 @@ caused it.
 
 ## Install
 
-Download `vbtm-linux-amd64`, `vbtm-linux-arm64`, or `vbtm-macos-arm64` from the
-[GitHub releases page](https://github.com/yagipass/verbatime/releases), rename it to `vbtm`, and
-make it executable. On other platforms, download `verbatime-cli.jar` and run it with
-`java -jar verbatime-cli.jar` on Java 17 or later.
+Download `vbtm` from the [GitHub releases page](https://github.com/yagipass/verbatime/releases)
+and put it on your `PATH`.
+
+::: code-group
+
+```sh [macOS (Apple silicon)]
+curl -Lo vbtm https://github.com/yagipass/verbatime/releases/latest/download/vbtm-macos-arm64
+chmod +x vbtm
+```
+
+```sh [Linux x86_64]
+curl -Lo vbtm https://github.com/yagipass/verbatime/releases/latest/download/vbtm-linux-amd64
+chmod +x vbtm
+```
+
+```sh [Linux aarch64]
+curl -Lo vbtm https://github.com/yagipass/verbatime/releases/latest/download/vbtm-linux-arm64
+chmod +x vbtm
+```
+
+```sh [Other (Java 17+)]
+curl -LO https://github.com/yagipass/verbatime/releases/latest/download/verbatime-cli.jar
+java -jar verbatime-cli.jar --help
+```
+
+```sh [Nix]
+nix profile install github:yagipass/verbatime#vbtm
+```
+
+:::
 
 ## Find a slow call
 
