@@ -14,7 +14,10 @@ permissions:
 
 jobs:
   checks:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
@@ -71,18 +74,3 @@ jobs:
           key: m2-cli-${{ hashFiles('pom.xml', 'modules/format/pom.xml', 'modules/cli/pom.xml') }}
           restore-keys: m2-cli-
       - run: nix develop .#cli --command mvn -B -pl modules/cli -am verify
-
-  cli-native:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
-      - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866
-        with:
-          name: verbatime
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      - run: nix build .#vbtm -L
-      - run: ./result/bin/vbtm --help
