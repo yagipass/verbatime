@@ -13,24 +13,27 @@ hero:
   actions:
     - theme: brand
       text: Get Started
-      link: getting-started.md
+      link: quick-start.md
     - theme: alt
       text: View on GitHub
       link: https://github.com/yagipass/verbatime
 features:
+  - title: Record with the agent alone
+    details: Record everything from startup until the JVM exits, to a file.
+    link: quick-start.md#agent-alone
   - title: Record with JDK Mission Control
-    details: Connect to a running application, pick the methods, and record.
-    link: guide/recording-with-jmc.md
-  - title: Record tests and batch jobs
-    details: Record from startup to exit and write the result to a file.
-    link: guide/recording-without-jmc.md
+    details: Start and stop recording at any time while the application runs.
+    link: jmc.md
   - title: Read from the command line
     details: Find a slow call with vbtm, a few hundred lines at a time.
-    link: guide/reading-with-vbtm.md
+    link: cli.md
   - title: Ask an AI agent
     details: Let an agent follow a slow request down to its cause.
-    link: guide/ai-agents.md
+    link: cli.md#with-an-ai-agent
 ---
+
+Verbatime is for development. Run it on your machine to check the performance of a feature you
+built, not in production.
 
 ## Why
 
@@ -38,7 +41,7 @@ To see where one request, one server startup, or one batch job spent its time, y
 call it made, in order. A sampling profiler only sees some of them, and most other profilers merge
 all requests into one average.
 
-Verbatime is a tool for development. It records everything and shows it as it happened.
+Verbatime records every call and shows it as it happened.
 
 - **Every call.** Each run of a method you choose becomes one call tree, with the order and time
   of every call in it. Nothing is sampled or dropped.

@@ -48,8 +48,8 @@ export default defineConfig({
           extends: defaultTheme,
           aside: true,
           nav: [
-            { text: "Guide", link: `${base}getting-started/` },
-            { text: "Reference", link: `${base}reference/agent-options/` },
+            { text: "Quick start", link: `${base}quick-start/` },
+            { text: "Use cases", link: `${base}use-cases/` },
           ],
           header: {
             logo: "verbatime-icon.png",
@@ -63,32 +63,31 @@ export default defineConfig({
           socialLinks:{ github: "https://github.com/yagipass/verbatime" },
           sidebar: [
             {
-              text: "Introduction",
+              text: "Get started",
               items: [
                 { text: "What is Verbatime?", link: "/index.md" },
-                { text: "Getting Started", link: "/getting-started.md" },
+                { text: "Quick start", link: "/quick-start.md" },
+                { text: "Use cases", link: "/use-cases.md" },
               ],
             },
             {
-              text: "Guide",
+              text: "Agent",
               items: [
-                { text: "Recording with JDK Mission Control", link: "/guide/recording-with-jmc.md" },
-                { text: "Recording without JDK Mission Control", link: "/guide/recording-without-jmc.md" },
-                { text: "Reading a recording with vbtm", link: "/guide/reading-with-vbtm.md" },
-                { text: "Using an AI agent", link: "/guide/ai-agents.md" },
+                { text: "Adding the agent", link: "/agent/setup.md" },
+                { text: "Agent options", link: "/agent/options.md" },
               ],
             },
             {
-              text: "Reference",
+              text: "Tools",
               items: [
-                { text: "Agent options", link: "/reference/agent-options.md" },
-                { text: "JMC plugin", link: "/reference/jmc-plugin.md" },
-                { text: "vbtm commands", link: "/reference/cli.md" },
+                { text: "JMC plugin", link: "/jmc.md" },
+                { text: "vbtm CLI", link: "/cli.md" },
               ],
             },
             {
               text: "More",
               items: [
+                { text: "Troubleshooting", link: "/troubleshooting.md" },
                 { text: "Examples", link: "/examples.md" },
                 { text: "Limitations", link: "/limitations.md" },
               ],
