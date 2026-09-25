@@ -1,5 +1,20 @@
 # Changelog
 
+## [v0.7.1](https://github.com/yagipass/verbatime/compare/v0.7.0...v0.7.1) - 2026-09-25
+
+- feat(docs): make the docs site indexable and add security headers by @yagipass in https://github.com/yagipass/verbatime/pull/23
+- build(docs): build the docs site on every PR and update its npm deps by @yagipass in https://github.com/yagipass/verbatime/pull/25
+- feat(docs): move the docs site to verbatime-docs.yagipass.com by @yagipass in https://github.com/yagipass/verbatime/pull/33
+- build(deps-dev): bump wrangler from 4.133.0 to 4.134.0 in /docs by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/31
+- build(nix): run the mvnHash update only when Dependabot pushes by @yagipass in https://github.com/yagipass/verbatime/pull/34
+- build(deps): bump org.apache.maven.plugins:maven-surefire-plugin from 3.2.5 to 3.6.0 by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/26
+- build(deps): bump org.codehaus.mojo:exec-maven-plugin from 3.5.0 to 3.6.4 by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/27
+- build(deps): bump org.apache.maven.plugins:maven-dependency-plugin from 3.8.1 to 3.11.0 by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/28
+- build(deps): bump org.apache.maven.plugins:maven-antrun-plugin from 3.1.0 to 3.2.0 by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/29
+- build(deps): bump io.micronaut.platform:micronaut-parent from 5.1.4 to 5.1.5 in /examples by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/30
+- build(deps-dev): bump io.github.ascopes:protobuf-maven-plugin from 5.1.9 to 5.1.10 in /examples by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/32
+- docs(examples): show the grpc PlaceOrder response field as tx_id by @yagipass in https://github.com/yagipass/verbatime/pull/35
+
 ## [v0.7.0](https://github.com/yagipass/verbatime/commits/v0.7.0) - 2026-09-24
 
 - build(deps): bump helidon to 4.5.5 in helidon-se example by @yagipass in https://github.com/yagipass/verbatime/pull/13
