@@ -58,12 +58,12 @@ show its flame chart, then click a call.
 | Verbatime Top-down | The call tree under the selected call, heaviest child first. |
 | Verbatime Bottom-up | Who called each method under the selected call. |
 
-![The Verbatime Call Details view, showing the selected call and its ancestors](/images/call-views.png)
+![The Verbatime Call Details view, showing the selected call and its ancestors](/images/call-views.webp)
 
 To find a method, type part of its name in Search methods (`⌘F` on macOS). Calls that match stay
 in color, and the rest are dimmed.
 
-![Searching for methods named has, with the matching calls in color](/images/search.png)
+![Searching for methods named has, with the matching calls in color](/images/search.webp)
 
 ## Settings
 

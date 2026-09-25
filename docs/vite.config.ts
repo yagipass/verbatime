@@ -1,27 +1,30 @@
 import { defineConfig, type Plugin } from "vite";
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { extname, join } from "node:path";
 import { oxContent, defineTheme, defaultTheme } from "@ox-content/vite-plugin";
 
 const base = process.env.DOCS_BASE ?? "/";
 const siteUrl = "https://verbatime-docs.yagipass.com";
+const imageTypes: Record<string, string> = { ".png": "image/png", ".webp": "image/webp" };
 
 function docsImages(): Plugin {
   const dir = join(import.meta.dirname, "content/images");
   return {
     name: "verbatime-docs-images",
     configureServer(server) {
-      server.middlewares.use("/images", (req, res, next) => {
+      server.middlewares.use(`${base}images`, (req, res, next) => {
         try {
-          res.setHeader("Content-Type", "image/png");
-          res.end(readFileSync(join(dir, decodeURIComponent(req.url ?? "").replace(/^\/+/, ""))));
+          const name = decodeURIComponent(req.url ?? "").replace(/^\/+/, "");
+          const source = readFileSync(join(dir, name));
+          res.setHeader("Content-Type", imageTypes[extname(name)] ?? "application/octet-stream");
+          res.end(source);
         } catch {
           next();
         }
       });
     },
     generateBundle() {
-      for (const name of readdirSync(dir).filter((n) => n.endsWith(".png"))) {
+      for (const name of readdirSync(dir).filter((n) => extname(n) in imageTypes)) {
         this.emitFile({ type: "asset", fileName: `images/${name}`, source: readFileSync(join(dir, name)) });
       }
     },
@@ -68,12 +71,12 @@ export default defineConfig({
             { text: "Use cases", link: `${base}use-cases/` },
           ],
           header: {
-            logo: "verbatime-icon.png",
+            logo: "images/verbatime-icon.png",
             logoWidth: 32,
             logoHeight: 32,
           },
           embed: {
-            head: `<link rel="icon" href="${base}verbatime-icon.png" type="image/png">`,
+            head: `<link rel="icon" href="${base}images/verbatime-icon.png" type="image/png">`,
           },
           css: ".header-nav { margin-left: 2rem; } .content img { max-width: 100%; height: auto; }",
           socialLinks:{ github: "https://github.com/yagipass/verbatime" },
