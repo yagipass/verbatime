@@ -75,7 +75,7 @@ export default defineConfig({
           embed: {
             head: `<link rel="icon" href="${base}verbatime-icon.png" type="image/png">`,
           },
-          css: ".header-nav { margin-left: 2rem; } .content img { max-width: 100%; height: auto; }",
+          css: ".header-nav { margin-left: 2rem; } .content img { max-width: 100%; height: auto; } .hero-name { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }",
           socialLinks:{ github: "https://github.com/yagipass/verbatime" },
           sidebar: [
             {
