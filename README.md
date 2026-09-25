@@ -29,7 +29,13 @@ You need Java 25 or later for the application, and
 the results.
 
 1. Download `verbatime-agent.jar` and `verbatime-jmc-plugin.jar` from the
-   [GitHub releases page](https://github.com/yagipass/verbatime/releases).
+   [GitHub releases page](https://github.com/yagipass/verbatime/releases). To check that they
+   were built by this repository's GitHub Actions, verify them with the
+   [GitHub CLI](https://cli.github.com/).
+   ```sh
+   gh attestation verify verbatime-agent.jar --repo yagipass/verbatime
+   gh attestation verify verbatime-jmc-plugin.jar --repo yagipass/verbatime
+   ```
 2. Copy the plugin into the `dropins` directory of JDK Mission Control, and restart it.
    ```sh
    # macOS
