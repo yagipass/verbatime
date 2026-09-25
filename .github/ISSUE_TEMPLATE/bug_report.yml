@@ -1,0 +1,71 @@
+name: Bug report
+description: Something in Verbatime does not work as expected.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check [Troubleshooting](https://verbatime-docs.yagipass.com/troubleshooting/) first.
+        To report a security vulnerability, do not open an issue. Send
+        [a private report](https://github.com/yagipass/verbatime/security/advisories/new) instead.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Agent
+        - JMC plugin
+        - vbtm CLI
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Verbatime version
+      placeholder: v0.7.1
+    validations:
+      required: true
+  - type: textarea
+    id: java-version
+    attributes:
+      label: Output of java -version
+      description: For the JVM that runs the agent, or that runs the vbtm jar.
+      render: text
+  - type: input
+    id: environment
+    attributes:
+      label: OS, and JDK Mission Control version if you use it
+      placeholder: macOS 15 on Apple silicon, JMC 9.1
+  - type: textarea
+    id: command
+    attributes:
+      label: How you start the agent or run the command
+      description: The full `-javaagent` argument and JMX flags, or the `vbtm` command line.
+      render: text
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: |
+        Steps, or a small project. An application from `examples/` is the easiest to reproduce with.
+        If a recording shows the problem, zip the `.vbtm` file and attach it. A recording holds the
+        class, method, and thread names of your application.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Lines starting with [verbatime]
+      description: The agent writes them to standard error.
+      render: text
