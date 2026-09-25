@@ -15,22 +15,25 @@ and put it on your `PATH`.
 
 ```sh [macOS (Apple silicon)]
 curl -Lo vbtm https://github.com/yagipass/verbatime/releases/latest/download/vbtm-macos-arm64
+gh attestation verify vbtm --repo yagipass/verbatime
 chmod +x vbtm
 ```
 
 ```sh [Linux x86_64]
 curl -Lo vbtm https://github.com/yagipass/verbatime/releases/latest/download/vbtm-linux-amd64
+gh attestation verify vbtm --repo yagipass/verbatime
 chmod +x vbtm
 ```
 
 ```sh [Linux aarch64]
 curl -Lo vbtm https://github.com/yagipass/verbatime/releases/latest/download/vbtm-linux-arm64
+gh attestation verify vbtm --repo yagipass/verbatime
 chmod +x vbtm
 ```
 
 ```sh [Other (Java 17+)]
 curl -LO https://github.com/yagipass/verbatime/releases/latest/download/verbatime-cli.jar
-java -jar verbatime-cli.jar --help
+gh attestation verify verbatime-cli.jar --repo yagipass/verbatime && java -jar verbatime-cli.jar --help
 ```
 
 ```sh [Nix]
@@ -38,6 +41,9 @@ nix profile install github:yagipass/verbatime#vbtm
 ```
 
 :::
+
+`gh attestation verify` checks that the downloaded file was built by this repository's GitHub
+Actions. It needs the [GitHub CLI](https://cli.github.com/), signed in with `gh auth login`.
 
 ## Find a slow call
 

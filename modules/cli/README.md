@@ -16,7 +16,12 @@ caused it.
 ## Usage
 
 Install `vbtm` from the [GitHub releases page](https://github.com/yagipass/verbatime/releases)
-or with Nix.
+or with Nix. To check that a file from the releases page, such as `vbtm-linux-amd64`, was built by
+this repository's GitHub Actions, verify it with the [GitHub CLI](https://cli.github.com/).
+
+```sh
+gh attestation verify vbtm-linux-amd64 --repo yagipass/verbatime
+```
 
 ### Finding a slow call
 
