@@ -5,8 +5,15 @@ description: Download the Verbatime agent and record a Java run, with the agent 
 # Quick start
 
 Record a run on your development machine and see where the time went. Download
-`verbatime-agent.jar` from the [GitHub releases page](https://github.com/yagipass/verbatime/releases),
-then choose to record with the [agent alone](#agent-alone) or with
+`verbatime-agent.jar` from the [GitHub releases page](https://github.com/yagipass/verbatime/releases).
+To check that it was built by this repository's GitHub Actions, verify it with the
+[GitHub CLI](https://cli.github.com/).
+
+```sh
+gh attestation verify verbatime-agent.jar --repo yagipass/verbatime
+```
+
+Then choose to record with the [agent alone](#agent-alone) or with
 [JDK Mission Control](#with-jdk-mission-control).
 
 ## Requirements
@@ -54,6 +61,7 @@ Starts and stops recording at any time while the application runs.
    ```sh
    java -javaagent:/path/to/verbatime-agent.jar \
         -Dcom.sun.management.jmxremote.port=7091 -Dcom.sun.management.jmxremote.rmi.port=7091 \
+        -Dcom.sun.management.jmxremote.host=127.0.0.1 \
         -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
         -Djava.rmi.server.hostname=localhost \
         -jar app.jar
@@ -72,7 +80,7 @@ Starts and stops recording at any time while the application runs.
 
 The recording opens as a timeline flame chart.
 
-![The timeline flame chart of a recording](/images/viewer-overview.png)
+![The timeline flame chart of a recording](/images/viewer-overview.webp)
 
 ## Next
 

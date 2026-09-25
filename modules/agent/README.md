@@ -17,7 +17,12 @@ batch job, you need every call it made, in order, not a sample or an average.
 ## Usage
 
 The agent needs Java 25 or later. Download `verbatime-agent.jar` from the
-[GitHub releases page](https://github.com/yagipass/verbatime/releases).
+[GitHub releases page](https://github.com/yagipass/verbatime/releases). To check that it was built
+by this repository's GitHub Actions, verify it with the [GitHub CLI](https://cli.github.com/).
+
+```sh
+gh attestation verify verbatime-agent.jar --repo yagipass/verbatime
+```
 
 ### Recording from JDK Mission Control
 
@@ -26,6 +31,7 @@ Start the application with the agent and a JMX port.
 ```sh
 java -javaagent:/path/to/verbatime-agent.jar \
      -Dcom.sun.management.jmxremote.port=7091 -Dcom.sun.management.jmxremote.rmi.port=7091 \
+     -Dcom.sun.management.jmxremote.host=127.0.0.1 \
      -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
      -Djava.rmi.server.hostname=localhost \
      -cp ... your.Main

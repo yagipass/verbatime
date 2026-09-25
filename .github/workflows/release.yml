@@ -5,13 +5,17 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
-  pull-requests: write
-  issues: read
+  contents: read
 
 jobs:
   tagpr:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+      id-token: write
+      attestations: write
     outputs:
       tag: ${{ steps.tagpr.outputs.tag }}
     steps:
@@ -45,6 +49,13 @@ jobs:
           nix develop .#jmc   --command mvn -B -pl modules/jmc   -am verify
           nix develop .#cli   --command mvn -B -pl modules/cli   -am verify
       - if: steps.tagpr.outputs.tag != ''
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: |
+            modules/agent/target/verbatime-agent.jar
+            modules/jmc/target/verbatime-jmc-plugin.jar
+            modules/cli/target/verbatime-cli.jar
+      - if: steps.tagpr.outputs.tag != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.tagpr.outputs.tag }}
@@ -68,6 +79,10 @@ jobs:
           - os: macos-latest
             platform: macos-arm64
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -83,12 +98,14 @@ jobs:
           restore-keys: m2-cli-
       - run: mvn -B -pl modules/cli -am -Pnative -DskipTests package
       - run: modules/cli/target/vbtm --help
+      - run: cp modules/cli/target/vbtm "vbtm-${{ matrix.platform }}"
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: vbtm-${{ matrix.platform }}
       - env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.tagpr.outputs.tag }}
-        run: |
-          cp modules/cli/target/vbtm "vbtm-${{ matrix.platform }}"
-          gh release upload "$TAG" "vbtm-${{ matrix.platform }}" --clobber
+        run: gh release upload "$TAG" "vbtm-${{ matrix.platform }}" --clobber
 
   docs:
     needs: tagpr

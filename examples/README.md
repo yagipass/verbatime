@@ -102,9 +102,9 @@ Each server reads JVM options from its own place. The examples show where.
 | Maven Surefire | `argLine` | [`junit-maven`](junit-maven/README.md#agent-settings) |
 | Gradle | `tasks.test.jvmArgs` | [`junit-gradle`](junit-gradle/README.md#agent-settings) |
 
-The JMX flags from [Quick start](../README.md#quick-start) and `roots=` go in the same place. By
-default, everything except the JDK and the agent is instrumented, including the server and the
-framework.
+The JMX flags from [Quick start](../README.md#quick-start), without `jmxremote.host`, and `roots=`
+go in the same place. By default, everything except the JDK and the agent is instrumented,
+including the server and the framework.
 
 ## Recording tests and batch jobs
 

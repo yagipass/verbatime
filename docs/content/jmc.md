@@ -10,8 +10,14 @@ chart.
 ## Install
 
 Download `verbatime-jmc-plugin.jar` from the
-[GitHub releases page](https://github.com/yagipass/verbatime/releases), copy it into the `dropins`
-directory of JDK Mission Control, and restart it.
+[GitHub releases page](https://github.com/yagipass/verbatime/releases). To check that it was built
+by this repository's GitHub Actions, verify it with the [GitHub CLI](https://cli.github.com/).
+
+```sh
+gh attestation verify verbatime-jmc-plugin.jar --repo yagipass/verbatime
+```
+
+Copy it into the `dropins` directory of JDK Mission Control, and restart it.
 
 ::: code-group
 
@@ -58,12 +64,12 @@ show its flame chart, then click a call.
 | Verbatime Top-down | The call tree under the selected call, heaviest child first. |
 | Verbatime Bottom-up | Who called each method under the selected call. |
 
-![The Verbatime Call Details view, showing the selected call and its ancestors](/images/call-views.png)
+![The Verbatime Call Details view, showing the selected call and its ancestors](/images/call-views.webp)
 
 To find a method, type part of its name in Search methods (`⌘F` on macOS). Calls that match stay
 in color, and the rest are dimmed.
 
-![Searching for methods named has, with the matching calls in color](/images/search.png)
+![Searching for methods named has, with the matching calls in color](/images/search.webp)
 
 ## Settings
 
