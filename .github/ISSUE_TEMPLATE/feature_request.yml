@@ -1,0 +1,25 @@
+name: Feature request
+description: Suggest something Verbatime could do.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check [Limitations](https://verbatime-docs.yagipass.com/limitations/) first.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you are trying to do
+      description: The task, and where Verbatime falls short.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do now instead
