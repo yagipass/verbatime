@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.7.2](https://github.com/yagipass/verbatime/compare/v0.7.1...v0.7.2) - 2026-09-25
+
+- feat(github): add issue forms for bugs, features, and docs by @yagipass in https://github.com/yagipass/verbatime/pull/36
+- feat(github): prefill issue form titles with the issue type by @yagipass in https://github.com/yagipass/verbatime/pull/44
+- perf(docs): serve docs site images at twice their shown size by @yagipass in https://github.com/yagipass/verbatime/pull/51
+- fix(docs): give the docs home page an h1 and a descriptive title by @yagipass in https://github.com/yagipass/verbatime/pull/45
+- docs(github): add a security policy by @yagipass in https://github.com/yagipass/verbatime/pull/46
+- feat(release): attest release files so users can verify them by @yagipass in https://github.com/yagipass/verbatime/pull/47
+- docs(agent): keep the documented JMX port on the local machine by @yagipass in https://github.com/yagipass/verbatime/pull/48
+- fix(examples): publish the JMX port to the local machine only by @yagipass in https://github.com/yagipass/verbatime/pull/49
+
 ## [v0.7.1](https://github.com/yagipass/verbatime/compare/v0.7.0...v0.7.1) - 2026-09-25
 
 - feat(docs): make the docs site indexable and add security headers by @yagipass in https://github.com/yagipass/verbatime/pull/23
