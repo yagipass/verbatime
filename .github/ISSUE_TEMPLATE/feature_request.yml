@@ -1,5 +1,6 @@
 name: Feature request
 description: Suggest something Verbatime could do.
+title: "feat: "
 labels: [enhancement]
 body:
   - type: markdown
