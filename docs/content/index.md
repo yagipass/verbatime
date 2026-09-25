@@ -7,7 +7,7 @@ hero:
   text: Every call, as it happened
   tagline: Records every Java method call under the methods you choose, and shows where the time went.
   image:
-    src: verbatime-banner.png
+    src: images/verbatime-banner.webp
     alt: Verbatime — JVM execution, frame by frame.
     width: 960
     height: 320
@@ -50,4 +50,4 @@ Verbatime records every call and shows it as it happened.
 - **Cheap.** A recorded call costs about 35 ns.
 - **Large recordings.** 100 million calls open smoothly.
 
-![A Spring Boot startup recorded with Verbatime, shown as a timeline flame chart in JDK Mission Control](/images/flame-chart.png)
+![A Spring Boot startup recorded with Verbatime, shown as a timeline flame chart in JDK Mission Control](/images/flame-chart.webp)
