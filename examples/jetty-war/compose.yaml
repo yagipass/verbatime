@@ -5,7 +5,7 @@ services:
       dockerfile: examples/jetty-war/Dockerfile
     ports:
       - "8080:8080"
-      - "7091:7091"
+      - "${JMX_BIND:-127.0.0.1}:7091:7091"
     environment:
       JAVA_OPTIONS: >-
         -javaagent:/var/lib/jetty/verbatime-agent.jar=waitstart=60s,roots=org.eclipse.jetty.xml.XmlConfiguration::main+org.eclipse.jetty.server.Server::handle,${VERBATIME_EXTRA:-}

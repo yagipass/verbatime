@@ -5,7 +5,7 @@ services:
       dockerfile: examples/tomcat-war/Dockerfile
     ports:
       - "8080:8080"
-      - "7091:7091"
+      - "${JMX_BIND:-127.0.0.1}:7091:7091"
     environment:
       CATALINA_OPTS: >-
         -javaagent:/usr/local/tomcat/verbatime-agent.jar=waitstart=60s,roots=org.apache.catalina.startup.Bootstrap::main+org.apache.catalina.connector.CoyoteAdapter::service,${VERBATIME_EXTRA:-}

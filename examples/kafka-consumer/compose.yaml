@@ -28,7 +28,7 @@ services:
         condition: service_healthy
     ports:
       - "8080:8080"
-      - "7091:7091"
+      - "${JMX_BIND:-127.0.0.1}:7091:7091"
     environment:
       JAVA_TOOL_OPTIONS: >-
         -javaagent:/app/verbatime-agent.jar=waitstart=60s,roots=org.springframework.boot.SpringApplication::run+org.springframework.kafka.listener.KafkaMessageListenerContainer$$ListenerConsumer::doInvokeRecordListener,${VERBATIME_EXTRA:-}
