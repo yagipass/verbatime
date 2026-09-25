@@ -131,16 +131,10 @@ Set these when you run `docker compose up`.
 | Variable | What it does |
 |---|---|
 | `VERBATIME_EXTRA` | Adds agent arguments |
-| `JMX_BIND` | The host IP address the JMX port is published on, instead of `127.0.0.1` |
-| `JMX_HOST` | The host name JMC connects to, instead of `localhost` |
 | `VERBATIME_JVM_EXTRA` | Adds JVM options. Only in `open-liberty-war` |
 
 If you set one, set it for the `load` command too. Otherwise Compose restarts the application, and
 the recording with it.
-
-JMX has no password, so the JMX port is published to your machine only. To connect JMC from another
-machine, set `JMX_BIND=0.0.0.0` and `JMX_HOST` to the name that machine uses for this host, and
-connect to `<host>:7091`. Do this only on a network you trust.
 
 ## Notes
 

@@ -5,11 +5,9 @@ services:
       dockerfile: examples/open-liberty-war/Dockerfile
     ports:
       - "8080:8080"
-      - "${JMX_BIND:-127.0.0.1}:7091:7091"
+      - "127.0.0.1:7091:7091"
     environment:
-      JVM_ARGS: >-
-        -Djava.rmi.server.hostname=${JMX_HOST:-localhost}
-        ${VERBATIME_JVM_EXTRA:-}
+      JVM_ARGS: ${VERBATIME_JVM_EXTRA:-}
     healthcheck:
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /healthz HTTP/1.0\\r\\n\\r\\n' >&3 && head -n1 <&3 | grep -q ' 200 '"]
       interval: 5s

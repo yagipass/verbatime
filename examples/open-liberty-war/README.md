@@ -34,7 +34,7 @@ alongside the shared JMX flags:
 
 | File | Contents |
 |---|---|
-| `jvm.options` | The agent line above and the `com.sun.management.jmxremote.*` flags, one option per line |
+| `jvm.options` | The agent line above and the JMX flags, one option per line |
 | `bootstrap.properties` | `org.osgi.framework.bootdelegation=io.github.yagipass.verbatime.agent.probe`. OSGi bundle class loaders do not delegate unknown packages to the boot class path, where the agent puts its `probe` classes. Without this, every instrumented class fails with `NoClassDefFoundError` |
 | `server.xml` | The `servlet-6.1` feature, the HTTP endpoint on port 8080, and the WAR at context root `/` |
 
@@ -44,9 +44,7 @@ alongside the shared JMX flags:
 | `waitstart=60s` | Pauses at `com.ibm.ws.kernel.boot.cmdline.EnvCheck.main`, the main class of `ws-server.jar`, for up to 60 seconds until JMC starts a recording |
 | `roots=` | Sets the roots below. You can change them in JMC |
 
-`compose.yaml` sets `JVM_ARGS`, which the `server` script appends after `jvm.options`, to
-`-Djava.rmi.server.hostname=${JMX_HOST:-localhost}`. `VERBATIME_JVM_EXTRA` appends further JVM
-options and `JMX_HOST` replaces `localhost`.
+`VERBATIME_JVM_EXTRA` goes into `JVM_ARGS`, which the `server` script appends after `jvm.options`.
 
 ## Roots to try
 

@@ -22,7 +22,7 @@ shutdown are the same for every example and are described once in
 curl 'http://localhost:8080/orders?sku=widget&qty=3'
 ```
 
-Use `down` and `up`, not `stop` and `start`, after changing `VERBATIME_EXTRA` or `JMX_HOST`: the
+Use `down` and `up`, not `stop` and `start`, after changing `VERBATIME_EXTRA`: the
 image's entrypoint expands `JAVA_OPTIONS` through `start.jar` into `/var/lib/jetty/jetty.start` on
 the container's first start and reuses that file afterwards.
 
