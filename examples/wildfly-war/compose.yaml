@@ -5,7 +5,7 @@ services:
       dockerfile: examples/wildfly-war/Dockerfile
     ports:
       - "8080:8080"
-      - "7091:7091"
+      - "127.0.0.1:7091:7091"
     environment:
       JAVA_OPTS: >-
         -javaagent:/opt/jboss/wildfly/verbatime-agent.jar=waitstart=60s,roots=org.jboss.as.server.Main::main+io.undertow.servlet.handlers.ServletInitialHandler::dispatchRequest,exclude=org.jboss.modules+org.jboss.marshalling,${VERBATIME_EXTRA:-}
@@ -13,7 +13,7 @@ services:
         -Dcom.sun.management.jmxremote.rmi.port=7091
         -Dcom.sun.management.jmxremote.authenticate=false
         -Dcom.sun.management.jmxremote.ssl=false
-        -Djava.rmi.server.hostname=${JMX_HOST:-localhost}
+        -Djava.rmi.server.hostname=localhost
         -Djboss.modules.system.pkgs=org.jboss.byteman,org.jboss.logmanager,org.wildfly.common,io.smallrye.common,io.github.yagipass.verbatime.agent.probe
         -Djava.net.preferIPv4Stack=true
         -Djava.awt.headless=true

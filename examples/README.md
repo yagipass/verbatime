@@ -131,7 +131,6 @@ Set these when you run `docker compose up`.
 | Variable | What it does |
 |---|---|
 | `VERBATIME_EXTRA` | Adds agent arguments |
-| `JMX_HOST` | The host name JMC connects to, instead of `localhost` |
 | `VERBATIME_JVM_EXTRA` | Adds JVM options. Only in `open-liberty-war` |
 
 If you set one, set it for the `load` command too. Otherwise Compose restarts the application, and
