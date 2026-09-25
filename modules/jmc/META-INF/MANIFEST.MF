@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: io.github.yagipass.verbatime.jmc;singleton:=true
 Bundle-Name: Verbatime for JDK Mission Control
-Bundle-Version: 0.7.0
+Bundle-Version: 0.7.1
 Bundle-Vendor: yagipass
 Bundle-License: Apache-2.0;link="https://www.apache.org/licenses/LICENSE-2.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-17
