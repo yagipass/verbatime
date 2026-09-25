@@ -1,3 +1,7 @@
+---
+description: The Verbatime agent options, with the recording modes, how to choose roots and what to instrument, and every -javaagent option.
+---
+
 # Agent options
 
 Options go after `=` in the `-javaagent` flag, as `key=value` pairs separated by `,`. Separate

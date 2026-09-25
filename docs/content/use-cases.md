@@ -1,3 +1,7 @@
+---
+description: How to record, which root to use, and where to look for a slow request, slow startup, a slow test, a batch job, or with an AI agent.
+---
+
 # Use cases
 
 Pick the case closest to yours. Each says how to record, which root to use, and where to look.

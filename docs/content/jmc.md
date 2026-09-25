@@ -1,3 +1,7 @@
+---
+description: Install the Verbatime plugin for JDK Mission Control, start and stop recordings, and read them as a timeline flame chart.
+---
+
 # JMC plugin
 
 The JDK Mission Control plugin starts and stops recordings, and shows them as a timeline flame

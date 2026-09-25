@@ -1,3 +1,7 @@
+---
+description: Install vbtm and read a .vbtm recording from the command line, from the slowest sessions to hot methods and call trees, as text or JSON.
+---
+
 # vbtm CLI
 
 `vbtm` reads a `.vbtm` recording and shows where the time went, a few hundred lines at a time.

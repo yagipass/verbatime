@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { oxContent, defineTheme, defaultTheme } from "@ox-content/vite-plugin";
 
 const base = process.env.DOCS_BASE ?? "/";
+const siteUrl = "https://verbatime-docs.yagipass.me";
 
 function docsImages(): Plugin {
   const dir = join(import.meta.dirname, "content/images");
@@ -27,11 +28,21 @@ function docsImages(): Plugin {
   };
 }
 
+function hostHeaders(): Plugin {
+  return {
+    name: "verbatime-docs-headers",
+    generateBundle() {
+      this.emitFile({ type: "asset", fileName: "_headers", source: readFileSync(join(import.meta.dirname, "_headers")) });
+    },
+  };
+}
+
 export default defineConfig({
   base,
   publicDir: "../assets",
   plugins: [
     docsImages(),
+    hostHeaders(),
     oxContent({
       srcDir: "content",
       outDir: "dist",
@@ -42,8 +53,13 @@ export default defineConfig({
       steps: true,
       codeGroups: true,
       docs: false,
+      siteMaps: true,
       ssg: {
         siteName: "Verbatime",
+        siteUrl,
+        ogImage: `${siteUrl}/verbatime-og.png`,
+        notFound: true,
+        jsonLd: true,
         theme: defineTheme({
           extends: defaultTheme,
           aside: true,

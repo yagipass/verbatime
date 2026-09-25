@@ -1,3 +1,7 @@
+---
+description: Known limitations of Verbatime, such as com.sun.* classes that are never instrumented, recordings that need out= to survive the JVM, and deep recursion.
+---
+
 # Limitations
 
 ## Classes under `com.sun.*` are never instrumented
