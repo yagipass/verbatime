@@ -1,3 +1,7 @@
+---
+description: Fixes for common Verbatime problems, such as the JVM stopping at startup, missing views, JDK Mission Control not connecting, or an empty recording.
+---
+
 # Troubleshooting
 
 The agent writes its messages to standard error, starting with `[verbatime]`.

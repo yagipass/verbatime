@@ -1,3 +1,7 @@
+---
+description: Where to put -javaagent for fat jars, Spring Boot, Quarkus, Maven Surefire and other runners, and the JMX flags for JDK Mission Control.
+---
+
 # Adding the agent
 
 Add `-javaagent` to the JVM that runs your code. Where it goes depends on how that JVM starts.

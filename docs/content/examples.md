@@ -1,3 +1,7 @@
+---
+description: Ready-to-run Docker Compose applications to try Verbatime on, covering web servers, WARs on application servers, databases, messaging, tests, and batch jobs.
+---
+
 # Examples
 
 Ready-to-run applications in

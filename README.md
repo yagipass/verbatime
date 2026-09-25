@@ -85,6 +85,7 @@ request was slow. See the [CLI README](modules/cli/README.md).
 
 | Where | What |
 |---|---|
+| [verbatime-docs.yagipass.me](https://verbatime-docs.yagipass.me) | The documentation site: quick start, use cases, and troubleshooting |
 | [`modules/agent/`](modules/agent/) | The Java agent and its options |
 | [`modules/jmc/`](modules/jmc/) | The JDK Mission Control plugin and its views |
 | [`modules/cli/`](modules/cli/) | The `vbtm` command |
