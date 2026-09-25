@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { oxContent, defineTheme, defaultTheme } from "@ox-content/vite-plugin";
 
 const base = process.env.DOCS_BASE ?? "/";
-const siteUrl = "https://verbatime-docs.yagipass.me";
+const siteUrl = "https://verbatime-docs.yagipass.com";
 
 function docsImages(): Plugin {
   const dir = join(import.meta.dirname, "content/images");
