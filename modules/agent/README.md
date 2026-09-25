@@ -32,11 +32,6 @@ java -javaagent:/path/to/verbatime-agent.jar \
      -cp ... your.Main
 ```
 
-These flags turn off JMX authentication, so anyone who can reach the port can control the JVM. Use
-them only on your development machine. `jmxremote.host=127.0.0.1` keeps other machines from
-connecting. For a container or another host, see
-[From a container or another host](https://verbatime-docs.yagipass.com/agent/setup/#from-a-container-or-another-host).
-
 Then, in the Verbatime Control view of JDK Mission Control, connect to `localhost:7091`, set the
 root methods, and press Start recording and Stop recording. The
 [root README](../../README.md#quick-start) shows how to install the plugin.

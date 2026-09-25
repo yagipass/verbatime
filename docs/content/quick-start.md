@@ -61,9 +61,7 @@ Starts and stops recording at any time while the application runs.
    ```
 
    ::: warning
-   These flags turn off JMX authentication. `jmxremote.host=127.0.0.1` keeps other machines from
-   connecting. For a container or another host, see
-   [From a container or another host](./agent/setup.md#from-a-container-or-another-host).
+   These flags turn off JMX authentication.
    :::
 
 3. In JDK Mission Control, choose `Window > Verbatime`. Connect to `localhost:7091`, and add the

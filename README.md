@@ -46,10 +46,7 @@ the results.
         -Djava.rmi.server.hostname=localhost \
         -cp ... your.Main
    ```
-   These flags turn off JMX authentication, so anyone who can reach the port can control the JVM.
-   Use them only on your development machine. `jmxremote.host=127.0.0.1` keeps other machines from
-   connecting. For a container or another host, see
-   [From a container or another host](https://verbatime-docs.yagipass.com/agent/setup/#from-a-container-or-another-host).
+   These flags turn off JMX authentication.
 4. In JDK Mission Control, choose `Window > Verbatime`. In the Verbatime Control view, connect
    to `localhost:7091`.
 5. Under Instrumentation roots, add the methods to measure.
