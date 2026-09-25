@@ -1,8 +1,9 @@
 ---
 layout: entry
-title: Verbatime
+title: Java method call tracer with flame charts
 description: Records every Java method call under the methods you choose, and shows where the time went.
 hero:
+  name: Verbatime
   text: Every call, as it happened
   tagline: Records every Java method call under the methods you choose, and shows where the time went.
   image:
