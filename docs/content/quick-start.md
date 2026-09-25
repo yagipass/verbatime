@@ -72,7 +72,7 @@ Starts and stops recording at any time while the application runs.
 
 The recording opens as a timeline flame chart.
 
-![The timeline flame chart of a recording](/images/viewer-overview.png)
+![The timeline flame chart of a recording](/images/viewer-overview.webp)
 
 ## Next
 
