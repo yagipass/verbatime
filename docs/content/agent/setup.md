@@ -32,10 +32,15 @@ To record [with JDK Mission Control](../jmc.md), add these flags in the same pla
 ```text
 -Dcom.sun.management.jmxremote.port=7091
 -Dcom.sun.management.jmxremote.rmi.port=7091
+-Dcom.sun.management.jmxremote.host=127.0.0.1
 -Dcom.sun.management.jmxremote.authenticate=false
 -Dcom.sun.management.jmxremote.ssl=false
 -Djava.rmi.server.hostname=localhost
 ```
+
+`jmxremote.host=127.0.0.1` lets only your machine reach the port. Without it, the JVM listens on
+every network interface, and any machine on the same network can connect. `java.rmi.server.hostname`
+does not limit this. It only sets the host name the JVM tells JDK Mission Control to connect to.
 
 ::: warning
 Anyone who can reach this port can control the JVM, with no password. Use these flags only on
@@ -44,10 +49,13 @@ your development machine.
 
 ## From a container or another host
 
-- **Container:** publish the port to your machine only, as in `-p 127.0.0.1:7091:7091`. Keep
+- **Container:** leave out `jmxremote.host`. A published port arrives on the container's own
+  network interface, not its loopback, so the flag would block it. Publish the port to your
+  machine only instead, as in `-p 127.0.0.1:7091:7091`, and keep
   `java.rmi.server.hostname=localhost`.
-- **Another host:** set `java.rmi.server.hostname` to the name JDK Mission Control uses for that
-  host, and connect to `<host>:7091`. Use a network you trust.
+- **Another host:** leave out `jmxremote.host`, which would block JDK Mission Control on your
+  machine. Set `java.rmi.server.hostname` to the name JDK Mission Control uses for that host, and
+  connect to `<host>:7091`. Use a network you trust.
 
 JDK Mission Control connects to the port, then to the host named in `java.rmi.server.hostname`, so
 both must be reachable.

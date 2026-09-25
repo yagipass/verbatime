@@ -54,13 +54,16 @@ Starts and stops recording at any time while the application runs.
    ```sh
    java -javaagent:/path/to/verbatime-agent.jar \
         -Dcom.sun.management.jmxremote.port=7091 -Dcom.sun.management.jmxremote.rmi.port=7091 \
+        -Dcom.sun.management.jmxremote.host=127.0.0.1 \
         -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
         -Djava.rmi.server.hostname=localhost \
         -jar app.jar
    ```
 
    ::: warning
-   These flags turn off JMX authentication.
+   These flags turn off JMX authentication. `jmxremote.host=127.0.0.1` keeps other machines from
+   connecting. For a container or another host, see
+   [From a container or another host](./agent/setup.md#from-a-container-or-another-host).
    :::
 
 3. In JDK Mission Control, choose `Window > Verbatime`. Connect to `localhost:7091`, and add the
