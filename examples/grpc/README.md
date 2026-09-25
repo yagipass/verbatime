@@ -50,6 +50,6 @@ Set in [`compose.yaml`](compose.yaml) through `JAVA_TOOL_OPTIONS`, alongside the
 
 | Call | Response |
 |---|---|
-| `verbatime.Orders/PlaceOrder {"sku":"widget","qty":3}` | `{"sku":"widget","qty":3,"cents":"...","txId":"..."}` |
+| `verbatime.Orders/PlaceOrder {"sku":"widget","qty":3}` | `{"sku":"widget","qty":3,"cents":"...","tx_id":"..."}` |
 | `verbatime.Orders/PlaceOrder {"sku":"widget","qty":500}` | `FailedPrecondition` with the `OutOfStockException` message |
 | `grpc.health.v1.Health/Check` | `SERVING` |
