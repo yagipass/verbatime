@@ -1,5 +1,6 @@
 name: Documentation
 description: Something in the docs is wrong, missing, or unclear.
+title: "doc: "
 labels: [documentation]
 body:
   - type: input
