@@ -32,6 +32,7 @@ To record [with JDK Mission Control](../jmc.md), add these flags in the same pla
 ```text
 -Dcom.sun.management.jmxremote.port=7091
 -Dcom.sun.management.jmxremote.rmi.port=7091
+-Dcom.sun.management.jmxremote.host=127.0.0.1
 -Dcom.sun.management.jmxremote.authenticate=false
 -Dcom.sun.management.jmxremote.ssl=false
 -Djava.rmi.server.hostname=localhost
@@ -44,10 +45,10 @@ your development machine.
 
 ## From a container or another host
 
-- **Container:** publish the port to your machine only, as in `-p 127.0.0.1:7091:7091`. Keep
-  `java.rmi.server.hostname=localhost`.
-- **Another host:** set `java.rmi.server.hostname` to the name JDK Mission Control uses for that
-  host, and connect to `<host>:7091`. Use a network you trust.
+- **Container:** leave out `jmxremote.host`. Publish the port to your machine only, as in
+  `-p 127.0.0.1:7091:7091`. Keep `java.rmi.server.hostname=localhost`.
+- **Another host:** leave out `jmxremote.host`. Set `java.rmi.server.hostname` to the name JDK
+  Mission Control uses for that host, and connect to `<host>:7091`. Use a network you trust.
 
 JDK Mission Control connects to the port, then to the host named in `java.rmi.server.hostname`, so
 both must be reachable.

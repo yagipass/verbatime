@@ -31,6 +31,7 @@ Start the application with the agent and a JMX port.
 ```sh
 java -javaagent:/path/to/verbatime-agent.jar \
      -Dcom.sun.management.jmxremote.port=7091 -Dcom.sun.management.jmxremote.rmi.port=7091 \
+     -Dcom.sun.management.jmxremote.host=127.0.0.1 \
      -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
      -Djava.rmi.server.hostname=localhost \
      -cp ... your.Main
