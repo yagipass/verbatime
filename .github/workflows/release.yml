@@ -44,8 +44,12 @@ jobs:
             m2-jmc-
             m2-cli-
       - if: steps.tagpr.outputs.tag != ''
+        env:
+          MAVEN_GPG_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: nix develop .#agent --command mvn -B -Prelease -pl modules/agent -am verify
+      - if: steps.tagpr.outputs.tag != ''
         run: |
-          nix develop .#agent --command mvn -B -pl modules/agent -am verify
           nix develop .#jmc   --command mvn -B -pl modules/jmc   -am verify
           nix develop .#cli   --command mvn -B -pl modules/cli   -am verify
       - if: steps.tagpr.outputs.tag != ''
