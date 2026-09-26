@@ -115,6 +115,18 @@ jobs:
           TAG: ${{ needs.tagpr.outputs.tag }}
         run: gh release upload "$TAG" "vbtm-${{ matrix.platform }}" --clobber
 
+  homebrew:
+    needs: [tagpr, cli-native]
+    if: needs.tagpr.outputs.tag != ''
+    permissions:
+      contents: read
+    uses: yagipass/homebrew-tap/.github/workflows/bump.yml@main
+    with:
+      formula: vbtm
+      tag: ${{ needs.tagpr.outputs.tag }}
+    secrets:
+      tap-token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
   docs:
     needs: tagpr
     if: needs.tagpr.outputs.tag != ''
