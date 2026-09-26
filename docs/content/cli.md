@@ -8,32 +8,19 @@ description: Install vbtm and read a .vbtm recording from the command line, from
 
 ## Install
 
-Download `vbtm` from the [GitHub releases page](https://github.com/yagipass/verbatime/releases)
-and put it on your `PATH`.
+On macOS (Apple silicon) and Linux (x86_64, aarch64), the install script downloads `vbtm` from
+the [GitHub releases page](https://github.com/yagipass/verbatime/releases) and puts it in
+`~/.local/bin`.
 
 ::: code-group
 
-```sh [macOS (Apple silicon)]
-curl -Lo vbtm https://github.com/yagipass/verbatime/releases/latest/download/vbtm-macos-arm64
-gh attestation verify vbtm --repo yagipass/verbatime
-chmod +x vbtm
-```
-
-```sh [Linux x86_64]
-curl -Lo vbtm https://github.com/yagipass/verbatime/releases/latest/download/vbtm-linux-amd64
-gh attestation verify vbtm --repo yagipass/verbatime
-chmod +x vbtm
-```
-
-```sh [Linux aarch64]
-curl -Lo vbtm https://github.com/yagipass/verbatime/releases/latest/download/vbtm-linux-arm64
-gh attestation verify vbtm --repo yagipass/verbatime
-chmod +x vbtm
+```sh [macOS / Linux]
+curl -fsSL https://github.com/yagipass/verbatime/releases/latest/download/install-cli.sh | sh
 ```
 
 ```sh [Other (Java 17+)]
 curl -LO https://github.com/yagipass/verbatime/releases/latest/download/verbatime-cli.jar
-gh attestation verify verbatime-cli.jar --repo yagipass/verbatime && java -jar verbatime-cli.jar --help
+java -jar verbatime-cli.jar --help
 ```
 
 ```sh [Nix]
@@ -42,8 +29,12 @@ nix profile install github:yagipass/verbatime#vbtm
 
 :::
 
-`gh attestation verify` checks that the downloaded file was built by this repository's GitHub
-Actions. It needs the [GitHub CLI](https://cli.github.com/), signed in with `gh auth login`.
+Optionally, check that GitHub Actions built it:
+
+```sh
+gh attestation verify ~/.local/bin/vbtm --repo yagipass/verbatime
+gh attestation verify verbatime-cli.jar --repo yagipass/verbatime    # for the jar
+```
 
 ## Find a slow call
 
