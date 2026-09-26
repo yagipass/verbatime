@@ -32,6 +32,7 @@
     <dependency>
       <groupId>io.github.yagipass</groupId>
       <artifactId>verbatime-format</artifactId>
+      <optional>true</optional>
     </dependency>
   </dependencies>
 
