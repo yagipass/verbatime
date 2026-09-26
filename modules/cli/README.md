@@ -15,12 +15,18 @@ caused it.
 
 ## Usage
 
-Install `vbtm` from the [GitHub releases page](https://github.com/yagipass/verbatime/releases)
-or with Nix. To check that a file from the releases page, such as `vbtm-linux-amd64`, was built by
-this repository's GitHub Actions, verify it with the [GitHub CLI](https://cli.github.com/).
+Install `vbtm` with the install script on macOS (Apple silicon) and Linux, or with Nix. The
+script downloads `vbtm` from the [GitHub releases page](https://github.com/yagipass/verbatime/releases)
+and puts it in `~/.local/bin`.
 
 ```sh
-gh attestation verify vbtm-linux-amd64 --repo yagipass/verbatime
+curl -fsSL https://github.com/yagipass/verbatime/releases/latest/download/install-cli.sh | sh
+```
+
+Optionally, check that GitHub Actions built it:
+
+```sh
+gh attestation verify ~/.local/bin/vbtm --repo yagipass/verbatime
 ```
 
 ### Finding a slow call

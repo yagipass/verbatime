@@ -61,6 +61,7 @@ jobs:
             modules/agent/target/verbatime-agent.jar
             modules/jmc/target/verbatime-jmc-plugin.jar
             modules/cli/target/verbatime-cli.jar
+            modules/cli/install-cli.sh
       - if: steps.tagpr.outputs.tag != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -70,6 +71,7 @@ jobs:
             modules/agent/target/verbatime-agent.jar \
             modules/jmc/target/verbatime-jmc-plugin.jar \
             modules/cli/target/verbatime-cli.jar \
+            modules/cli/install-cli.sh \
             --clobber
 
   cli-native:
