@@ -6,7 +6,7 @@
 }:
 
 let
-  version = "0.7.2";
+  version = "0.8.0";
   graalvm = graalvmPackages.graalvm-ce;
   fs = lib.fileset;
 
