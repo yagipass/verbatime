@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.8.0](https://github.com/yagipass/verbatime/compare/v0.7.2...v0.8.0) - 2026-09-26
+
+- fix(agent): keep bundled verbatime-format out of dependent projects by @yagipass in https://github.com/yagipass/verbatime/pull/55
+- build(maven): add the project URL, developers, and SCM to the POM by @yagipass in https://github.com/yagipass/verbatime/pull/56
+- feat(agent): build sources and javadoc jars and sign them on release by @yagipass in https://github.com/yagipass/verbatime/pull/58
+- feat(release): publish the agent to Maven Central on release by @yagipass in https://github.com/yagipass/verbatime/pull/59
+
 ## [v0.7.2](https://github.com/yagipass/verbatime/compare/v0.7.1...v0.7.2) - 2026-09-25
 
 - feat(github): add issue forms for bugs, features, and docs by @yagipass in https://github.com/yagipass/verbatime/pull/36
