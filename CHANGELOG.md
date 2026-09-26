@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.8.1](https://github.com/yagipass/verbatime/compare/v0.8.0...v0.8.1) - 2026-09-26
+
+- feat(cli): add an install script that makes vbtm executable by @yagipass in https://github.com/yagipass/verbatime/pull/62
+- feat(release): update the Homebrew formula on release by @yagipass in https://github.com/yagipass/verbatime/pull/65
+
 ## [v0.8.0](https://github.com/yagipass/verbatime/compare/v0.7.2...v0.8.0) - 2026-09-26
 
 - fix(agent): keep bundled verbatime-format out of dependent projects by @yagipass in https://github.com/yagipass/verbatime/pull/55
