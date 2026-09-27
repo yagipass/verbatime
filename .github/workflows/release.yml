@@ -121,8 +121,21 @@ jobs:
             "vbtm-${{ matrix.platform }}.sha256" \
             --clobber
 
-  homebrew:
+  publish:
     needs: [tagpr, cli-native]
+    if: needs.tagpr.outputs.tag != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.tagpr.outputs.tag }}
+        run: gh release edit "$TAG" --draft=false
+
+  homebrew:
+    needs: [tagpr, publish]
     if: needs.tagpr.outputs.tag != ''
     permissions:
       contents: read

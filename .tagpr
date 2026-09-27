@@ -3,4 +3,4 @@
 	releaseBranch = main
 	versionFile = nix/vbtm.nix,modules/jmc/META-INF/MANIFEST.MF,pom.xml,modules/format/pom.xml,modules/agent/pom.xml,modules/jmc/pom.xml,modules/cli/pom.xml
 	changelog = true
-	release = true
+	release = draft
