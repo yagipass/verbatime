@@ -18,6 +18,10 @@ the [GitHub releases page](https://github.com/yagipass/verbatime/releases) and p
 curl -fsSL https://github.com/yagipass/verbatime/releases/latest/download/install-cli.sh | sh -s -- -b ~/.local/bin
 ```
 
+```sh [Homebrew]
+brew install yagipass/tap/vbtm
+```
+
 ```sh [Other (Java 17+)]
 curl -LO https://github.com/yagipass/verbatime/releases/latest/download/verbatime-cli.jar
 java -jar verbatime-cli.jar --help
