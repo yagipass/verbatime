@@ -85,7 +85,7 @@ jobs:
           - os: ubuntu-24.04-arm
             platform: linux-arm64
           - os: macos-latest
-            platform: macos-arm64
+            platform: darwin-arm64
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -106,14 +106,20 @@ jobs:
           restore-keys: m2-cli-
       - run: mvn -B -pl modules/cli -am -Pnative -DskipTests package
       - run: modules/cli/target/vbtm --help
-      - run: cp modules/cli/target/vbtm "vbtm-${{ matrix.platform }}"
+      - run: |
+          cp modules/cli/target/vbtm "vbtm-${{ matrix.platform }}"
+          shasum -a 256 "vbtm-${{ matrix.platform }}" > "vbtm-${{ matrix.platform }}.sha256"
       - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
           subject-path: vbtm-${{ matrix.platform }}
       - env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.tagpr.outputs.tag }}
-        run: gh release upload "$TAG" "vbtm-${{ matrix.platform }}" --clobber
+        run: |
+          gh release upload "$TAG" \
+            "vbtm-${{ matrix.platform }}" \
+            "vbtm-${{ matrix.platform }}.sha256" \
+            --clobber
 
   homebrew:
     needs: [tagpr, cli-native]
