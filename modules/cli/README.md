@@ -15,12 +15,22 @@ caused it.
 
 ## Usage
 
-Install `vbtm` with the install script on macOS (Apple silicon) and Linux, or with Nix. The
-script downloads `vbtm` from the [GitHub releases page](https://github.com/yagipass/verbatime/releases)
-and puts it in `~/.local/bin`.
+Install `vbtm` on macOS (Apple silicon) and Linux with the install script or Homebrew, or with Nix.
 
 ```sh
 curl -fsSL https://github.com/yagipass/verbatime/releases/latest/download/install-cli.sh | sh -s -- -b ~/.local/bin
+```
+
+With Nix:
+
+```sh
+nix profile install github:yagipass/verbatime#vbtm
+```
+
+With Homebrew:
+
+```sh
+brew install yagipass/tap/vbtm
 ```
 
 ### Finding a slow call
