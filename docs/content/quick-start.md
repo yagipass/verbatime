@@ -6,12 +6,7 @@ description: Download the Verbatime agent and record a Java run, with the agent 
 
 Record a run on your development machine and see where the time went. Download
 `verbatime-agent.jar` from the [GitHub releases page](https://github.com/yagipass/verbatime/releases).
-To check that it was built by this repository's GitHub Actions, verify it with the
-[GitHub CLI](https://cli.github.com/).
-
-```sh
-gh attestation verify verbatime-agent.jar --repo yagipass/verbatime
-```
+[Verifying downloads](./verify.md) shows how to check it.
 
 Then choose to record with the [agent alone](#agent-alone) or with
 [JDK Mission Control](#with-jdk-mission-control).

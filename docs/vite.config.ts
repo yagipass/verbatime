@@ -109,6 +109,7 @@ export default defineConfig({
                 { text: "Troubleshooting", link: "/troubleshooting.md" },
                 { text: "Examples", link: "/examples.md" },
                 { text: "Limitations", link: "/limitations.md" },
+                { text: "Verifying downloads", link: "/verify.md" },
               ],
             },
           ],

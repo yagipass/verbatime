@@ -33,11 +33,7 @@ nix profile install github:yagipass/verbatime#vbtm
 
 :::
 
-Optionally, check that GitHub Actions built the jar:
-
-```sh
-gh attestation verify verbatime-cli.jar --repo yagipass/verbatime
-```
+[Verifying downloads](./verify.md) shows how to check the jar.
 
 ## Find a slow call
 
