@@ -15,7 +15,7 @@ the [GitHub releases page](https://github.com/yagipass/verbatime/releases) and p
 ::: code-group
 
 ```sh [macOS / Linux]
-curl -fsSL https://github.com/yagipass/verbatime/releases/latest/download/install-cli.sh | sh
+curl -fsSL https://github.com/yagipass/verbatime/releases/latest/download/install-cli.sh | sh -s -- -b ~/.local/bin
 ```
 
 ```sh [Other (Java 17+)]
@@ -29,11 +29,10 @@ nix profile install github:yagipass/verbatime#vbtm
 
 :::
 
-Optionally, check that GitHub Actions built it:
+Optionally, check that GitHub Actions built the jar:
 
 ```sh
-gh attestation verify ~/.local/bin/vbtm --repo yagipass/verbatime
-gh attestation verify verbatime-cli.jar --repo yagipass/verbatime    # for the jar
+gh attestation verify verbatime-cli.jar --repo yagipass/verbatime
 ```
 
 ## Find a slow call

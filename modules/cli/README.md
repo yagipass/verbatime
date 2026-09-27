@@ -20,13 +20,7 @@ script downloads `vbtm` from the [GitHub releases page](https://github.com/yagip
 and puts it in `~/.local/bin`.
 
 ```sh
-curl -fsSL https://github.com/yagipass/verbatime/releases/latest/download/install-cli.sh | sh
-```
-
-Optionally, check that GitHub Actions built it:
-
-```sh
-gh attestation verify ~/.local/bin/vbtm --repo yagipass/verbatime
+curl -fsSL https://github.com/yagipass/verbatime/releases/latest/download/install-cli.sh | sh -s -- -b ~/.local/bin
 ```
 
 ### Finding a slow call
