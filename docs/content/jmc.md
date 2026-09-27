@@ -10,12 +10,8 @@ chart.
 ## Install
 
 Download `verbatime-jmc-plugin.jar` from the
-[GitHub releases page](https://github.com/yagipass/verbatime/releases). To check that it was built
-by this repository's GitHub Actions, verify it with the [GitHub CLI](https://cli.github.com/).
-
-```sh
-gh attestation verify verbatime-jmc-plugin.jar --repo yagipass/verbatime
-```
+[GitHub releases page](https://github.com/yagipass/verbatime/releases).
+[Verifying downloads](./verify.md) shows how to check it.
 
 Copy it into the `dropins` directory of JDK Mission Control, and restart it.
 
