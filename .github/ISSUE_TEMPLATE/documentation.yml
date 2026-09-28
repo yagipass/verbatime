@@ -14,10 +14,12 @@ body:
   - type: textarea
     id: problem
     attributes:
-      label: What is wrong, missing, or unclear
+      label: Problem
+      description: What is wrong, missing, or unclear.
     validations:
       required: true
   - type: textarea
     id: suggestion
     attributes:
-      label: What it should say
+      label: Proposal
+      description: What it should say.
