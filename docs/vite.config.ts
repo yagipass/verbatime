@@ -86,7 +86,16 @@ export default defineConfig({
               items: [
                 { text: "What is Verbatime?", link: "/index.md" },
                 { text: "Quick start", link: "/quick-start.md" },
-                { text: "Use cases", link: "/use-cases.md" },
+              ],
+            },
+            {
+              text: "Use cases",
+              items: [
+                { text: "Overview", link: "/use-cases.md" },
+                { text: "A slow request", link: "/use-cases/slow-request.md" },
+                { text: "Slow startup", link: "/use-cases/slow-startup.md" },
+                { text: "A slow test", link: "/use-cases/slow-test.md" },
+                { text: "A slow batch job", link: "/use-cases/batch-job.md" },
               ],
             },
             {
