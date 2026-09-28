@@ -45,15 +45,10 @@ body:
       description: The full `-javaagent` argument and JMX flags, or the `vbtm` command line.
       render: text
   - type: textarea
-    id: what-happened
+    id: problem
     attributes:
-      label: What happened
-    validations:
-      required: true
-  - type: textarea
-    id: expected
-    attributes:
-      label: What you expected
+      label: Problem
+      description: What happened, and what you expected instead. Paste error messages as text.
     validations:
       required: true
   - type: textarea
@@ -61,9 +56,15 @@ body:
     attributes:
       label: How to reproduce
       description: |
-        Steps, or a small project. An application from `examples/` is the easiest to reproduce with.
+        Steps, or a small project, and whether it happens every time. An application from `examples/`
+        is the easiest to reproduce with.
         If a recording shows the problem, zip the `.vbtm` file and attach it. A recording holds the
         class, method, and thread names of your application.
+  - type: textarea
+    id: checked
+    attributes:
+      label: Checked so far
+      description: What you tried and what it showed, such as another version or an application from `examples/`. End with what you have not checked yet.
   - type: textarea
     id: logs
     attributes:

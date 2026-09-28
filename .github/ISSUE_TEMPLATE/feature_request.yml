@@ -10,17 +10,24 @@ body:
   - type: textarea
     id: problem
     attributes:
-      label: What you are trying to do
-      description: The task, and where Verbatime falls short.
+      label: Problem
+      description: What you are trying to do, and where Verbatime falls short.
     validations:
       required: true
   - type: textarea
     id: proposal
     attributes:
-      label: What you would like
+      label: Proposal
+      description: The change you would like, with example usage if you can.
     validations:
       required: true
   - type: textarea
     id: alternatives
     attributes:
-      label: What you do now instead
+      label: Alternatives
+      description: What you do now instead, and other options you considered.
+  - type: textarea
+    id: checked
+    attributes:
+      label: Checked so far
+      description: What you tried and what it showed. End with what you have not checked yet.
