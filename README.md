@@ -4,6 +4,12 @@
   <img src="assets/verbatime-banner.png" alt="Verbatime — JVM execution, frame by frame." width="100%">
 </p>
 
+[![CI](https://github.com/yagipass/verbatime/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yagipass/verbatime/actions/workflows/ci.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.yagipass/verbatime-agent)](https://central.sonatype.com/artifact/io.github.yagipass/verbatime-agent)
+[![Release](https://img.shields.io/github/v/release/yagipass/verbatime)](https://github.com/yagipass/verbatime/releases)
+[![License](https://img.shields.io/github/license/yagipass/verbatime)](LICENSE)
+[![Java 25+](https://img.shields.io/badge/Java-25%2B-orange)](https://openjdk.org/projects/jdk/25/)
+
 Records every Java method call under the methods you choose, and shows where the time went.
 
 ## Why
