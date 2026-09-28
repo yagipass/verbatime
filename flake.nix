@@ -111,6 +111,8 @@
                 MD060 = false;
               };
             };
+
+            actionlint.enable = true;
           };
 
           devShells = rec {
