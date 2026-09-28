@@ -1,5 +1,5 @@
 ---
-description: Known limitations of Verbatime, such as com.sun.* classes that are never instrumented, recordings that need out= to survive the JVM, and deep recursion.
+description: Known limitations of Verbatime, such as com.sun.* classes that are never instrumented, recordings that need out= to survive the JVM, deep recursion, and slower class loading.
 ---
 
 # Limitations
@@ -46,3 +46,13 @@ show as unclosed, and the agent logs `[verbatime] WARN session #... ended early`
 session stays open until the recording stops, or the whole recording stops.
 
 Give the thread a larger stack with `-Xss`, or leave the recursive code out with `exclude=`.
+
+## Class loading looks slower than it is
+
+The agent instruments each class as the JVM loads it, and records the calls that class loaders
+outside the JDK make. Both add to the time of loading a class, so class loading takes longer in a
+recording than it does without the agent. It shows most at startup and in the first requests,
+when most classes load. In a Spring Boot fat jar, it shows as `JarUrlClassLoader.loadClass`.
+
+Before you treat class loading as the cause, compare with how long the application takes without
+the agent, such as the startup time Spring Boot logs.
