@@ -1,7 +1,7 @@
 ---
 layout: entry
-title: Java method call tracer with flame charts
-description: Records every Java method call under the methods you choose, and shows where the time went.
+title: Java method tracing profiler with flame charts
+description: Records every Java method call under the methods you choose, with nothing sampled, and shows each run as its own flame chart instead of one merged flame graph.
 hero:
   name: Verbatime
   text: Every call, as it happened
@@ -40,7 +40,7 @@ built, not in production.
 
 To see where one request, one server startup, or one batch job spent its time, you need every
 call it made, in order. A sampling profiler only sees some of them, and most other profilers merge
-all requests into one average.
+all requests into one call tree or flame graph.
 
 Verbatime records every call and shows it as it happened.
 

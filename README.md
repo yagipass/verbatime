@@ -10,9 +10,9 @@ Records every Java method call under the methods you choose, and shows where the
 
 To see where one request, one server startup, or one batch job spent its time, you need every
 call it made, in order. A sampling profiler only sees some of them, and most other profilers merge
-all requests into one average.
+all requests into one call tree or flame graph.
 
-Verbatime is a tool for development. It records everything and shows it as it happened.
+Verbatime is a tool for development. It records every call and shows it as it happened.
 
 - **Every call.** Each run of a method you choose becomes one call tree, with the order and time
   of every call in it. Nothing is sampled or dropped.
