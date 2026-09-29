@@ -66,11 +66,12 @@ final class BottomUpModelTest {
     @Test
     void copyTextMirrorsTheTableColumnsAndFollowsTheCurrentSort() throws IOException {
         BottomUpModel m = model(fixture());
-        assertEquals("bottom-up of Root.root(), total 20.00 µs, 3 methods, by self descending\n"
-                + "      self       total       %     calls  method\n"
-                + "  11.00 µs    20.00 µs     55%         1  pkg.Root.root()V\n"
-                + "   8.00 µs     8.00 µs     40%         2  pkg.Root.a()V\n"
-                + "   1.00 µs     1.00 µs    5.0%         1  pkg.Root.b()V", CopyTexts.bottomUpText(m, r -> false),
+        assertEquals("""
+                bottom-up of Root.root(), total 20.00 µs, 3 methods, by self descending
+                      self       total       %     calls  method
+                  11.00 µs    20.00 µs     55%         1  pkg.Root.root()V
+                   8.00 µs     8.00 µs     40%         2  pkg.Root.a()V
+                   1.00 µs     1.00 µs    5.0%         1  pkg.Root.b()V""", CopyTexts.bottomUpText(m, r -> false),
                 "what is copied is what the table shows, same columns in the same order, with full names for grepping");
         m.toggleSort(SortKey.METHOD);
         assertTrue(CopyTexts.bottomUpText(m, r -> false)

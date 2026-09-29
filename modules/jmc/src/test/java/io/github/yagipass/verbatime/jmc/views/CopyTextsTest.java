@@ -32,16 +32,18 @@ final class CopyTextsTest {
         TraceSnapshot d = rootAndKid();
         SelectedCall kid = new SelectedCall(7, 11_000, 4_000, 4_000, 1, 2, -1, false,
                 List.of(new SelectedCall.Ancestor(10_000, 20_000, 0, 1)), null, null);
-        assertEquals("session #1 Root.root on main, 20.00 µs\n"
-                + "depth       total  % of session  method\n"
-                + "    0    20.00 µs          100%  pkg.Root.root()V\n"
-                + "    1     4.00 µs           20%  pkg.Root.kid()V", CopyTexts.ancestorText(d, kid),
+        assertEquals("""
+                session #1 Root.root on main, 20.00 µs
+                depth       total  % of session  method
+                    0    20.00 µs          100%  pkg.Root.root()V
+                    1     4.00 µs           20%  pkg.Root.kid()V""", CopyTexts.ancestorText(d, kid),
                 "one frame per line, full names, so the text can be pasted into an issue or handed to an AI");
 
         SelectedCall stray = new SelectedCall(7, 40_000, 1_000, 1_000, 0, 2, -1, false, List.of(), null, null);
-        assertEquals("not in a session on main\n"
-                + "depth       total  % of session  method\n"
-                + "    0     1.00 µs                pkg.Root.kid()V", CopyTexts.ancestorText(d, stray),
+        assertEquals("""
+                not in a session on main
+                depth       total  % of session  method
+                    0     1.00 µs                pkg.Root.kid()V""", CopyTexts.ancestorText(d, stray),
                 "outside a session there is no denominator, so the share column stays blank");
     }
 
