@@ -80,11 +80,12 @@ final class TopDownModelTest {
     @Test
     void copyTextIndentsTheExpandedTree() throws IOException {
         TopDownModel m = fixture();
-        assertEquals("top-down of Root.root(), total 10.00 µs, 3 call paths\n"
-                + "      self       total       %     calls  method\n"
-                + "   5.00 µs    10.00 µs    100%         1  pkg.Root.root()V\n"
-                + "   4.00 µs     4.00 µs     40%         1    pkg.Root.a()V\n"
-                + "   1.00 µs     1.00 µs     10%         1    pkg.Root.b()V", CopyTexts.topDownText(m, r -> true),
+        assertEquals("""
+                top-down of Root.root(), total 10.00 µs, 3 call paths
+                      self       total       %     calls  method
+                   5.00 µs    10.00 µs    100%         1  pkg.Root.root()V
+                   4.00 µs     4.00 µs     40%         1    pkg.Root.a()V
+                   1.00 µs     1.00 µs     10%         1    pkg.Root.b()V""", CopyTexts.topDownText(m, r -> true),
                 "the fully expanded tree is copied with two spaces of indent per level");
     }
 }
