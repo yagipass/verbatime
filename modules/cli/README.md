@@ -60,7 +60,13 @@ vbtm tree rec.vbtm --at 7.57         # one call and everything under it
 ### With an AI agent
 
 [`skills/vbtm/`](../../skills/vbtm/SKILL.md) is an agent skill that investigates a recording with
-these commands. Add it to your agent, and ask why a request was slow.
+these commands. Add it to your agent with one of the following, and ask why a request was slow.
+
+```sh
+gh skill install yagipass/verbatime vbtm          # GitHub CLI 2.90.0 or later
+npx skills add yagipass/verbatime --skill vbtm
+apm install yagipass/verbatime/skills/vbtm
+```
 
 ## Build
 

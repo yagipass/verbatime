@@ -1,6 +1,7 @@
 ---
 name: vbtm
 description: Read a Verbatime `.vbtm` recording with the `vbtm` command to find where the time went. Use whenever the user points at a `.vbtm` file or asks why a request, server startup, batch job or test run was slow, which methods are hot, which code path calls a method, whether there is an N+1 query or a costly loop, or which exceptions are thrown and where they are caught.
+license: Apache-2.0
 ---
 
 # Investigating a `.vbtm` recording with `vbtm`
