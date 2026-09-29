@@ -88,7 +88,15 @@ vbtm tree trace.vbtm 7
 ```
 
 [`skills/vbtm/`](skills/vbtm/SKILL.md) is an agent skill that uses `vbtm` to find out why a
-request was slow. See the [CLI README](modules/cli/README.md).
+request was slow. Add it to your agent with one of these commands.
+
+```sh
+gh skill install yagipass/verbatime vbtm
+npx skills add yagipass/verbatime --skill vbtm
+apm install yagipass/verbatime/skills/vbtm
+```
+
+See the [CLI README](modules/cli/README.md).
 
 ## Documentation
 

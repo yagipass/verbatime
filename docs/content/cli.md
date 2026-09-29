@@ -76,8 +76,24 @@ Every command takes `--json`, which prints one JSON object per line. `vbtm` neve
 ## With an AI agent
 
 [`skills/vbtm/`](https://github.com/yagipass/verbatime/blob/main/skills/vbtm/SKILL.md) is an agent
-skill that investigates a recording with `vbtm`. Add it to your agent, and ask why a request was
-slow.
+skill that investigates a recording with `vbtm`. Add it to your agent with one of these commands,
+and ask why a request was slow.
+
+::: code-group
+
+```sh [GitHub CLI (2.90.0+)]
+gh skill install yagipass/verbatime vbtm
+```
+
+```sh [npx skills]
+npx skills add yagipass/verbatime --skill vbtm
+```
+
+```sh [apm]
+apm install yagipass/verbatime/skills/vbtm
+```
+
+:::
 
 A recording holds class, method, thread, and exception names, GC pauses, and timings. It holds no
 argument values, return values, or exception messages.
