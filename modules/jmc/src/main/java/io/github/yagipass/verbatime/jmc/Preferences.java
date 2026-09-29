@@ -50,35 +50,35 @@ public final class Preferences extends ScopedPreferenceStore implements ControlP
 
     @Override
     @SuppressWarnings("EmptyCatch")
-    public void save(final String target, final String roots) {
+    public void save(String target, String roots) {
         setValue(AGENT_TARGET, target);
         setValue(ROOTS, roots);
         try {
             save();
-        } catch (final IOException ignored) {
+        } catch (IOException ignored) {
         }
     }
 
-    static Path resolveRecordingsDir(final String pref, final Path dflt) {
-        final String s = pref == null ? "" : pref.trim();
+    static Path resolveRecordingsDir(String pref, Path dflt) {
+        String s = pref == null ? "" : pref.trim();
         return s.isEmpty() ? dflt : Path.of(s);
     }
 
-    static Path recordingsDirIn(final Path workspace) {
+    static Path recordingsDirIn(Path workspace) {
         return workspace.resolve(RECORDINGS_SUBDIR);
     }
 
     @SuppressWarnings("EmptyCatch")
     private static Path workspaceDir() {
         try {
-            final IPath ws = Platform.getLocation();
+            IPath ws = Platform.getLocation();
             if (ws != null) {
-                final Path p = ws.toFile().toPath();
+                Path p = ws.toFile().toPath();
                 if (Files.isDirectory(p)) {
                     return p;
                 }
             }
-        } catch (final IllegalStateException unset) {
+        } catch (IllegalStateException unset) {
         }
         return Path.of(System.getProperty("user.home", "."));
     }

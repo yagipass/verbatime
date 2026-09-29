@@ -2,6 +2,8 @@ package io.github.yagipass.verbatime.jmc.export;
 
 import java.util.Arrays;
 
+import com.google.errorprone.annotations.Var;
+
 final class BelowFloorCounts {
 
     private int[] keys = new int[16];
@@ -12,12 +14,12 @@ final class BelowFloorCounts {
 
     private int size;
 
-    void increment(final int methodId) {
-        final int key = methodId + 1;
-        int mask = keys.length - 1;
-        int slot = mix(key) & mask;
+    void increment(int methodId) {
+        int key = methodId + 1;
+        @Var int mask = keys.length - 1;
+        @Var int slot = mix(key) & mask;
         while (true) {
-            final int k = keys[slot];
+            int k = keys[slot];
             if (k == key) {
                 counts[slot]++;
                 return;
@@ -47,11 +49,11 @@ final class BelowFloorCounts {
         return size;
     }
 
-    int methodId(final int i) {
+    int methodId(int i) {
         return keys[touched[i]] - 1;
     }
 
-    int count(final int i) {
+    int count(int i) {
         return counts[touched[i]];
     }
 
@@ -63,15 +65,15 @@ final class BelowFloorCounts {
     }
 
     private void allocate() {
-        final int[] oldKeys = keys;
-        final int[] oldCounts = counts;
-        final int[] oldTouched = touched;
+        int[] oldKeys = keys;
+        int[] oldCounts = counts;
+        int[] oldTouched = touched;
         keys = new int[oldKeys.length * 2];
         counts = new int[oldKeys.length * 2];
-        final int mask = keys.length - 1;
+        int mask = keys.length - 1;
         for (int i = 0; i < size; i++) {
-            final int from = oldTouched[i];
-            int slot = mix(oldKeys[from]) & mask;
+            int from = oldTouched[i];
+            @Var int slot = mix(oldKeys[from]) & mask;
             while (keys[slot] != 0) {
                 slot = (slot + 1) & mask;
             }
@@ -81,8 +83,8 @@ final class BelowFloorCounts {
         }
     }
 
-    private static int mix(final int x) {
-        final int h = x * 0x9E3779B9;
+    private static int mix(int x) {
+        int h = x * 0x9E3779B9;
         return h ^ (h >>> 16);
     }
 }

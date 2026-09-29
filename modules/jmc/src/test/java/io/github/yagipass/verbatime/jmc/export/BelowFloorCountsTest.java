@@ -8,7 +8,7 @@ final class BelowFloorCountsTest {
 
     @Test
     void callsOfOneParentAreCountedPerMethodNotPerCall() {
-        final BelowFloorCounts c = new BelowFloorCounts();
+        BelowFloorCounts c = new BelowFloorCounts();
         c.increment(7);
         c.increment(3);
         c.increment(7);
@@ -22,7 +22,7 @@ final class BelowFloorCountsTest {
 
     @Test
     void clearEmptiesTheTableSoTheNextParentStartsFromZero() {
-        final BelowFloorCounts c = new BelowFloorCounts();
+        BelowFloorCounts c = new BelowFloorCounts();
         c.increment(1);
         c.increment(2);
         c.clear();
@@ -35,7 +35,7 @@ final class BelowFloorCountsTest {
 
     @Test
     void manyDistinctMethodsGrowTheTableAndKeepEveryCount() {
-        final BelowFloorCounts c = new BelowFloorCounts();
+        BelowFloorCounts c = new BelowFloorCounts();
         for (int round = 1; round <= 3; round++) {
             for (int id = 0; id < 100; id++) {
                 c.increment(id * 31);

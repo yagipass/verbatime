@@ -20,7 +20,7 @@ public final class ChunkCursor {
 
     private boolean released;
 
-    public ChunkCursor(final MappedTrace buf, final ThreadIndex m, final int c0, final int c1) {
+    public ChunkCursor(MappedTrace buf, ThreadIndex m, int c0, int c1) {
         buf.retain();
         this.buf = buf;
         this.m = m;
@@ -56,7 +56,7 @@ public final class ChunkCursor {
         return m.chunks.endsSession[c];
     }
 
-    public void open(final EventCursor cursor) {
+    public void open(EventCursor cursor) {
         cursor.reset(scratch, 0, len, m.chunks.baseTicks[c]);
     }
 

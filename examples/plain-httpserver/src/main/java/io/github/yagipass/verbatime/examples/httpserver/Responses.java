@@ -11,8 +11,8 @@ final class Responses {
     private Responses() {
     }
 
-    static void text(final HttpExchange exchange, final int status, final String body) throws IOException {
-        final byte[] bytes = (body + "\n").getBytes(StandardCharsets.UTF_8);
+    static void text(HttpExchange exchange, int status, String body) throws IOException {
+        byte[] bytes = (body + "\n").getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=utf-8");
         exchange.sendResponseHeaders(status, bytes.length);
         try (OutputStream os = exchange.getResponseBody()) {

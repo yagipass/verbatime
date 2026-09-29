@@ -9,6 +9,8 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.jmc.Formats;
 import io.github.yagipass.verbatime.jmc.SelectedCall;
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
@@ -35,17 +37,17 @@ public final class BottomUpView extends AggregateTreeView<BottomUpModel, Row> {
         column(SortKey.METHOD, "Method", 600, SWT.LEFT, Row::name, false);
     }
 
-    private void column(final SortKey key, final String title, final int width, final int style,
-            final Function<Row, String> text, final boolean mono) {
-        final TreeColumn tc = column(title, width, style, text, mono);
+    private void column(SortKey key, String title, int width, int style,
+            Function<Row, String> text, boolean mono) {
+        TreeColumn tc = column(title, width, style, text, mono);
         if (key != null) {
             tc.addListener(SWT.Selection, e -> toggleSort(key));
             columns.put(key, tc);
         }
     }
 
-    private void toggleSort(final SortKey key) {
-        final BottomUpModel m = model();
+    private void toggleSort(SortKey key) {
+        BottomUpModel m = model();
         if (m == null) {
             return;
         }
@@ -55,8 +57,8 @@ public final class BottomUpView extends AggregateTreeView<BottomUpModel, Row> {
     }
 
     private void applySortIndicator() {
-        final Tree tree = viewer().getTree();
-        final BottomUpModel m = model();
+        Tree tree = viewer().getTree();
+        BottomUpModel m = model();
         if (m == null) {
             tree.setSortColumn(null);
             tree.setSortDirection(SWT.NONE);
@@ -67,12 +69,12 @@ public final class BottomUpView extends AggregateTreeView<BottomUpModel, Row> {
     }
 
     @Override
-    protected int methodId(final Row row) {
+    protected int methodId(Row row) {
         return row.methodId();
     }
 
     @Override
-    protected String name(final Row row) {
+    protected String name(Row row) {
         return row.name();
     }
 
@@ -82,15 +84,15 @@ public final class BottomUpView extends AggregateTreeView<BottomUpModel, Row> {
     }
 
     @Override
-    protected BottomUpModel build(final TraceSnapshot d, final SubtreeAggregate agg) {
-        final BottomUpModel previous = model();
-        final SortKey sortKey = previous != null ? previous.sortKey() : SortKey.SELF;
-        final boolean descending = previous == null || previous.descending();
+    protected BottomUpModel build(TraceSnapshot d, SubtreeAggregate agg) {
+        BottomUpModel previous = model();
+        SortKey sortKey = previous != null ? previous.sortKey() : SortKey.SELF;
+        boolean descending = previous == null || previous.descending();
         return BottomUpModel.of(d, agg, sortKey, descending);
     }
 
     @Override
-    protected void setInput(final BottomUpModel m) {
+    protected void setInput(BottomUpModel m) {
         viewer().setInput(m);
         if (m != null) {
             viewer().setChildCount(m, m.size());
@@ -99,9 +101,9 @@ public final class BottomUpView extends AggregateTreeView<BottomUpModel, Row> {
     }
 
     @Override
-    protected String describe(final TraceSnapshot d, final SelectedCall f, final BottomUpModel m) {
-        final String where = Formats.shortName(d.methodName(f.methodId()));
-        String desc = Formats.fmtInt(m.size()) + " methods in " + where + ", total " + Formats.fmtDur(m.rootTotalNs());
+    protected String describe(TraceSnapshot d, SelectedCall f, BottomUpModel m) {
+        String where = Formats.shortName(d.methodName(f.methodId()));
+        @Var String desc = Formats.fmtInt(m.size()) + " methods in " + where + ", total " + Formats.fmtDur(m.rootTotalNs());
         if (m.truncated()) {
             desc += ", call tree truncated at " + Formats.fmtInt(SubtreeAggregate.MAX_NODES) + " paths";
         }
@@ -109,7 +111,7 @@ public final class BottomUpView extends AggregateTreeView<BottomUpModel, Row> {
     }
 
     @Override
-    protected String copyText(final BottomUpModel m, final Predicate<Row> expanded) {
+    protected String copyText(BottomUpModel m, Predicate<Row> expanded) {
         return CopyTexts.bottomUpText(m, expanded);
     }
 }

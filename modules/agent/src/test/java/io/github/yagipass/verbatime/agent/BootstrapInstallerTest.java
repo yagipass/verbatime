@@ -18,10 +18,10 @@ public final class BootstrapInstallerTest {
     }
 
     public static void run() throws Exception {
-        final Path tmp = Path.of(System.getProperty("io.github.yagipass.verbatime.agent.test.tmp")).resolve("boot");
+        Path tmp = Path.of(System.getProperty("io.github.yagipass.verbatime.agent.test.tmp")).resolve("boot");
         Files.createDirectories(tmp);
 
-        final Path fake = tmp.resolve("fake-agent.jar");
+        Path fake = tmp.resolve("fake-agent.jar");
         try (JarOutputStream out = new JarOutputStream(Files.newOutputStream(fake))) {
             put(out, "META-INF/MANIFEST.MF");
             put(out, "io/github/yagipass/verbatime/agent/probe/");
@@ -31,24 +31,24 @@ public final class BootstrapInstallerTest {
             put(out, "io/github/yagipass/verbatime/agent/VerbatimeAgent.class");
             put(out, "io/github/yagipass/verbatime/agent/jmx/VerbatimeControl.class");
         }
-        final Path probe = BootstrapInstaller.extractBootstrapJar(fake);
-        final List<String> names = new ArrayList<>();
+        Path probe = BootstrapInstaller.extractBootstrapJar(fake);
+        List<String> names = new ArrayList<>();
         try (JarFile jf = new JarFile(probe.toFile())) {
-            final Enumeration<JarEntry> e = jf.entries();
+            Enumeration<JarEntry> e = jf.entries();
             while (e.hasMoreElements()) {
                 names.add(e.nextElement().getName());
             }
         }
         Check.eq(List.of("io/github/yagipass/verbatime/agent/probe/Probe.class", "io/github/yagipass/verbatime/agent/probe/MethodRegistry.class", "io/github/yagipass/verbatime/format/Vbtm.class"), names, "probe jar carries exactly the probe and format class entries, which the bootstrap loader must see together");
 
-        final Path noProbe = tmp.resolve("no-probe.jar");
+        Path noProbe = tmp.resolve("no-probe.jar");
         try (JarOutputStream out = new JarOutputStream(Files.newOutputStream(noProbe))) {
             put(out, "io/github/yagipass/verbatime/agent/VerbatimeAgent.class");
         }
         Check.thrown(IOException.class, () -> BootstrapInstaller.extractBootstrapJar(noProbe), "a jar without probe entries is rejected");
     }
 
-    private static void put(final JarOutputStream out, final String name) throws IOException {
+    private static void put(JarOutputStream out, String name) throws IOException {
         out.putNextEntry(new JarEntry(name));
         if (!name.endsWith("/")) {
             out.write(new byte[] { 1, 2, 3 });

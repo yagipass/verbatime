@@ -16,21 +16,21 @@ public class PersistentOrderService {
 
     private final OrderMapper mapper;
 
-    PersistentOrderService(final OrderService orders, final OrderMapper mapper) {
+    PersistentOrderService(OrderService orders, OrderMapper mapper) {
         this.orders = orders;
         this.mapper = mapper;
     }
 
     @Transactional
-    public OrderRow place(final String sku, final int qty) {
-        final Receipt receipt = orders.placeOrder(sku, qty);
-        final OrderRow row = new OrderRow(receipt.sku(), receipt.qty(), receipt.cents(), receipt.txId());
+    public OrderRow place(String sku, int qty) {
+        Receipt receipt = orders.placeOrder(sku, qty);
+        OrderRow row = new OrderRow(receipt.sku(), receipt.qty(), receipt.cents(), receipt.txId());
         mapper.insert(row);
         return mapper.findById(row.getId()).orElseThrow();
     }
 
     @Transactional(readOnly = true)
-    public Optional<OrderRow> find(final long id) {
+    public Optional<OrderRow> find(long id) {
         return mapper.findById(id);
     }
 

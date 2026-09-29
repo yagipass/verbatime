@@ -14,14 +14,14 @@ public class StartupRunner implements ApplicationRunner {
 
     private final OrderRepository repository;
 
-    StartupRunner(final OrderService orders, final OrderRepository repository) {
+    StartupRunner(OrderService orders, OrderRepository repository) {
         this.orders = orders;
         this.repository = repository;
     }
 
     @Override
-    public void run(final ApplicationArguments args) {
-        final Receipt receipt = orders.placeOrder("warmup", 1);
+    public void run(ApplicationArguments args) {
+        Receipt receipt = orders.placeOrder("warmup", 1);
         repository.save(OrderEntity.of(receipt.sku(), receipt.qty(), receipt.cents(), receipt.txId())).block();
     }
 }

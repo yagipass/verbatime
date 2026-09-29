@@ -42,9 +42,9 @@ final class PathTrie {
         depth[0] = -1;
     }
 
-    int child(final int p, final int method, final int d) {
-        final long key = ((long) p << 22) | method;
-        final Integer n = index.get(key);
+    int child(int p, int method, int d) {
+        long key = ((long) p << 22) | method;
+        Integer n = index.get(key);
         if (n != null) {
             return n;
         }
@@ -55,7 +55,7 @@ final class PathTrie {
         if (size == methodId.length) {
             allocate(size * 2);
         }
-        final int node = size++;
+        int node = size++;
         methodId[node] = method;
         parent[node] = p;
         depth[node] = d;
@@ -63,8 +63,8 @@ final class PathTrie {
         return node;
     }
 
-    void record(final int node, final int session, final long ordinal, final long durTicks, final long self,
-            final boolean threw) {
+    void record(int node, int session, long ordinal, long durTicks, long self,
+            boolean threw) {
         calls[node]++;
         totalTicks[node] += durTicks;
         selfTicks[node] += self;
@@ -78,16 +78,16 @@ final class PathTrie {
         }
     }
 
-    CallId slowest(final int node) {
+    CallId slowest(int node) {
         return new CallId(slowestSession[node], slowestOrdinal[node]);
     }
 
     int[][] childrenByTotal() {
-        final int[] counts = new int[size];
+        int[] counts = new int[size];
         for (int n = 1; n < size; n++) {
             counts[parent[n]]++;
         }
-        final int[][] children = new int[size][];
+        int[][] children = new int[size][];
         for (int n = 0; n < size; n++) {
             children[n] = new int[counts[n]];
             counts[n] = 0;
@@ -95,13 +95,13 @@ final class PathTrie {
         for (int n = 1; n < size; n++) {
             children[parent[n]][counts[parent[n]]++] = n;
         }
-        for (final int[] k : children) {
-            final Integer[] boxed = new Integer[k.length];
+        for (int[] k : children) {
+            Integer[] boxed = new Integer[k.length];
             for (int i = 0; i < k.length; i++) {
                 boxed[i] = k[i];
             }
             Arrays.sort(boxed, (x, y) -> {
-                final int c = Long.compare(totalTicks[y], totalTicks[x]);
+                int c = Long.compare(totalTicks[y], totalTicks[x]);
                 return c != 0 ? c : Integer.compare(x, y);
             });
             for (int i = 0; i < k.length; i++) {
@@ -111,7 +111,7 @@ final class PathTrie {
         return children;
     }
 
-    private void allocate(final int capacity) {
+    private void allocate(int capacity) {
         methodId = Arrays.copyOf(methodId, capacity);
         parent = Arrays.copyOf(parent, capacity);
         depth = Arrays.copyOf(depth, capacity);

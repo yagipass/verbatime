@@ -63,31 +63,31 @@ public final class Main {
     private Main() {
     }
 
-    public static void main(final String[] args) {
-        final PrintStream stdout = new PrintStream(new BufferedOutputStream(new FileOutputStream(FileDescriptor.out),
+    public static void main(String[] args) {
+        PrintStream stdout = new PrintStream(new BufferedOutputStream(new FileOutputStream(FileDescriptor.out),
                 1 << 16), false, StandardCharsets.UTF_8);
-        final PrintStream stderr = new PrintStream(new FileOutputStream(FileDescriptor.err), true,
+        PrintStream stderr = new PrintStream(new FileOutputStream(FileDescriptor.err), true,
                 StandardCharsets.UTF_8);
-        final int code = run(Arrays.asList(args), stdout, stderr);
+        int code = run(Arrays.asList(args), stdout, stderr);
         stdout.flush();
         System.exit(code);
     }
 
-    static int run(final List<String> args, final PrintStream stdout, final PrintStream stderr) {
+    static int run(List<String> args, PrintStream stdout, PrintStream stderr) {
         try {
             if (args.isEmpty() || args.get(0).equals("--help") || args.get(0).equals("-h")
                     || args.get(0).equals("help")) {
                 stdout.print(HELP);
                 return 0;
             }
-            final Command command = command(args.get(0));
-            final List<String> rest = args.subList(1, args.size());
+            Command command = command(args.get(0));
+            List<String> rest = args.subList(1, args.size());
             if (rest.contains("--help") || rest.contains("-h")) {
                 stdout.print(command.help());
                 return 0;
             }
             return command.runner().run(rest, stdout);
-        } catch (final CliException e) {
+        } catch (CliException e) {
             stdout.flush();
             stderr.println("vbtm: " + e.getMessage());
             if (e.hint() != null) {
@@ -97,7 +97,7 @@ public final class Main {
         }
     }
 
-    private static Command command(final String name) {
+    private static Command command(String name) {
         return switch (name) {
             case "sessions" -> new Command(SessionsCommand.HELP, SessionsCommand::run);
             case "hot" -> new Command(HotCommand.HELP, HotCommand::run);

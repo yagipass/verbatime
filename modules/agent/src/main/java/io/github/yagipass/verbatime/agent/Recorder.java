@@ -24,18 +24,18 @@ public final class Recorder {
         return currentRecording != null;
     }
 
-    public synchronized Recording start(final LongFunction<Path> pathForId, final String name, final boolean spooled) {
+    public synchronized Recording start(LongFunction<Path> pathForId, String name, boolean spooled) {
         if (currentRecording != null) {
             throw new IllegalStateException("already recording #" + currentRecording.id());
         }
-        final Path path = pathForId.apply(nextRecordingId);
-        final TraceFileWriter w;
+        Path path = pathForId.apply(nextRecordingId);
+        TraceFileWriter w;
         try {
             w = TraceFileWriter.open(path);
-        } catch (final IOException e) {
+        } catch (IOException e) {
             throw new UncheckedIOException("cannot open the trace file " + path, e);
         }
-        final Recording r = new Recording(nextRecordingId, name, w, spooled);
+        Recording r = new Recording(nextRecordingId, name, w, spooled);
         nextRecordingId++;
         currentRecording = r;
         Tracing.start(w);
@@ -44,20 +44,20 @@ public final class Recorder {
         return r;
     }
 
-    public synchronized Recording stop(final String reason) {
-        final Recording r = currentRecording;
+    public synchronized Recording stop(String reason) {
+        Recording r = currentRecording;
         if (r == null) {
             throw new IllegalStateException("not recording");
         }
         currentRecording = null;
-        final int flushed = Tracing.stop();
+        int flushed = Tracing.stop();
         r.writer().close();
         r.markClosed();
         Log.info("recording #" + r.id() + " " + reason + ": " + r.writer().committedBytes() + " bytes" + (flushed > 0 ? ", " + Log.plural(flushed, "unclosed session") + " flushed" : ""));
         return r;
     }
 
-    public synchronized Recording stopIfRecording(final String reason) {
+    public synchronized Recording stopIfRecording(String reason) {
         return currentRecording == null ? null : stop(reason);
     }
 }

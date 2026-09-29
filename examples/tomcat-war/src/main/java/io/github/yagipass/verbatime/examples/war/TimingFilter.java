@@ -22,8 +22,8 @@ public final class TimingFilter extends HttpFilter {
     }
 
     @Override
-    protected void doFilter(final HttpServletRequest req, final HttpServletResponse resp, final FilterChain chain) throws IOException, ServletException {
-        final long start = System.nanoTime();
+    protected void doFilter(HttpServletRequest req, HttpServletResponse resp, FilterChain chain) throws IOException, ServletException {
+        long start = System.nanoTime();
         try {
             chain.doFilter(req, resp);
         } finally {

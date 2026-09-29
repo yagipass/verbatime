@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.errorprone.annotations.Var;
+
 final class TreeCommand {
 
     static final String HELP = """
@@ -57,8 +59,8 @@ final class TreeCommand {
 
     final SessionWalker walker;
 
-    private TreeCommand(final TraceFile file, final Names names, final TraceFile.Session session, final long at,
-            final int maxDepth, final int limit, final Args args, final Out out) {
+    private TreeCommand(TraceFile file, Names names, TraceFile.Session session, long at,
+            int maxDepth, int limit, Args args, Out out) {
         this.file = file;
         this.names = names;
         this.session = session;
@@ -70,19 +72,19 @@ final class TreeCommand {
         this.walker = new SessionWalker(file);
     }
 
-    static int run(final List<String> argv, final PrintStream stdout) {
-        final Args args = Args.parse("tree", argv, Set.of("at", "depth", "floor", "limit"), Set.of("json", "merge"));
+    static int run(List<String> argv, PrintStream stdout) {
+        Args args = Args.parse("tree", argv, Set.of("at", "depth", "floor", "limit"), Set.of("json", "merge"));
         args.rejectPositionalsBeyond(2);
-        final TraceFile file = TraceFile.open(args.positional(0, "the .vbtm file"));
-        final Out out = new Out(stdout, args.has("json"));
-        final Names names = new Names(file);
-        final TraceFile.Session session;
-        long at = -1;
+        TraceFile file = TraceFile.open(args.positional(0, "the .vbtm file"));
+        Out out = new Out(stdout, args.has("json"));
+        Names names = new Names(file);
+        TraceFile.Session session;
+        @Var long at = -1;
         if (args.has("at")) {
-            final CallId id = CallId.parse(args.value("at"));
+            CallId id = CallId.parse(args.value("at"));
             session = file.session(id.session());
             at = id.ordinal();
-            final String sessionRef = args.positionalOrNull(1);
+            String sessionRef = args.positionalOrNull(1);
             if (sessionRef != null && file.session(sessionRef) != session) {
                 throw CliException.usage("--at " + id + " is not in session " + sessionRef,
                         "the number before the dot of a call id is its session");
@@ -90,9 +92,9 @@ final class TreeCommand {
         } else {
             session = file.session(args.positional(1, "the session id or --at CALL"));
         }
-        final int maxDepth = args.nonNegativeInt("depth", Integer.MAX_VALUE);
-        final int limit = args.positiveInt("limit", DEFAULT_LIMIT);
-        final TreeCommand tree = new TreeCommand(file, names, session, at, maxDepth, limit, args, out);
+        int maxDepth = args.nonNegativeInt("depth", Integer.MAX_VALUE);
+        int limit = args.positiveInt("limit", DEFAULT_LIMIT);
+        TreeCommand tree = new TreeCommand(file, names, session, at, maxDepth, limit, args, out);
         if (args.has("merge")) {
             new MergedTree(tree).print();
         } else {
@@ -102,7 +104,7 @@ final class TreeCommand {
         return file.exitCode();
     }
 
-    void walk(final SubtreeVisitor visitor) {
+    void walk(SubtreeVisitor visitor) {
         walker.walk(session, visitor);
         if (!visitor.found) {
             throw CliException.usage("no call " + callId(at) + " in session " + session.number,
@@ -114,7 +116,7 @@ final class TreeCommand {
         }
     }
 
-    String callId(final long ordinal) {
+    String callId(long ordinal) {
         return new CallId(session.number, ordinal).toString();
     }
 
@@ -126,15 +128,15 @@ final class TreeCommand {
         return args.ticks("floor", 0);
     }
 
-    String floorText(final long floorTicks, final String none) {
+    String floorText(long floorTicks, String none) {
         if (floorTicks == 0) {
             return none;
         }
         return Formats.duration(floorTicks) + (autoFloor() ? ", chosen to fit --limit " + limit : "");
     }
 
-    Json optionsJson(final long floorTicks, final boolean merge) {
-        final Json json = new Json("options");
+    Json optionsJson(long floorTicks, boolean merge) {
+        Json json = new Json("options");
         if (merge) {
             json.put("merge", true);
         }
@@ -142,8 +144,8 @@ final class TreeCommand {
                 .put("depth", maxDepth == Integer.MAX_VALUE ? -1 : maxDepth).put("limit", limit);
     }
 
-    void header(final SubtreeVisitor scope, final long calls) {
-        final String thread = file.threadName(session.tid);
+    void header(SubtreeVisitor scope, long calls) {
+        String thread = file.threadName(session.tid);
         if (at < 0) {
             out.text("session " + session.number + "  thread: " + thread + "  start " + Formats.ms(scope.startTicks)
                     + " ms  dur " + Formats.ms(scope.durTicks) + " ms  calls " + Formats.grouped(calls)
@@ -152,19 +154,19 @@ final class TreeCommand {
                     .ms("start_ms", scope.startTicks).ms("dur_ms", scope.durTicks).put("calls", calls));
             return;
         }
-        final StringBuilder path = new StringBuilder();
-        final StringBuilder jsonPath = new StringBuilder("[");
+        StringBuilder path = new StringBuilder();
+        StringBuilder jsonPath = new StringBuilder("[");
         for (int i = 0; i < scope.pathMethodIds.length; i++) {
             if (i > 0) {
                 path.append(" > ");
                 jsonPath.append(',');
             }
-            final String step = callId(scope.pathOrdinals[i]) + " " + names.displayName(scope.pathMethodIds[i]);
+            String step = callId(scope.pathOrdinals[i]) + " " + names.displayName(scope.pathMethodIds[i]);
             path.append(step);
             jsonPath.append(Json.quote(step));
         }
         jsonPath.append(']');
-        final long startTicks = scope.startTicks - walker.startTicks;
+        long startTicks = scope.startTicks - walker.startTicks;
         out.text("session " + session.number + "  thread: " + thread + "  at " + callId(at) + "  start "
                 + Formats.ms(startTicks) + " ms  dur " + Formats.ms(scope.durTicks) + " ms  calls "
                 + Formats.grouped(calls));
@@ -174,10 +176,10 @@ final class TreeCommand {
                 .raw("path", jsonPath.toString()));
     }
 
-    void exceptionsLegend(final Map<Integer, Long> countByException) {
-        final StringBuilder sb = new StringBuilder("exceptions:");
-        for (final Map.Entry<Integer, Long> e : countByException.entrySet()) {
-            final int id = e.getKey();
+    void exceptionsLegend(Map<Integer, Long> countByException) {
+        StringBuilder sb = new StringBuilder("exceptions:");
+        for (Map.Entry<Integer, Long> e : countByException.entrySet()) {
+            int id = e.getKey();
             if (id <= 0) {
                 continue;
             }
@@ -193,22 +195,22 @@ final class TreeCommand {
         out.text(sb.toString());
     }
 
-    void gcLegend(final long startTicks, final long durTicks) {
-        final List<TraceFile.GcPause> pauses = new GcPauses(file).overlapping(startTicks, startTicks + durTicks);
+    void gcLegend(long startTicks, long durTicks) {
+        List<TraceFile.GcPause> pauses = new GcPauses(file).overlapping(startTicks, startTicks + durTicks);
         if (pauses.isEmpty()) {
             return;
         }
-        long total = 0;
-        for (final TraceFile.GcPause g : pauses) {
+        @Var long total = 0;
+        for (TraceFile.GcPause g : pauses) {
             total += g.durTicks();
         }
         out.text("gc: " + Formats.plural(pauses.size(), "pause") + " overlap, " + Formats.ms(total)
                 + " ms stop-the-world, included in the durations below");
-        final List<TraceFile.GcPause> longest = new ArrayList<>(pauses);
+        List<TraceFile.GcPause> longest = new ArrayList<>(pauses);
         longest.sort((x, y) -> Long.compare(y.durTicks(), x.durTicks()));
         for (int i = 0; i < longest.size(); i++) {
-            final TraceFile.GcPause g = longest.get(i);
-            final long start = g.startTicks() - walker.startTicks;
+            TraceFile.GcPause g = longest.get(i);
+            long start = g.startTicks() - walker.startTicks;
             if (i < GC_PAUSES_SHOWN) {
                 out.text("  at " + Formats.ms(start) + " ms for " + Formats.ms(g.durTicks()) + " ms, " + g.kind() + " "
                         + g.collector() + ": " + g.cause());

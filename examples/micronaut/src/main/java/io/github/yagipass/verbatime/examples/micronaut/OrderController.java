@@ -16,13 +16,13 @@ public class OrderController {
 
     private final OrderService orders;
 
-    OrderController(final OrderService orders) {
+    OrderController(OrderService orders) {
         this.orders = orders;
     }
 
     @Get("/orders")
     @Produces(MediaType.TEXT_PLAIN)
-    public String place(@QueryValue(defaultValue = "widget") final String sku, @QueryValue(defaultValue = "1") final int qty) {
+    public String place(@QueryValue(defaultValue = "widget") String sku, @QueryValue(defaultValue = "1") int qty) {
         return orders.placeOrder(sku, qty).toText() + "\n";
     }
 
@@ -33,7 +33,7 @@ public class OrderController {
     }
 
     @Error(exception = OutOfStockException.class)
-    public HttpResponse<String> outOfStock(final OutOfStockException e) {
+    public HttpResponse<String> outOfStock(OutOfStockException e) {
         return HttpResponse.status(HttpStatus.CONFLICT).body(e.getMessage() + "\n");
     }
 }

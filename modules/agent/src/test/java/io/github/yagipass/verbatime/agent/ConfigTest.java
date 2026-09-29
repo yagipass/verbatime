@@ -10,36 +10,36 @@ public final class ConfigTest {
     }
 
     public static void run() {
-        final Config c = Config.parse("include=com.example.app+org.acme,exclude=com.example.app.internal,out=/var/log/app/trace.vbtm");
+        Config c = Config.parse("include=com.example.app+org.acme,exclude=com.example.app.internal,out=/var/log/app/trace.vbtm");
         Check.eq(List.of("com/example/app", "org/acme"), c.includes(), "includes as internal names");
         Check.eq(List.of("com/example/app/internal"), c.excludes(), "excludes");
         Check.eq("/var/log/app/trace.vbtm", c.out(), "out is taken verbatim, extension included");
         Check.that(c.spoolDir() == null, "no spool dir with out=");
 
-        final Config none = Config.parse(null);
+        Config none = Config.parse(null);
         Check.that(none.includes().isEmpty() && none.excludes().isEmpty(), "null args -> no filters");
         Check.that(none.out() == null && none.spoolDir() == null, "null args -> spooled to a temp dir");
         Check.that(none.selects("com/anything/At/All"), "everything is included by default");
 
         Check.eq("/var/tmp/vbtm", Config.parse("spool=/var/tmp/vbtm").spoolDir(), "spool directory");
 
-        final Config inc = Config.parse("include=com.example.app,exclude=com.example.app.internal");
+        Config inc = Config.parse("include=com.example.app,exclude=com.example.app.internal");
         Check.that(inc.selects("com/example/app/foo/Bar"), "class inside include");
         Check.that(inc.selects("com/example/app/Top"), "class directly in the package");
         Check.that(!inc.selects("com/example/appx/Bar"), "sibling package with the prefix as a substring");
         Check.that(!inc.selects("com/example/Bar"), "parent package");
         Check.that(!inc.selects("com/example/app/internal/X"), "excluded subpackage");
         Check.that(inc.selects("com/example/app/internalx/X"), "exclude also matches on package boundary");
-        final Config cls = Config.parse("include=com.example.Foo");
+        Config cls = Config.parse("include=com.example.Foo");
         Check.that(cls.selects("com/example/Foo"), "include a class");
         Check.that(cls.selects("com/example/Foo$Inner"), "include covers nested classes");
         Check.that(!cls.selects("com/example/FooBar"), "include does not cover FooBar");
 
-        final Config exc = Config.parse("exclude=com.example");
+        Config exc = Config.parse("exclude=com.example");
         Check.that(!exc.selects("com/example/Foo"), "exclude narrows the default include-everything");
         Check.that(exc.selects("org/other/Foo"), "everything else stays included");
 
-        final Config jdk = Config.parse("include=java.util+com.example");
+        Config jdk = Config.parse("include=java.util+com.example");
         Check.eq(List.of("com/example"), jdk.includes(), "include=java.* is ignored with a warning");
 
         Check.eq(60_000L, Config.parse("waitstart=60s").waitStartMs(), "waitstart with the s suffix");
@@ -76,11 +76,11 @@ public final class ConfigTest {
     }
 
     private static void roots() {
-        final Config one = Config.parse("roots=com.example.Order::place");
+        Config one = Config.parse("roots=com.example.Order::place");
         Check.eq(List.of(new RootSpec("com.example.Order", "place", null)), one.roots(), "roots= parses one spec");
         Check.eq(RecordStart.ONDEMAND, one.recordStart(), "record=ondemand is the default");
 
-        final Config many = Config.parse("roots=com.example.Order::place+com.example.Cart::add(Ljava/lang/String;)V");
+        Config many = Config.parse("roots=com.example.Order::place+com.example.Cart::add(Ljava/lang/String;)V");
         Check.eq(2, many.roots().size(), "roots= takes several specs joined with +");
         Check.eq("(Ljava/lang/String;)V", many.roots().get(1).descriptor(), "roots= keeps the descriptor of a spec that has one");
 
@@ -88,7 +88,7 @@ public final class ConfigTest {
         Check.that(one.describe().contains("roots=com.example.Order::place"), "roots appear in describe()");
         Check.that(Config.parse(null).describe().contains("record=ondemand"), "the record mode always appears in describe()");
 
-        final Config startup = Config.parse("roots=com.example.Order::place,out=/tmp/t.vbtm,record=startup");
+        Config startup = Config.parse("roots=com.example.Order::place,out=/tmp/t.vbtm,record=startup");
         Check.eq(RecordStart.STARTUP, startup.recordStart(), "record=startup is parsed");
         Check.that(startup.describe().contains("record=startup"), "record=startup appears in describe()");
 
@@ -104,12 +104,12 @@ public final class ConfigTest {
         expectFailure("record=startup,roots=com.example.Order::place,out=/tmp/t.vbtm,waitstart=60s", "record=startup with waitstart", "mutually exclusive");
     }
 
-    private static void expectFailure(final String args, final String what) {
+    private static void expectFailure(String args, String what) {
         Check.thrown(IllegalArgumentException.class, () -> Config.parse(args), "Config.parse rejects " + what + ": '" + args + "'");
     }
 
-    private static void expectFailure(final String args, final String what, final String mustMention) {
-        final IllegalArgumentException e = Check.thrown(IllegalArgumentException.class, () -> Config.parse(args), "Config.parse rejects " + what + ": '" + args + "'");
+    private static void expectFailure(String args, String what, String mustMention) {
+        IllegalArgumentException e = Check.thrown(IllegalArgumentException.class, () -> Config.parse(args), "Config.parse rejects " + what + ": '" + args + "'");
         if (e != null) {
             Check.that(e.getMessage().contains(mustMention), what + ": the message must show the corrected form '" + mustMention + "', got: " + e.getMessage());
         }

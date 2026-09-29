@@ -17,18 +17,18 @@ public final class Columns {
     private Columns() {
     }
 
-    static <T> TreeColumn addTree(final TreeViewer viewer, final String title, final int width,
-            final int style, final ColumnLabels<T> labels) {
-        final TreeViewerColumn col = new TreeViewerColumn(viewer, style);
+    static <T> TreeColumn addTree(TreeViewer viewer, String title, int width,
+            int style, ColumnLabels<T> labels) {
+        TreeViewerColumn col = new TreeViewerColumn(viewer, style);
         col.getColumn().setText(title);
         col.getColumn().setWidth(width);
         col.setLabelProvider(labels);
         return col.getColumn();
     }
 
-    public static <T> TableColumn addTable(final TableViewer viewer, final String title, final int width,
-            final int style, final ColumnLabels<T> labels) {
-        final TableViewerColumn col = new TableViewerColumn(viewer, style);
+    public static <T> TableColumn addTable(TableViewer viewer, String title, int width,
+            int style, ColumnLabels<T> labels) {
+        TableViewerColumn col = new TableViewerColumn(viewer, style);
         col.getColumn().setText(title);
         col.getColumn().setWidth(width);
         col.setLabelProvider(labels);
@@ -45,8 +45,8 @@ public final class Columns {
 
         private final boolean mono;
 
-        public ColumnLabels(final Class<T> type, final Function<T, String> text, final Function<T, String> tip,
-                final boolean mono) {
+        public ColumnLabels(Class<T> type, Function<T, String> text, Function<T, String> tip,
+                boolean mono) {
             this.type = type;
             this.text = text;
             this.tip = tip;
@@ -54,17 +54,17 @@ public final class Columns {
         }
 
         @Override
-        public String getText(final Object element) {
+        public String getText(Object element) {
             return type.isInstance(element) ? text.apply(type.cast(element)) : "";
         }
 
         @Override
-        public String getToolTipText(final Object element) {
+        public String getToolTipText(Object element) {
             return type.isInstance(element) ? tip.apply(type.cast(element)) : null;
         }
 
         @Override
-        public Font getFont(final Object element) {
+        public Font getFont(Object element) {
             return mono ? JFaceResources.getTextFont() : null;
         }
     }

@@ -5,12 +5,12 @@ public final class DemoMain {
     private DemoMain() {
     }
 
-    public static void main(final String[] args) {
-        final Fixture fx = new Fixture();
+    public static void main(String[] args) {
+        Fixture fx = new Fixture();
         System.out.println("root() = " + fx.root());
         try {
             fx.rootThrows();
-        } catch (final IllegalStateException expected) {
+        } catch (IllegalStateException expected) {
             System.out.println("rootThrows() threw as expected");
         }
     }

@@ -58,11 +58,11 @@ public final class TransferState {
         return transferredBytes;
     }
 
-    void transferred(final long bytes) {
+    void transferred(long bytes) {
         transferredBytes = bytes;
     }
 
-    void started(final Transfer p, final Runnable cancelAction) {
+    void started(Transfer p, Runnable cancelAction) {
         current = p;
         cancel = cancelAction;
     }
@@ -79,7 +79,7 @@ public final class TransferState {
         editor = null;
     }
 
-    void defer(final long recordingId, final Path file) {
+    void defer(long recordingId, Path file) {
         deferred = new Deferred(recordingId, file);
     }
 
@@ -87,7 +87,7 @@ public final class TransferState {
         if (stopping != null) {
             return null;
         }
-        final Deferred p = deferred;
+        Deferred p = deferred;
         deferred = null;
         return p;
     }
@@ -97,12 +97,12 @@ public final class TransferState {
     }
 
     @SuppressWarnings("ReferenceEquality")
-    boolean isCurrent(final Transfer p) {
+    boolean isCurrent(Transfer p) {
         return current == p;
     }
 
     @SuppressWarnings("ReferenceEquality")
-    boolean clearStopping(final Transfer p) {
+    boolean clearStopping(Transfer p) {
         if (stopping != p) {
             return false;
         }
@@ -111,7 +111,7 @@ public final class TransferState {
     }
 
     @SuppressWarnings("ReferenceEquality")
-    boolean clearCurrent(final Transfer p) {
+    boolean clearCurrent(Transfer p) {
         if (current != p) {
             return false;
         }
@@ -125,22 +125,22 @@ public final class TransferState {
         return editor;
     }
 
-    void editorOpened(final EditorHandle e, final long now) {
+    void editorOpened(EditorHandle e, long now) {
         editor = e;
         lastReloadMs = now;
     }
 
-    boolean reloadDue(final long now) {
+    boolean reloadDue(long now) {
         return now - lastReloadMs >= RELOAD_THROTTLE_MS;
     }
 
-    void reloaded(final long now) {
+    void reloaded(long now) {
         lastReloadMs = now;
     }
 
-    double sampleAgentRate(final long now, final long agentBytes) {
+    double sampleAgentRate(long now, long agentBytes) {
         if (agentSampleMs > 0 && now > agentSampleMs && agentBytes >= agentSampleBytes) {
-            final double r = (agentBytes - agentSampleBytes) * 1000.0 / (now - agentSampleMs);
+            double r = (agentBytes - agentSampleBytes) * 1000.0 / (now - agentSampleMs);
             agentBytesPerSec = agentBytesPerSec <= 0 ? r : (agentBytesPerSec + r) / 2;
         }
         agentSampleMs = now;

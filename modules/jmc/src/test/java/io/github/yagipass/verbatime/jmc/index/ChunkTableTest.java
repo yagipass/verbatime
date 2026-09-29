@@ -11,12 +11,12 @@ final class ChunkTableTest {
 
     @Test
     void copySharesNoArrayWithItsSourceSoASnapshotStaysFrozen() {
-        final ChunkTable t = new ChunkTable();
+        ChunkTable t = new ChunkTable();
         for (int i = 0; i < 10; i++) {
             t.append(100L * i, 100L * i + 50, 10L * i, 10L * i + 9, i % 3);
         }
         t.markSessionEnd(9);
-        final ChunkTable c = t.copy();
+        ChunkTable c = t.copy();
         assertEquals(10, c.count);
         assertEquals(900, c.payloadOffset[9]);
         assertEquals(50, c.payloadLen(9));
@@ -32,7 +32,7 @@ final class ChunkTableTest {
 
     @Test
     void appendGrowsPastTheInitialCapacityAndKeepsEveryColumn() {
-        final ChunkTable t = new ChunkTable();
+        ChunkTable t = new ChunkTable();
         for (int i = 0; i < 100; i++) {
             t.append(i, i + 1, 2L * i, 2L * i + 1, i);
         }

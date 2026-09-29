@@ -1,5 +1,7 @@
 package io.github.yagipass.verbatime.format;
 
+import com.google.errorprone.annotations.Var;
+
 public final class EventCursor {
 
     public enum Event {
@@ -42,7 +44,7 @@ public final class EventCursor {
 
     private long faultValue;
 
-    public void reset(final byte[] bytes, final int off, final int len, final long baseTicks) {
+    public void reset(byte[] bytes, int off, int len, long baseTicks) {
         this.bytes = bytes;
         this.pos = off;
         this.limit = off + len;
@@ -67,19 +69,19 @@ public final class EventCursor {
             return stop(Event.END);
         }
         eventIndex = pos;
-        final long h = varint();
+        long h = varint();
         if (varintStatus != OK) {
             return fail();
         }
         if ((h & EventEncoder.EXIT_BIT) == 0) {
-            final long delta = h >>> 1;
+            long delta = h >>> 1;
             if (decodedEvents > 0) {
                 if (delta > Vbtm.MAX_TICKS - ticks) {
                     return corrupt(Fault.TICKS_LIMIT, delta);
                 }
                 ticks += delta;
             }
-            final long id = varint();
+            long id = varint();
             if (varintStatus != OK) {
                 return fail();
             }
@@ -90,9 +92,9 @@ public final class EventCursor {
             decodedEvents++;
             return Event.ENTER;
         }
-        int exc = -1;
+        @Var int exc = -1;
         if ((h & EventEncoder.THROW_BIT) != 0) {
-            final long e = varint();
+            long e = varint();
             if (varintStatus != OK) {
                 return fail();
             }
@@ -101,7 +103,7 @@ public final class EventCursor {
             }
             exc = (int) e;
         }
-        final long delta = h >>> 2;
+        long delta = h >>> 2;
         if (decodedEvents > 0) {
             if (delta > Vbtm.MAX_TICKS - ticks) {
                 return corrupt(Fault.TICKS_LIMIT, delta);
@@ -149,27 +151,27 @@ public final class EventCursor {
         return varintStatus == OUT_OF_BYTES ? stop(Event.INCOMPLETE) : corrupt(Fault.VARINT_TOO_LONG, 0);
     }
 
-    private Event stop(final Event e) {
+    private Event stop(Event e) {
         stopIndex = eventIndex;
         terminal = e;
         return e;
     }
 
-    private Event corrupt(final Fault f, final long value) {
+    private Event corrupt(Fault f, long value) {
         fault = f;
         faultValue = value;
         return stop(Event.CORRUPT);
     }
 
     private long varint() {
-        long r = 0;
-        int shift = 0;
+        @Var long r = 0;
+        @Var int shift = 0;
         while (true) {
             if (pos >= limit) {
                 varintStatus = OUT_OF_BYTES;
                 return 0;
             }
-            final int b = bytes[pos++] & 0xFF;
+            int b = bytes[pos++] & 0xFF;
             r |= (long) (b & 0x7F) << shift;
             if ((b & 0x80) == 0) {
                 return r;

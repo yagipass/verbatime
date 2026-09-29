@@ -13,20 +13,20 @@ final class AgentStatusTest {
 
     @Test
     void rootEntriesDriveChipStateFromTheStatusPrefix() {
-        final List<RootEntry> l = AgentStatus
+        List<RootEntry> l = AgentStatus
                 .rootEntries(Map.of("root.0", "ok a.B::m", "root.1", "pending a.B::n", "roots", "2"));
         assertEquals(List.of(new RootEntry("a.B::m", true), new RootEntry("a.B::n", false)), l);
     }
 
     @Test
     void rootEntriesStopAtTheFirstGapSoOrderFollowsTheAgent() {
-        final List<RootEntry> l = AgentStatus.rootEntries(Map.of("root.0", "ok a.B::m", "root.2", "ok a.B::x"));
+        List<RootEntry> l = AgentStatus.rootEntries(Map.of("root.0", "ok a.B::m", "root.2", "ok a.B::x"));
         assertEquals(List.of(new RootEntry("a.B::m", true)), l);
     }
 
     @Test
     void rootEntriesSplitAtTheFirstSpaceOnlyAndTolerateGarbledLines() {
-        final List<RootEntry> l = AgentStatus
+        List<RootEntry> l = AgentStatus
                 .rootEntries(Map.of("root.0", "future-state a.B::m", "root.1", "specwithoutstate"));
         assertEquals(new RootEntry("a.B::m", false), l.get(0));
         assertEquals(new RootEntry("specwithoutstate", false), l.get(1));
@@ -34,7 +34,7 @@ final class AgentStatusTest {
 
     @Test
     void everyStatusKeyIsReadOnceIntoTypedFields() {
-        final AgentStatus s = AgentStatus.parse(Map.ofEntries(Map.entry("v", "4"), Map.entry("pid", "4242"),
+        AgentStatus s = AgentStatus.parse(Map.ofEntries(Map.entry("v", "4"), Map.entry("pid", "4242"),
                 Map.entry("state", "recording"), Map.entry("roots", "1"), Map.entry("root.0", "ok a.B::m"),
                 Map.entry("instrumentedClasses", "12"), Map.entry("instrumentedMethods", "340"),
                 Map.entry("recording.id", "5"), Map.entry("recording.name", "load test"),
@@ -62,7 +62,7 @@ final class AgentStatusTest {
 
     @Test
     void anOlderOrTerserAgentYieldsDefaultsInsteadOfExceptions() {
-        final AgentStatus s = AgentStatus.parse(Map.of("state", "idle", "recording.bytes", "not-a-number"));
+        AgentStatus s = AgentStatus.parse(Map.of("state", "idle", "recording.bytes", "not-a-number"));
         assertEquals(0, s.protocol(), "no v= means the pre-search protocol");
         assertEquals("?", s.pid());
         assertFalse(s.recording());

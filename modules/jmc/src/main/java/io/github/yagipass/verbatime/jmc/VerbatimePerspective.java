@@ -24,37 +24,37 @@ public final class VerbatimePerspective implements IPerspectiveFactory {
     private static final String BOTTOM_UP_VIEW = "io.github.yagipass.verbatime.jmc.bottomUpView";
 
     @Override
-    public void createInitialLayout(final IPageLayout layout) {
-        final String editorArea = layout.getEditorArea();
+    public void createInitialLayout(IPageLayout layout) {
+        String editorArea = layout.getEditorArea();
 
-        final IFolderLayout left = layout.createFolder("left", IPageLayout.LEFT, 0.25f, editorArea);
+        IFolderLayout left = layout.createFolder("left", IPageLayout.LEFT, 0.25f, editorArea);
         left.addView(CONTROL_VIEW);
-        final IFolderLayout leftBottom = layout.createFolder("leftBottom", IPageLayout.BOTTOM, 0.6f, "left");
+        IFolderLayout leftBottom = layout.createFolder("leftBottom", IPageLayout.BOTTOM, 0.6f, "left");
         leftBottom.addView(RECORDINGS_VIEW);
 
-        final IFolderLayout bottom = layout.createFolder("bottom", IPageLayout.BOTTOM, 0.65f, editorArea);
+        IFolderLayout bottom = layout.createFolder("bottom", IPageLayout.BOTTOM, 0.65f, editorArea);
         bottom.addView(CALL_DETAILS_VIEW);
         bottom.addView(TOP_DOWN_VIEW);
         bottom.addView(BOTTOM_UP_VIEW);
 
-        for (final String id : new String[] { CONTROL_VIEW, RECORDINGS_VIEW, CALL_DETAILS_VIEW, TOP_DOWN_VIEW,
+        for (String id : new String[] { CONTROL_VIEW, RECORDINGS_VIEW, CALL_DETAILS_VIEW, TOP_DOWN_VIEW,
                 BOTTOM_UP_VIEW }) {
             layout.addShowViewShortcut(id);
         }
     }
 
-    public static void show(final IWorkbenchWindow window) {
+    public static void show(IWorkbenchWindow window) {
         if (window == null) {
             return;
         }
-        final IWorkbenchPage page = window.getActivePage();
-        final IPerspectiveDescriptor current = page == null ? null : page.getPerspective();
+        IWorkbenchPage page = window.getActivePage();
+        IPerspectiveDescriptor current = page == null ? null : page.getPerspective();
         if (current != null && ID.equals(current.getId())) {
             return;
         }
         try {
             window.getWorkbench().showPerspective(ID, window);
-        } catch (final WorkbenchException e) {
+        } catch (WorkbenchException e) {
             ILog.get().warn("Cannot switch to the Verbatime perspective: " + e.getMessage());
         }
     }

@@ -8,6 +8,8 @@ import java.nio.file.StandardOpenOption;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.jmc.Formats;
 
 final class Transfer {
@@ -37,12 +39,12 @@ final class Transfer {
 
     private final long idleMs;
 
-    Transfer(final Agent agent, final long recordingId, final Path file, final long offset, final Listener listener) {
+    Transfer(Agent agent, long recordingId, Path file, long offset, Listener listener) {
         this(agent, recordingId, file, offset, listener, IDLE_MS);
     }
 
-    Transfer(final Agent agent, final long recordingId, final Path file, final long offset, final Listener listener,
-            final long idleMs) {
+    Transfer(Agent agent, long recordingId, Path file, long offset, Listener listener,
+            long idleMs) {
         this.agent = agent;
         this.recordingId = recordingId;
         this.file = file;
@@ -59,15 +61,15 @@ final class Transfer {
         return file;
     }
 
-    void run(final IProgressMonitor monitor) {
-        long sid = -1;
-        long bytes = offset;
+    void run(IProgressMonitor monitor) {
+        @Var long sid = -1;
+        @Var long bytes = offset;
         try {
             sid = agent.openStream(recordingId, offset);
             try (OutputStream out = Files.newOutputStream(file, StandardOpenOption.CREATE, StandardOpenOption.WRITE,
                     StandardOpenOption.APPEND)) {
                 while (!monitor.isCanceled()) {
-                    final byte[] b = agent.readStream(sid);
+                    byte[] b = agent.readStream(sid);
                     if (b == null) {
                         break;
                     }
@@ -87,10 +89,10 @@ final class Transfer {
             } else {
                 listener.finished(bytes);
             }
-        } catch (final InterruptedException e) {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             listener.stopped();
-        } catch (final Exception e) {
+        } catch (Exception e) {
             if (monitor.isCanceled()) {
                 listener.stopped();
             } else {
@@ -104,10 +106,10 @@ final class Transfer {
     }
 
     @SuppressWarnings("EmptyCatch")
-    private void closeStreamQuietly(final long sid) {
+    private void closeStreamQuietly(long sid) {
         try {
             agent.closeStream(sid);
-        } catch (final IOException ignored) {
+        } catch (IOException ignored) {
         }
     }
 }

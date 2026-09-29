@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.errorprone.annotations.Var;
+
 final class TracingPlan {
 
     private static final ClassDesc PROBE = ClassDesc.of("io.github.yagipass.verbatime.agent.probe.Probe");
@@ -36,25 +38,25 @@ final class TracingPlan {
 
     private final Map<String, Integer> planned;
 
-    private TracingPlan(final ClassDesc owner, final boolean isInterface, final List<String> sigs, final Map<String, Integer> planned) {
+    private TracingPlan(ClassDesc owner, boolean isInterface, List<String> sigs, Map<String, Integer> planned) {
         this.owner = owner;
         this.isInterface = isInterface;
         this.sigs = sigs;
         this.planned = planned;
     }
 
-    static TracingPlan plan(final ClassModel cm) {
-        final Set<String> existing = new HashSet<>();
-        for (final MethodModel mm : cm.methods()) {
+    static TracingPlan plan(ClassModel cm) {
+        Set<String> existing = new HashSet<>();
+        for (MethodModel mm : cm.methods()) {
             existing.add(mm.methodName().stringValue() + mm.methodType().stringValue());
         }
-        final List<String> sigs = new ArrayList<>();
-        final Map<String, Integer> planned = new HashMap<>();
-        for (final MethodModel mm : cm.methods()) {
+        List<String> sigs = new ArrayList<>();
+        Map<String, Integer> planned = new HashMap<>();
+        for (MethodModel mm : cm.methods()) {
             if (unsupportedReason(mm, existing) != null) {
                 continue;
             }
-            final String sig = mm.methodName().stringValue() + mm.methodType().stringValue();
+            String sig = mm.methodName().stringValue() + mm.methodType().stringValue();
             planned.put(sig, sigs.size());
             sigs.add(sig);
         }
@@ -69,28 +71,28 @@ final class TracingPlan {
         return sigs.isEmpty();
     }
 
-    ClassTransform transform(final int baseId) {
+    ClassTransform transform(int baseId) {
         return (cb, ce) -> {
-            if (!(ce instanceof final MethodModel mm)) {
+            if (!(ce instanceof MethodModel mm)) {
                 cb.with(ce);
                 return;
             }
-            final String name = mm.methodName().stringValue();
-            final Integer index = planned.get(name + mm.methodType().stringValue());
+            String name = mm.methodName().stringValue();
+            Integer index = planned.get(name + mm.methodType().stringValue());
             if (index == null) {
                 cb.with(ce);
                 return;
             }
 
-            final int flags = mm.flags().flagsMask();
-            final boolean isStatic = (flags & ClassFile.ACC_STATIC) != 0;
-            final MethodTypeDesc mtd = mm.methodTypeSymbol();
-            final String bodyName = name + Transformer.BODY_SUFFIX;
-            final int id = baseId + index;
+            int flags = mm.flags().flagsMask();
+            boolean isStatic = (flags & ClassFile.ACC_STATIC) != 0;
+            MethodTypeDesc mtd = mm.methodTypeSymbol();
+            String bodyName = name + Transformer.BODY_SUFFIX;
+            int id = baseId + index;
 
-            final int bodyFlags = (flags & ~(ClassFile.ACC_PUBLIC | ClassFile.ACC_PROTECTED | ClassFile.ACC_SYNCHRONIZED)) | ClassFile.ACC_PRIVATE | ClassFile.ACC_SYNTHETIC;
+            int bodyFlags = (flags & ~(ClassFile.ACC_PUBLIC | ClassFile.ACC_PROTECTED | ClassFile.ACC_SYNCHRONIZED)) | ClassFile.ACC_PRIVATE | ClassFile.ACC_SYNTHETIC;
             cb.withMethod(bodyName, mtd, bodyFlags, mb -> {
-                for (final MethodElement me : mm) {
+                for (MethodElement me : mm) {
                     if (me instanceof CodeModel) {
                         mb.with(me);
                     }
@@ -98,7 +100,7 @@ final class TracingPlan {
             });
 
             cb.withMethod(name, mtd, flags, mb -> {
-                for (final MethodElement me : mm) {
+                for (MethodElement me : mm) {
                     if (!(me instanceof CodeModel) && !(me instanceof AccessFlags)) {
                         mb.with(me);
                     }
@@ -108,8 +110,8 @@ final class TracingPlan {
         };
     }
 
-    private static String unsupportedReason(final MethodModel mm, final Set<String> existing) {
-        final String name = mm.methodName().stringValue();
+    private static String unsupportedReason(MethodModel mm, Set<String> existing) {
+        String name = mm.methodName().stringValue();
         if (name.startsWith("<")) {
             return "constructors/initializers are not instrumented";
         }
@@ -134,19 +136,19 @@ final class TracingPlan {
         return null;
     }
 
-    private void emitWrapper(final CodeBuilder cob, final String bodyName, final MethodTypeDesc mtd, final boolean isStatic, final int id) {
-        final TypeKind returnKind = TypeKind.from(mtd.returnType());
+    private void emitWrapper(CodeBuilder cob, String bodyName, MethodTypeDesc mtd, boolean isStatic, int id) {
+        TypeKind returnKind = TypeKind.from(mtd.returnType());
 
         cob.loadConstant(id);
         cob.invokestatic(PROBE, "enter", VOID_INT);
         cob.trying(tb -> {
-            int slot = 0;
+            @Var int slot = 0;
             if (!isStatic) {
                 tb.aload(0);
                 slot = 1;
             }
             for (int i = 0; i < mtd.parameterCount(); i++) {
-                final TypeKind k = TypeKind.from(mtd.parameterType(i));
+                TypeKind k = TypeKind.from(mtd.parameterType(i));
                 tb.loadLocal(k, slot);
                 slot += k.slotSize();
             }

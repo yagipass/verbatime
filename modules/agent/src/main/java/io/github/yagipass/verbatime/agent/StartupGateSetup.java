@@ -16,22 +16,22 @@ final class StartupGateSetup {
     }
 
     static String resolveGateClassInternal() {
-        final String main = resolveMainClass(System.getProperty("sun.java.command"), System.getProperty("java.class.path"), System.getProperty("jdk.module.main"), m -> ModuleLayer.boot().findModule(m).flatMap(x -> x.getDescriptor().mainClass()));
-        final String internal = main.replace('.', '/');
+        String main = resolveMainClass(System.getProperty("sun.java.command"), System.getProperty("java.class.path"), System.getProperty("jdk.module.main"), m -> ModuleLayer.boot().findModule(m).flatMap(x -> x.getDescriptor().mainClass()));
+        String internal = main.replace('.', '/');
         if (Transformer.isNeverInstrumented(internal)) {
             throw new IllegalArgumentException("waitstart: the main class " + main + " is a JDK or agent class and cannot carry the startup gate");
         }
         return internal;
     }
 
-    static String resolveMainClass(final String javaCommand, final String classPath, final String mainModule, final Function<String, Optional<String>> moduleMainClass) {
+    static String resolveMainClass(String javaCommand, String classPath, String mainModule, Function<String, Optional<String>> moduleMainClass) {
         if (javaCommand == null || javaCommand.isBlank()) {
             throw new IllegalArgumentException("waitstart: cannot identify the main class because sun.java.command is not set. waitstart only works when the java launcher starts the JVM");
         }
-        final int sp = javaCommand.indexOf(' ');
-        final String head = sp < 0 ? javaCommand : javaCommand.substring(0, sp);
+        int sp = javaCommand.indexOf(' ');
+        String head = sp < 0 ? javaCommand : javaCommand.substring(0, sp);
         if (mainModule != null) {
-            final int slash = head.indexOf('/');
+            int slash = head.indexOf('/');
             if (slash >= 0) {
                 return head.substring(slash + 1);
             }
@@ -43,20 +43,20 @@ final class StartupGateSetup {
         return head;
     }
 
-    private static String mainClassFromManifest(final String jarPath) {
+    private static String mainClassFromManifest(String jarPath) {
         try (JarFile jar = new JarFile(jarPath)) {
-            final Manifest mf = jar.getManifest();
-            final String mainClass = mf == null ? null : mf.getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
+            Manifest mf = jar.getManifest();
+            String mainClass = mf == null ? null : mf.getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
             if (mainClass == null || mainClass.isBlank()) {
                 throw new IllegalArgumentException("waitstart: " + jarPath + " has no Main-Class in its manifest");
             }
             return mainClass.trim();
-        } catch (final IOException e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException("waitstart: cannot read " + jarPath + ": " + e);
         }
     }
 
-    static void arm(final String gateClass, final long waitStartMs) {
+    static void arm(String gateClass, long waitStartMs) {
         StartupGate.arm(waitStartMs);
         startWatchdog(gateClass, waitStartMs);
         Log.info("waitstart: will pause at " + gateClass.replace('/', '.') + ".main for up to " + (waitStartMs / 1000) + " s until startRecording");
@@ -65,14 +65,14 @@ final class StartupGateSetup {
         }
     }
 
-    private static void startWatchdog(final String gateClass, final long waitStartMs) {
-        final Thread watchdog = new Thread(() -> {
+    private static void startWatchdog(String gateClass, long waitStartMs) {
+        Thread watchdog = new Thread(() -> {
             try {
                 Thread.sleep(waitStartMs);
-            } catch (final InterruptedException e) {
+            } catch (InterruptedException e) {
                 return;
             }
-            final String warning = neverReachedWarning(StartupGate.stateName(), gateClass, waitStartMs);
+            String warning = neverReachedWarning(StartupGate.stateName(), gateClass, waitStartMs);
             if (warning != null) {
                 Log.warn(warning);
             }
@@ -81,7 +81,7 @@ final class StartupGateSetup {
         watchdog.start();
     }
 
-    static String neverReachedWarning(final String gateState, final String gateClass, final long waitStartMs) {
+    static String neverReachedWarning(String gateState, String gateClass, long waitStartMs) {
         if (!"armed".equals(gateState)) {
             return null;
         }

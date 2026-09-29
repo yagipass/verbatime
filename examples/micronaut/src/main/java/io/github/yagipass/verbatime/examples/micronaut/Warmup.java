@@ -11,12 +11,12 @@ public class Warmup {
 
     private final OrderService orders;
 
-    Warmup(final OrderService orders) {
+    Warmup(OrderService orders) {
         this.orders = orders;
     }
 
     @EventListener
-    void onStart(final StartupEvent event) {
+    void onStart(StartupEvent event) {
         orders.placeOrder("warmup", 1);
     }
 }

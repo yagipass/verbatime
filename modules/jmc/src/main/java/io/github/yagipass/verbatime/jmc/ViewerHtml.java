@@ -26,19 +26,19 @@ public final class ViewerHtml {
         }
     }
 
-    public static String render(final String template, final String metaJson, final String hostJs)
+    public static String render(String template, String metaJson, String hostJs)
             throws IOException {
         return replace(replace(template, INIT_MARKER, metaJson), HOST_MARKER, hostJs);
     }
 
-    static String page(final TraceSnapshot data, final ViewerJson.SentNames sentNames, final ViewerJson.SentSessions cursor)
+    static String page(TraceSnapshot data, ViewerJson.SentNames sentNames, ViewerJson.SentSessions cursor)
             throws IOException {
         return render(template(), ViewerJson.metaJson(data, sentNames, cursor), "");
     }
 
-    private static String replace(final String template, final String marker, final String value)
+    private static String replace(String template, String marker, String value)
             throws IOException {
-        final int i = template.indexOf(marker);
+        int i = template.indexOf(marker);
         if (i < 0) {
             throw new IOException(RESOURCE + " has no " + marker + " marker");
         }

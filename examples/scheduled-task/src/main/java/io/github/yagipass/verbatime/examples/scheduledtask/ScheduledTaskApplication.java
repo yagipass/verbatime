@@ -11,7 +11,7 @@ import io.github.yagipass.verbatime.examples.workload.OrderService;
 @EnableScheduling
 public class ScheduledTaskApplication {
 
-    public static void main(final String[] args) {
+    public static void main(String[] args) {
         SpringApplication.run(ScheduledTaskApplication.class, args);
     }
 

@@ -13,12 +13,12 @@ public final class OrdersService implements HttpService {
 
     private final OrderService orders;
 
-    public OrdersService(final OrderService orders) {
+    public OrdersService(OrderService orders) {
         this.orders = orders;
     }
 
     @Override
-    public void routing(final HttpRules rules) {
+    public void routing(HttpRules rules) {
         rules.get("/healthz", (req, res) -> res.send("ok\n")).get("/orders", this::place);
     }
 
@@ -27,19 +27,19 @@ public final class OrdersService implements HttpService {
         orders.placeOrder("warmup", 1);
     }
 
-    private void place(final ServerRequest req, final ServerResponse res) {
-        final String sku = req.query().first("sku").orElse("widget");
-        final int qty;
+    private void place(ServerRequest req, ServerResponse res) {
+        String sku = req.query().first("sku").orElse("widget");
+        int qty;
         try {
             qty = Integer.parseInt(req.query().first("qty").orElse("1"));
-        } catch (final NumberFormatException e) {
+        } catch (NumberFormatException e) {
             res.status(Status.BAD_REQUEST_400).send("qty must be an integer\n");
             return;
         }
         try {
-            final Receipt receipt = orders.placeOrder(sku, qty);
+            Receipt receipt = orders.placeOrder(sku, qty);
             res.send(receipt.toText() + "\n");
-        } catch (final OutOfStockException e) {
+        } catch (OutOfStockException e) {
             res.status(Status.CONFLICT_409).send(e.getMessage() + "\n");
         }
     }

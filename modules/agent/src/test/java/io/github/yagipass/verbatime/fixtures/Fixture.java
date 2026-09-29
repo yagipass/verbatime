@@ -2,11 +2,13 @@ package io.github.yagipass.verbatime.fixtures;
 
 import java.util.function.IntUnaryOperator;
 
+import com.google.errorprone.annotations.Var;
+
 public final class Fixture implements FixtureInterface {
 
     @Marker("root")
     public String root() {
-        final StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
         sb.append(stat(1, 2L)).append(',');
         sb.append(inst(3.5, 4.5f)).append(',');
         sb.append(prims()).append(',');
@@ -32,12 +34,12 @@ public final class Fixture implements FixtureInterface {
     private static Object[] live;
 
     public int rootAllocates() {
-        final Object[] keep = new Object[1 << 21];
+        Object[] keep = new Object[1 << 21];
         for (int i = 0; i < keep.length; i++) {
             keep[i] = new int[2];
         }
         live = keep;
-        int n = 0;
+        @Var int n = 0;
         for (int i = 0; i < 32; i++) {
             n += churn(i);
         }
@@ -46,8 +48,8 @@ public final class Fixture implements FixtureInterface {
         return n;
     }
 
-    int churn(final int i) {
-        final byte[][] junk = new byte[16][];
+    int churn(int i) {
+        byte[][] junk = new byte[16][];
         for (int k = 0; k < junk.length; k++) {
             junk[k] = new byte[64 * 1024];
         }
@@ -58,11 +60,11 @@ public final class Fixture implements FixtureInterface {
         System.gc();
     }
 
-    public static long stat(final int a, final long b) {
+    public static long stat(int a, long b) {
         return a + b;
     }
 
-    double inst(final double a, final float b) {
+    double inst(double a, float b) {
         return a + b;
     }
 
@@ -102,11 +104,11 @@ public final class Fixture implements FixtureInterface {
         return 6d;
     }
 
-    synchronized int sync(final int x) {
+    synchronized int sync(int x) {
         return x * 2;
     }
 
-    int rec(final int n) {
+    int rec(int n) {
         return n == 0 ? 0 : 1 + rec(n - 1);
     }
 
@@ -114,7 +116,7 @@ public final class Fixture implements FixtureInterface {
         try {
             thrower();
             return 0;
-        } catch (final IllegalStateException e) {
+        } catch (IllegalStateException e) {
             return 1;
         }
     }
@@ -127,7 +129,7 @@ public final class Fixture implements FixtureInterface {
         try {
             otherThrower();
             return 0;
-        } catch (final FixtureException e) {
+        } catch (FixtureException e) {
             return 2;
         }
     }
@@ -136,20 +138,20 @@ public final class Fixture implements FixtureInterface {
         throw new FixtureException("y");
     }
 
-    int lambda(final int x) {
-        final IntUnaryOperator op = v -> lambdaBody(v) + 1;
+    int lambda(int x) {
+        IntUnaryOperator op = v -> lambdaBody(v) + 1;
         return op.applyAsInt(x);
     }
 
-    int lambdaBody(final int v) {
+    int lambdaBody(int v) {
         return v * 2;
     }
 
-    int[] arr(final int[] a) {
+    int[] arr(int[] a) {
         return a;
     }
 
-    String annotatedParam(@Marker("param") final String s) {
+    String annotatedParam(@Marker("param") String s) {
         return s + s;
     }
 
@@ -167,7 +169,7 @@ public final class Fixture implements FixtureInterface {
     }
 
     public static final class Inner {
-        int inner(final int x) {
+        int inner(int x) {
             return x + 100;
         }
     }

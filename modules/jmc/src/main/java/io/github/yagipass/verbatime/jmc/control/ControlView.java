@@ -26,6 +26,8 @@ import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.part.ViewPart;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.jmc.Preferences;
 import io.github.yagipass.verbatime.jmc.RecordingEditor;
 import io.github.yagipass.verbatime.jmc.RecordingEditorInput;
@@ -87,11 +89,11 @@ public final class ControlView extends ViewPart {
     private State renderedState = State.DISCONNECTED;
 
     @Override
-    public void createPartControl(final Composite parent) {
+    public void createPartControl(Composite parent) {
         display = parent.getDisplay();
         ui = UiThread.of(parent);
 
-        final Composite root = new Composite(parent, SWT.NONE);
+        Composite root = new Composite(parent, SWT.NONE);
         root.setLayout(new GridLayout(1, false));
 
         createConnectionRow(root);
@@ -103,7 +105,7 @@ public final class ControlView extends ViewPart {
 
         connection = new ControlPresenter(new PresenterView(), ui, ControlView::newJmxExecutor, JmxAgent::dial,
                 settings, System::currentTimeMillis, p -> {
-                    final TransferJob job = new TransferJob(p);
+                    TransferJob job = new TransferJob(p);
                     job.schedule();
                     return () -> job.cancel();
                 });
@@ -111,8 +113,8 @@ public final class ControlView extends ViewPart {
         setMessage("Not connected");
     }
 
-    private void createConnectionRow(final Composite root) {
-        final Composite conn = new Composite(root, SWT.NONE);
+    private void createConnectionRow(Composite root) {
+        Composite conn = new Composite(root, SWT.NONE);
         conn.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
         conn.setLayout(new GridLayout(2, false));
 
@@ -133,7 +135,7 @@ public final class ControlView extends ViewPart {
         targetText.setToolTipText("host:port or a full JMX service URL");
         connectBtn = new Button(disconnectedPage, SWT.PUSH);
         connectBtn.setText("Connect");
-        final Listener connect = e -> connection.connect(targetText.getText().trim());
+        Listener connect = e -> connection.connect(targetText.getText().trim());
         connectBtn.addListener(SWT.Selection, e -> {
             if (connection.state() == State.CONNECTING) {
                 connection.cancelConnect();
@@ -147,28 +149,28 @@ public final class ControlView extends ViewPart {
         connectedPage.setLayout(zeroMargin(new GridLayout(2, false)));
         connInfoLabel = new Label(connectedPage, SWT.NONE);
         connInfoLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        final Button disconnectBtn = new Button(connectedPage, SWT.PUSH);
+        Button disconnectBtn = new Button(connectedPage, SWT.PUSH);
         disconnectBtn.setText("Disconnect");
         disconnectBtn.addListener(SWT.Selection, e -> connection.disconnect());
 
         connStackLayout.topControl = disconnectedPage;
     }
 
-    private static GridLayout zeroMargin(final GridLayout l) {
+    private static GridLayout zeroMargin(GridLayout l) {
         l.marginWidth = 0;
         l.marginHeight = 0;
         return l;
     }
 
     @SuppressWarnings("ReferenceEquality")
-    private void createRootsGroup(final Composite root) {
+    private void createRootsGroup(Composite root) {
         rootsGroup = new Group(root, SWT.NONE);
         rootsGroup.setText("Instrumentation roots");
         rootsGroup.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
         rootsGroup.setLayout(new GridLayout(1, false));
 
         chipArea = new Composite(rootsGroup, SWT.NONE);
-        final RowLayout rl = new RowLayout(SWT.HORIZONTAL);
+        RowLayout rl = new RowLayout(SWT.HORIZONTAL);
         rl.wrap = true;
         rl.marginLeft = 0;
         rl.marginRight = 0;
@@ -178,8 +180,8 @@ public final class ControlView extends ViewPart {
         chipArea.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
         rootsGroup.addListener(SWT.Resize, e -> {
-            final GridData gd = (GridData) chipArea.getLayoutData();
-            final int w = rootsGroup.getClientArea().width - 2 * ((GridLayout) rootsGroup.getLayout()).marginWidth;
+            GridData gd = (GridData) chipArea.getLayoutData();
+            int w = rootsGroup.getClientArea().width - 2 * ((GridLayout) rootsGroup.getLayout()).marginWidth;
             if (w > 0 && gd.widthHint != w) {
                 gd.widthHint = w;
                 capChipWidths();
@@ -205,8 +207,8 @@ public final class ControlView extends ViewPart {
         countLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
     }
 
-    private void createRecordingStrip(final Composite root) {
-        final Composite rec = new Composite(root, SWT.NONE);
+    private void createRecordingStrip(Composite root) {
+        Composite rec = new Composite(root, SWT.NONE);
         rec.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
         rec.setLayout(new GridLayout(3, false));
         statusLabel = new Label(rec, SWT.NONE);
@@ -222,8 +224,8 @@ public final class ControlView extends ViewPart {
         stopBtn.addListener(SWT.Selection, e -> connection.stopRecording());
     }
 
-    private void render(final ViewState p) {
-        final boolean connected = p.state() == State.CONNECTED;
+    private void render(ViewState p) {
+        boolean connected = p.state() == State.CONNECTED;
         connectionDot.setForeground(display.getSystemColor(
                 connected ? (p.recording() ? SWT.COLOR_RED : SWT.COLOR_DARK_GREEN) : SWT.COLOR_DARK_GRAY));
         connStackLayout.topControl = connected ? connectedPage : disconnectedPage;
@@ -242,7 +244,7 @@ public final class ControlView extends ViewPart {
         stopBtn.setEnabled(p.canStop());
         searchText.setEnabled(connected && !p.rootsLocked());
         chipArea.setEnabled(!p.rootsLocked());
-        final String lockHint = p.rootsLocked() ? "Roots are locked while recording" : null;
+        String lockHint = p.rootsLocked() ? "Roots are locked while recording" : null;
         searchText.setToolTipText(lockHint);
         chipArea.setToolTipText(lockHint);
         if (!connected || p.rootsLocked()) {
@@ -254,32 +256,32 @@ public final class ControlView extends ViewPart {
         renderedState = p.state();
     }
 
-    private void updateChips(final List<RootEntry> entries) {
+    private void updateChips(List<RootEntry> entries) {
         if (entries.equals(renderedRoots)) {
             return;
         }
         renderedRoots = entries;
-        for (final Control ch : chipArea.getChildren()) {
+        for (Control ch : chipArea.getChildren()) {
             ch.dispose();
         }
-        for (final RootEntry r : entries) {
-            final Composite chip = new Composite(chipArea, SWT.BORDER);
-            final GridLayout cl = new GridLayout(3, false);
+        for (RootEntry r : entries) {
+            Composite chip = new Composite(chipArea, SWT.BORDER);
+            GridLayout cl = new GridLayout(3, false);
             cl.marginWidth = 3;
             cl.marginHeight = 1;
             cl.horizontalSpacing = 3;
             chip.setLayout(cl);
-            final Label dot = new Label(chip, SWT.NONE);
+            Label dot = new Label(chip, SWT.NONE);
             dot.setText("●");
             dot.setForeground(display.getSystemColor(r.resolved() ? SWT.COLOR_DARK_GREEN : SWT.COLOR_DARK_YELLOW));
             dot.setToolTipText(r.resolved() ? "Instrumented" : "Waiting for the class to load");
 
-            final CLabel spec = new CLabel(chip, SWT.NONE);
+            CLabel spec = new CLabel(chip, SWT.NONE);
             spec.setText(r.spec());
             spec.setMargins(0, 0, 0, 0);
             spec.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
             spec.setToolTipText(r.spec());
-            final Label close = new Label(chip, SWT.NONE);
+            Label close = new Label(chip, SWT.NONE);
             close.setText("✕");
             close.setToolTipText("Remove this root");
             close.addListener(SWT.MouseUp, e -> connection.removeRoot(r.spec()));
@@ -289,15 +291,15 @@ public final class ControlView extends ViewPart {
     }
 
     private void capChipWidths() {
-        int avail = ((GridData) chipArea.getLayoutData()).widthHint;
+        @Var int avail = ((GridData) chipArea.getLayoutData()).widthHint;
         if (avail <= 0) {
             avail = chipArea.getClientArea().width;
         }
         if (avail <= 0) {
             return;
         }
-        for (final Control chip : chipArea.getChildren()) {
-            final RowData rd = new RowData();
+        for (Control chip : chipArea.getChildren()) {
+            RowData rd = new RowData();
             if (chip.computeSize(SWT.DEFAULT, SWT.DEFAULT).x > avail) {
                 rd.width = avail;
             }
@@ -305,27 +307,27 @@ public final class ControlView extends ViewPart {
         }
     }
 
-    private void showCandidates(final String[] items) {
+    private void showCandidates(String[] items) {
         if (popup == null || popup.isDisposed()) {
             popup = new Shell(searchText.getShell(), SWT.NO_TRIM | SWT.ON_TOP | SWT.TOOL);
             popup.setLayout(zeroMargin(new GridLayout(1, false)));
             popupTable = new Table(popup, SWT.SINGLE | SWT.FULL_SELECTION | SWT.NO_FOCUS);
             popupTable.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
             popupTable.addListener(SWT.MouseDown, e -> {
-                final TableItem it = popupTable.getItem(new Point(e.x, e.y));
+                TableItem it = popupTable.getItem(new Point(e.x, e.y));
                 if (it != null) {
                     addRoot(it.getText());
                 }
             });
         }
         popupTable.removeAll();
-        for (final String s : items) {
+        for (String s : items) {
             new TableItem(popupTable, SWT.NONE).setText(s);
         }
         popupTable.setSelection(0);
-        final Point loc = searchText.toDisplay(0, searchText.getBounds().height);
-        final int w = Math.max(searchText.getBounds().width, 200);
-        final int h = Math.min(items.length, 10) * popupTable.getItemHeight() + 8;
+        Point loc = searchText.toDisplay(0, searchText.getBounds().height);
+        int w = Math.max(searchText.getBounds().width, 200);
+        int h = Math.min(items.length, 10) * popupTable.getItemHeight() + 8;
         popup.setBounds(loc.x, loc.y, w, h);
         popup.setVisible(true);
     }
@@ -340,13 +342,13 @@ public final class ControlView extends ViewPart {
         }
     }
 
-    private void onSearchKey(final org.eclipse.swt.widgets.Event e) {
+    private void onSearchKey(org.eclipse.swt.widgets.Event e) {
         if (!popupVisible()) {
             return;
         }
         if (e.keyCode == SWT.ARROW_DOWN || e.keyCode == SWT.ARROW_UP) {
-            final int n = popupTable.getItemCount();
-            final int i = popupTable.getSelectionIndex() + (e.keyCode == SWT.ARROW_DOWN ? 1 : -1);
+            int n = popupTable.getItemCount();
+            int i = popupTable.getSelectionIndex() + (e.keyCode == SWT.ARROW_DOWN ? 1 : -1);
             popupTable.setSelection(Math.max(0, Math.min(n - 1, i)));
             e.doit = false;
         } else if (e.keyCode == SWT.ESC) {
@@ -360,7 +362,7 @@ public final class ControlView extends ViewPart {
             addRoot(popupTable.getSelection()[0].getText());
             return;
         }
-        final String t = searchText.getText().trim();
+        String t = searchText.getText().trim();
         if (RootSpecs.looksLikeSpec(t)) {
             addRoot(t);
         } else if (!t.isEmpty()) {
@@ -368,12 +370,12 @@ public final class ControlView extends ViewPart {
         }
     }
 
-    private void addRoot(final String spec) {
+    private void addRoot(String spec) {
         hidePopup();
         connection.addRoot(spec);
     }
 
-    private void setMessage(final String text) {
+    private void setMessage(String text) {
         if (!messageLabel.isDisposed()) {
             messageLabel.setText(text);
         }
@@ -382,17 +384,17 @@ public final class ControlView extends ViewPart {
     private final class PresenterView implements ControlPresenter.View {
 
         @Override
-        public void render(final ViewState p) {
+        public void render(ViewState p) {
             ControlView.this.render(p);
         }
 
         @Override
-        public void message(final String text) {
+        public void message(String text) {
             setMessage(text);
         }
 
         @Override
-        public void rootCandidates(final String[] specs) {
+        public void rootCandidates(String[] specs) {
             if (specs.length == 0) {
                 hidePopup();
             } else {
@@ -407,8 +409,8 @@ public final class ControlView extends ViewPart {
         }
 
         @Override
-        public ControlPresenter.EditorHandle openEditor(final Path file) {
-            final RecordingEditor editor = RecordingEditorInput.openOrReport(getSite().getPage(), file, ControlView.this::setMessage);
+        public ControlPresenter.EditorHandle openEditor(Path file) {
+            RecordingEditor editor = RecordingEditorInput.openOrReport(getSite().getPage(), file, ControlView.this::setMessage);
             return editor == null ? null : new WorkbenchEditorHandle(editor);
         }
 
@@ -422,7 +424,7 @@ public final class ControlView extends ViewPart {
 
         private final RecordingEditor editor;
 
-        private WorkbenchEditorHandle(final RecordingEditor editor) {
+        private WorkbenchEditorHandle(RecordingEditor editor) {
             this.editor = editor;
         }
 
@@ -437,7 +439,7 @@ public final class ControlView extends ViewPart {
         }
 
         @Override
-        public void reload(final boolean live) {
+        public void reload(boolean live) {
             editor.reload(live);
         }
     }
@@ -465,7 +467,7 @@ public final class ControlView extends ViewPart {
 
     private static ExecutorService newJmxExecutor() {
         return Executors.newSingleThreadExecutor(r -> {
-            final Thread t = new Thread(r, "vbtm-control-jmx");
+            Thread t = new Thread(r, "vbtm-control-jmx");
             t.setDaemon(true);
             return t;
         });

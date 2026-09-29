@@ -11,12 +11,12 @@ public class StartupRunner implements ApplicationRunner {
 
     private final OrderService orders;
 
-    StartupRunner(final OrderService orders) {
+    StartupRunner(OrderService orders) {
         this.orders = orders;
     }
 
     @Override
-    public void run(final ApplicationArguments args) {
+    public void run(ApplicationArguments args) {
         orders.placeOrder("warmup", 1);
     }
 }

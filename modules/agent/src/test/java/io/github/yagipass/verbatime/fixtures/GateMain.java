@@ -11,7 +11,7 @@ public final class GateMain {
     private GateMain() {
     }
 
-    public static void main(final String[] args) throws Exception {
+    public static void main(String[] args) throws Exception {
         GateHarness.verify(INIT_NANOS);
     }
 }

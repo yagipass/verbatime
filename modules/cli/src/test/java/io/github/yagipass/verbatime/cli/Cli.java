@@ -15,8 +15,8 @@ final class Cli {
             return Arrays.asList(out.split("\n"));
         }
 
-        String line(final String prefix) {
-            for (final String l : lines()) {
+        String line(String prefix) {
+            for (String l : lines()) {
                 if (l.startsWith(prefix)) {
                     return l;
                 }
@@ -24,8 +24,8 @@ final class Cli {
             throw new AssertionError("no line starting with '" + prefix + "' in:\n" + out);
         }
 
-        List<String> rowsAfter(final String headerPrefix) {
-            final List<String> lines = lines();
+        List<String> rowsAfter(String headerPrefix) {
+            List<String> lines = lines();
             return lines.subList(lines.indexOf(line(headerPrefix)) + 1, lines.size());
         }
     }
@@ -33,14 +33,14 @@ final class Cli {
     private Cli() {
     }
 
-    static Result vbtm(final Object... args) {
-        final ByteArrayOutputStream out = new ByteArrayOutputStream();
-        final ByteArrayOutputStream err = new ByteArrayOutputStream();
-        final List<String> argv = new ArrayList<>();
-        for (final Object a : args) {
+    static Result vbtm(Object... args) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        List<String> argv = new ArrayList<>();
+        for (Object a : args) {
             argv.add(a.toString());
         }
-        final int code;
+        int code;
         try (PrintStream o = new PrintStream(out, true, StandardCharsets.UTF_8);
                 PrintStream e = new PrintStream(err, true, StandardCharsets.UTF_8)) {
             code = Main.run(argv, o, e);

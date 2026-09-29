@@ -11,6 +11,8 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 
+import com.google.errorprone.annotations.Var;
+
 final class AncestorTable extends Canvas {
 
     record Row(int depth, String shortName, String fullName, String total, String pct, boolean current) {
@@ -30,12 +32,12 @@ final class AncestorTable extends Canvas {
 
     private int paintedRowH;
 
-    AncestorTable(final Composite parent) {
+    AncestorTable(Composite parent) {
         super(parent, SWT.DOUBLE_BUFFERED);
         addListener(SWT.Paint, e -> paint(e.gc));
         addListener(SWT.MouseMove, e -> {
-            final int i = rowAt(e.y);
-            final String tip = i >= 0 ? rows.get(i).fullName() : null;
+            int i = rowAt(e.y);
+            String tip = i >= 0 ? rows.get(i).fullName() : null;
             if (tip == null ? hoverTip != null : !tip.equals(hoverTip)) {
                 hoverTip = tip;
                 setToolTipText(tip);
@@ -47,7 +49,7 @@ final class AncestorTable extends Canvas {
         });
     }
 
-    void setRows(final List<Row> rows) {
+    void setRows(List<Row> rows) {
         this.rows = List.copyOf(rows);
         hoverTip = null;
         setToolTipText(null);
@@ -66,30 +68,30 @@ final class AncestorTable extends Canvas {
         return JFaceResources.getFontRegistry().getBold(JFaceResources.DEFAULT_FONT);
     }
 
-    private int rowHeight(final GC gc) {
+    private int rowHeight(GC gc) {
         gc.setFont(mono());
-        final int mono = gc.getFontMetrics().getHeight();
+        int mono = gc.getFontMetrics().getHeight();
         gc.setFont(getFont());
         return Math.max(mono, gc.getFontMetrics().getHeight()) + 2 * PAD_Y;
     }
 
-    private int rowAt(final int y) {
-        final int h = paintedRowH;
+    private int rowAt(int y) {
+        int h = paintedRowH;
         if (h <= 0) {
             return -1;
         }
-        final int i = (y - h) / h;
+        int i = (y - h) / h;
         return y >= h && i < rows.size() ? i : -1;
     }
 
     @Override
-    public Point computeSize(final int wHint, final int hHint, final boolean changed) {
-        final GC gc = new GC(this);
+    public Point computeSize(int wHint, int hHint, boolean changed) {
+        GC gc = new GC(this);
         try {
-            final int h = rowHeight(gc) * (rows.size() + 1);
-            final int[] widths = columnWidths(gc);
-            int w = 2 * PAD_X + 3 * GAP;
-            for (final int cw : widths) {
+            int h = rowHeight(gc) * (rows.size() + 1);
+            int[] widths = columnWidths(gc);
+            @Var int w = 2 * PAD_X + 3 * GAP;
+            for (int cw : widths) {
                 w += cw;
             }
             return new Point(wHint != SWT.DEFAULT ? wHint : w, hHint != SWT.DEFAULT ? hHint : h);
@@ -98,13 +100,13 @@ final class AncestorTable extends Canvas {
         }
     }
 
-    private int[] columnWidths(final GC gc) {
-        final int[] w = new int[4];
+    private int[] columnWidths(GC gc) {
+        int[] w = new int[4];
         gc.setFont(getFont());
         for (int c = 0; c < 4; c++) {
             w[c] = gc.textExtent(TITLES[c]).x;
         }
-        for (final Row r : rows) {
+        for (Row r : rows) {
             gc.setFont(r.current() ? boldMono() : mono());
             w[0] = Math.max(w[0], gc.textExtent(Integer.toString(r.depth())).x);
             w[2] = Math.max(w[2], gc.textExtent(r.total()).x);
@@ -115,19 +117,19 @@ final class AncestorTable extends Canvas {
         return w;
     }
 
-    private void paint(final GC gc) {
-        final Point size = getSize();
+    private void paint(GC gc) {
+        Point size = getSize();
         gc.setBackground(getBackground());
         gc.fillRectangle(0, 0, size.x, size.y);
-        final int h = rowHeight(gc);
+        int h = rowHeight(gc);
         paintedRowH = h;
-        final int[] w = columnWidths(gc);
-        final int fixed = w[0] + w[2] + w[3] + 3 * GAP + 2 * PAD_X;
-        final int methodW = Math.max(40, Math.min(w[1], size.x - fixed));
-        final int xDepth = PAD_X;
-        final int xMethod = xDepth + w[0] + GAP;
-        final int xTotal = xMethod + methodW + GAP;
-        final int xPct = xTotal + w[2] + GAP;
+        int[] w = columnWidths(gc);
+        int fixed = w[0] + w[2] + w[3] + 3 * GAP + 2 * PAD_X;
+        int methodW = Math.max(40, Math.min(w[1], size.x - fixed));
+        int xDepth = PAD_X;
+        int xMethod = xDepth + w[0] + GAP;
+        int xTotal = xMethod + methodW + GAP;
+        int xPct = xTotal + w[2] + GAP;
 
         gc.setForeground(getDisplay().getSystemColor(SWT.COLOR_WIDGET_DISABLED_FOREGROUND));
         gc.setFont(getFont());
@@ -137,8 +139,8 @@ final class AncestorTable extends Canvas {
         drawRight(gc, TITLES[3], xPct, w[3], 0, h);
         gc.drawLine(0, h - 1, size.x, h - 1);
 
-        int y = h;
-        for (final Row r : rows) {
+        @Var int y = h;
+        for (Row r : rows) {
             gc.setForeground(getForeground());
             gc.setFont(r.current() ? boldMono() : mono());
             drawRight(gc, Integer.toString(r.depth()), xDepth, w[0], y, h);
@@ -152,19 +154,19 @@ final class AncestorTable extends Canvas {
         }
     }
 
-    private static int textY(final GC gc, final int rowY, final int rowH) {
+    private static int textY(GC gc, int rowY, int rowH) {
         return rowY + (rowH - gc.getFontMetrics().getHeight()) / 2;
     }
 
-    private static void drawRight(final GC gc, final String s, final int x, final int w, final int rowY, final int rowH) {
+    private static void drawRight(GC gc, String s, int x, int w, int rowY, int rowH) {
         gc.drawText(s, x + w - gc.textExtent(s).x, textY(gc, rowY, rowH), true);
     }
 
-    private static String clip(final GC gc, final String s, final int w) {
+    private static String clip(GC gc, String s, int w) {
         if (gc.textExtent(s).x <= w) {
             return s;
         }
-        int n = s.length();
+        @Var int n = s.length();
         while (n > 1 && gc.textExtent(s.substring(0, n) + "…").x > w) {
             n--;
         }

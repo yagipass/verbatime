@@ -11,7 +11,7 @@ final class PreferencesTest {
     @Test
     void blankPreferenceMeansTheDefaultNotTheWorkingDirectory() {
 
-        final Path dflt = Path.of("/ws/verbatime/recordings");
+        Path dflt = Path.of("/ws/verbatime/recordings");
         assertEquals(dflt, Preferences.resolveRecordingsDir("", dflt));
         assertEquals(dflt, Preferences.resolveRecordingsDir("   ", dflt));
         assertEquals(dflt, Preferences.resolveRecordingsDir(null, dflt));

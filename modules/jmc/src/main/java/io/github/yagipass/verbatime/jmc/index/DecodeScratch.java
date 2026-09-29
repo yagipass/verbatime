@@ -10,7 +10,7 @@ final class DecodeScratch {
     }
 
     static byte[] take() {
-        final byte[] b = FREE.get();
+        byte[] b = FREE.get();
         if (b == null) {
             return new byte[MIN_BYTES];
         }
@@ -18,11 +18,11 @@ final class DecodeScratch {
         return b;
     }
 
-    static byte[] allocate(final int len) {
+    static byte[] allocate(int len) {
         return new byte[Math.max(Integer.highestOneBit(len) * 2, MIN_BYTES)];
     }
 
-    static void give(final byte[] b) {
+    static void give(byte[] b) {
         if (b != null) {
             FREE.set(b);
         }

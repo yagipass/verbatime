@@ -8,7 +8,7 @@ import com.sun.net.httpserver.HttpHandler;
 public final class HealthHandler implements HttpHandler {
 
     @Override
-    public void handle(final HttpExchange exchange) throws IOException {
+    public void handle(HttpExchange exchange) throws IOException {
         Responses.text(exchange, 200, "ok");
     }
 }

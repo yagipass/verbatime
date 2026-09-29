@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.google.errorprone.annotations.Var;
+
 public final class ParsedExport {
 
     static final Pattern BODY = Pattern.compile("^(\\d+\\.\\d{4}) +(\\d+\\.\\d{4}) +(\\d+) +(?:·(\\d+) calls <(\\S+), "
@@ -80,7 +82,7 @@ public final class ParsedExport {
 
     final List<HotRow> hotByCalls = new ArrayList<>();
 
-    private ParsedExport(final List<String> lines) {
+    private ParsedExport(List<String> lines) {
         this.lines = lines;
         assertEquals("# verbatime session export v1", line(1));
         assertEquals("", line(2), "blank line after the title");
@@ -88,36 +90,36 @@ public final class ParsedExport {
         assertEquals("", line(15), "blank line after the header");
         assertEquals("## contents", line(16));
         assertEquals("", line(17), "blank line after the contents heading");
-        final long[][] r = new long[7][];
-        final String[] what = new String[7];
+        long[][] r = new long[7][];
+        String[] what = new String[7];
         for (int i = 0; i < 7; i++) {
-            final Matcher m = CONTENTS.matcher(line(18 + i));
+            Matcher m = CONTENTS.matcher(line(18 + i));
             assertTrue(m.matches(), "contents row L" + (18 + i) + ": " + line(18 + i));
             r[i] = new long[] { Long.parseLong(m.group(1)), Long.parseLong(m.group(2)) };
             what[i] = m.group(3);
         }
         assertEquals("", line(25), "blank line after the contents");
         outlineStart = r[0][0];
-        final long outlineEnd = r[0][1];
-        final long hotSelfStart = r[1][0];
-        final long hotSelfEnd = r[1][1];
-        final long hotCallsStart = r[2][0];
-        final long hotCallsEnd = r[2][1];
-        final long methodsStart = r[3][0];
-        final long methodsEnd = r[3][1];
-        final long exceptionsStart = r[4][0];
-        final long exceptionsEnd = r[4][1];
-        final long gcStart = r[5][0];
-        final long gcEnd = r[5][1];
+        long outlineEnd = r[0][1];
+        long hotSelfStart = r[1][0];
+        long hotSelfEnd = r[1][1];
+        long hotCallsStart = r[2][0];
+        long hotCallsEnd = r[2][1];
+        long methodsStart = r[3][0];
+        long methodsEnd = r[3][1];
+        long exceptionsStart = r[4][0];
+        long exceptionsEnd = r[4][1];
+        long gcStart = r[5][0];
+        long gcEnd = r[5][1];
         bodyStart = r[6][0];
-        final long bodyEnd = r[6][1];
+        long bodyEnd = r[6][1];
         assertEquals(26, outlineStart, "the outline follows the contents");
         assertEquals(bodyEnd, lines.size(), "the contents cover the whole file");
 
         assertTrue(line(outlineStart).startsWith("## outline: nodes >= "), line(outlineStart));
         assertEquals("", line(outlineStart + 1), "blank line after the outline heading");
         for (long l = outlineStart + 2; l <= outlineEnd; l++) {
-            final Matcher m = OUTLINE.matcher(line(l));
+            Matcher m = OUTLINE.matcher(line(l));
             assertTrue(m.matches(), "outline row L" + l + ": " + line(l));
             outline.add(new OutlineRow(Long.parseLong(m.group(1)), ticks(m.group(2)), ticks(m.group(3)), m.group(4),
                     m.group(5).length(), m.group(6), m.group(7) == null ? -1 : ticks(m.group(7)),
@@ -136,10 +138,10 @@ public final class ParsedExport {
         assertTrue(line(methodsStart).startsWith("## methods: "), line(methodsStart));
         assertEquals("", line(methodsStart + 1), "blank line after the methods heading");
         for (long l = methodsStart + 2; l <= methodsEnd; l++) {
-            final String s = line(l);
-            final int eq = s.indexOf(" = ");
+            String s = line(l);
+            int eq = s.indexOf(" = ");
             assertTrue(eq > 0, "methods row L" + l + ": " + s);
-            final String prev = methods.put(s.substring(0, eq), s.substring(eq + 3));
+            String prev = methods.put(s.substring(0, eq), s.substring(eq + 3));
             assertEquals(null, prev, "display names are unique: " + s);
         }
         assertEquals("", line(methodsEnd + 1), "blank line after the methods");
@@ -148,8 +150,8 @@ public final class ParsedExport {
         assertTrue(line(exceptionsStart).startsWith("## exceptions: "), line(exceptionsStart));
         assertEquals("", line(exceptionsStart + 1), "blank line after the exceptions heading");
         for (long l = exceptionsStart + 2; l <= exceptionsEnd; l++) {
-            final String s = line(l);
-            final int eq = s.indexOf(" = ");
+            String s = line(l);
+            int eq = s.indexOf(" = ");
             assertTrue(eq > 0, "exceptions row L" + l + ": " + s);
             assertEquals("e" + (exceptions.size() + 1), s.substring(0, eq), "exception numbers are dense and in order: " + s);
             exceptions.put(s.substring(0, eq), s.substring(eq + 3));
@@ -159,11 +161,11 @@ public final class ParsedExport {
 
         assertTrue(line(gcStart).startsWith("## gc pauses: "), line(gcStart));
         assertEquals("", line(gcStart + 1), "blank line after the gc pauses heading");
-        long prevStart = -1;
+        @Var long prevStart = -1;
         for (long l = gcStart + 2; l <= gcEnd; l++) {
-            final Matcher m = GC.matcher(line(l));
+            Matcher m = GC.matcher(line(l));
             assertTrue(m.matches(), "gc row L" + l + ": " + line(l));
-            final GcRow row = new GcRow(ticks(m.group(1)), ticks(m.group(2)));
+            GcRow row = new GcRow(ticks(m.group(1)), ticks(m.group(2)));
             assertTrue(row.start >= prevStart, "gc rows are in start order: " + line(l));
             assertTrue(row.dur > 0, "a listed pause has time inside the session: " + line(l));
             prevStart = row.start;
@@ -182,64 +184,64 @@ public final class ParsedExport {
             }
         }
         assertEquals("body: " + grouped(body.size()) + " lines, one call per line in time order", what[6]);
-        for (final BodyLine b : body) {
+        for (BodyLine b : body) {
             if (b.excNo > 0) {
                 assertTrue(exceptions.containsKey("e" + b.excNo), "every !eN on a body line is in the table: " + b.raw);
             }
         }
     }
 
-    private void hot(final long start, final long end, final String heading, final List<HotRow> target) {
+    private void hot(long start, long end, String heading, List<HotRow> target) {
         assertTrue(line(start).startsWith(heading), line(start));
         assertEquals("", line(start + 1), "blank line after the heading at L" + start);
         assertTrue(line(start + 2).trim().startsWith("self_ms "), line(start + 2));
         for (long l = start + 3; l <= end; l++) {
-            final Matcher m = HOT.matcher(line(l));
+            Matcher m = HOT.matcher(line(l));
             assertTrue(m.matches(), "hot row L" + l + ": " + line(l));
             target.add(new HotRow(ticks(m.group(1)), ticks(m.group(2)), Long.parseLong(m.group(3)), m.group(4)));
         }
         assertEquals("", line(end + 1), "blank line after the table ending at L" + end);
     }
 
-    private static String grouped(final long v) {
+    private static String grouped(long v) {
         return String.format(java.util.Locale.US, "%,d", v);
     }
 
-    long bodyLineOf(final long anchor) {
+    long bodyLineOf(long anchor) {
         return anchor - bodyStart - 1;
     }
 
-    BodyLine bodyAt(final long anchor) {
+    BodyLine bodyAt(long anchor) {
         return body.get((int) bodyLineOf(anchor) - 1);
     }
 
-    static ParsedExport read(final Path file) throws IOException {
-        final String text = Files.readString(file, StandardCharsets.UTF_8);
+    static ParsedExport read(Path file) throws IOException {
+        String text = Files.readString(file, StandardCharsets.UTF_8);
         assertTrue(text.endsWith("\n"), "file ends with a newline");
         assertEquals(-1, text.indexOf('?'), "no placeholder was left unpatched");
         return new ParsedExport(List.of(text.substring(0, text.length() - 1).split("\n", -1)));
     }
 
-    String line(final long oneBased) {
+    String line(long oneBased) {
         return lines.get((int) (oneBased - 1));
     }
 
-    static long ticks(final String ms) {
+    static long ticks(String ms) {
         return Long.parseLong(ms.replace(".", ""));
     }
 
-    private static BodyLine parseBody(final long abs, final String s) {
-        final Matcher m = BODY.matcher(s);
+    private static BodyLine parseBody(long abs, String s) {
+        Matcher m = BODY.matcher(s);
         if (!m.matches()) {
             fail("body line L" + abs + " does not match the grammar: " + s);
         }
-        final long start = ticks(m.group(1));
-        final long dur = ticks(m.group(2));
-        final int depth = Integer.parseInt(m.group(3));
+        long start = ticks(m.group(1));
+        long dur = ticks(m.group(2));
+        int depth = Integer.parseInt(m.group(3));
         if (m.group(4) != null) {
-            final List<String[]> list = new ArrayList<>();
-            for (final String item : m.group(8).split(", ", -1)) {
-                final int x = item.lastIndexOf('×');
+            List<String[]> list = new ArrayList<>();
+            for (String item : m.group(8).split(", ", -1)) {
+                int x = item.lastIndexOf('×');
                 list.add(x < 0 ? new String[] { item, "1" } : new String[] { item.substring(0, x), item.substring(x + 1) });
             }
             return new BodyLine(abs, start, dur, depth, true, null, -1, false, 0, false, Long.parseLong(m.group(4)),
@@ -251,24 +253,24 @@ public final class ParsedExport {
                 null, 0, 0, List.of(), s);
     }
 
-    String fullName(final String display) {
-        final String full = methods.get(display);
+    String fullName(String display) {
+        String full = methods.get(display);
         assertTrue(full != null, "display name in the methods table: " + display);
         return full;
     }
 
-    String exceptionClass(final long excNo) {
+    String exceptionClass(long excNo) {
         if (excNo <= 0) {
             return null;
         }
-        final String cls = exceptions.get("e" + excNo);
+        String cls = exceptions.get("e" + excNo);
         assertTrue(cls != null, "exception number in the exceptions table: e" + excNo);
         return cls;
     }
 
-    void checkInvariants(final String ctx) {
-        final Deque<long[]> stack = new ArrayDeque<>();
-        for (final BodyLine b : body) {
+    void checkInvariants(String ctx) {
+        Deque<long[]> stack = new ArrayDeque<>();
+        for (BodyLine b : body) {
             while (!stack.isEmpty() && stack.peek()[0] >= b.depth) {
                 closeTop(stack, ctx);
             }
@@ -292,8 +294,8 @@ public final class ParsedExport {
         }
     }
 
-    private static void closeTop(final Deque<long[]> stack, final String ctx) {
-        final long[] t = stack.pop();
+    private static void closeTop(Deque<long[]> stack, String ctx) {
+        long[] t = stack.pop();
         if (t[2] >= 0) {
             assertEquals(t[1], t[2] + t[3], ctx + " L" + t[5] + ": dur = self + children + accounting");
         } else {

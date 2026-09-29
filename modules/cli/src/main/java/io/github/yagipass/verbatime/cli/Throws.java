@@ -31,18 +31,18 @@ final class Throws {
 
     private int lastDepth;
 
-    Throws(final Listener listener) {
+    Throws(Listener listener) {
         this.listener = listener;
     }
 
-    void enter(final int depth, final int methodId) {
+    void enter(int depth, int methodId) {
         stack.push(depth, methodId);
         if (open) {
             close(stack.callerOf(lastDepth));
         }
     }
 
-    void exit(final long ordinal, final int depth, final int methodId, final long durTicks, final int exceptionId) {
+    void exit(long ordinal, int depth, int methodId, long durTicks, int exceptionId) {
         if (exceptionId == SessionWalker.NO_EXCEPTION) {
             if (open) {
                 close(methodId);
@@ -72,7 +72,7 @@ final class Throws {
         }
     }
 
-    private void close(final int catcherId) {
+    private void close(int catcherId) {
         open = false;
         if (listener != null) {
             listener.thrown(exceptionId, throwerId, throwerOrdinal, throwerDurTicks, catcherId);

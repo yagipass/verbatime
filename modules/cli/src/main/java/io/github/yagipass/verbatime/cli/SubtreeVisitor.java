@@ -28,7 +28,7 @@ abstract class SubtreeVisitor implements SessionWalker.Visitor {
 
     long[] pathOrdinals = new long[0];
 
-    SubtreeVisitor(final SessionWalker walker, final long rootOrdinal) {
+    SubtreeVisitor(SessionWalker walker, long rootOrdinal) {
         this.walker = walker;
         this.rootOrdinal = rootOrdinal;
         this.inside = rootOrdinal < 0;
@@ -40,7 +40,7 @@ abstract class SubtreeVisitor implements SessionWalker.Visitor {
     }
 
     @Override
-    public final void enter(final long ordinal, final int depth, final int methodId, final long startTicks) {
+    public final void enter(long ordinal, int depth, int methodId, long startTicks) {
         thrown.enter(depth, methodId);
         if (!inside) {
             stack.push(depth, methodId);
@@ -61,8 +61,8 @@ abstract class SubtreeVisitor implements SessionWalker.Visitor {
     }
 
     @Override
-    public final void exit(final long ordinal, final int depth, final int methodId, final long startTicks,
-            final long durTicks, final long selfTicks, final int exceptionId, final boolean unclosed) {
+    public final void exit(long ordinal, int depth, int methodId, long startTicks,
+            long durTicks, long selfTicks, int exceptionId, boolean unclosed) {
         if (!inside) {
             return;
         }

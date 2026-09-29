@@ -22,12 +22,12 @@ final class SessionSummary implements SessionWalker.Visitor {
 
     private final Throws thrown = new Throws(null);
 
-    private SessionSummary(final TraceFile.Session session) {
+    private SessionSummary(TraceFile.Session session) {
         this.session = session;
     }
 
-    static SessionSummary of(final SessionWalker walker, final TraceFile.Session s) {
-        final SessionSummary summary = new SessionSummary(s);
+    static SessionSummary of(SessionWalker walker, TraceFile.Session s) {
+        SessionSummary summary = new SessionSummary(s);
         walker.walk(s, summary);
         summary.throwCount = summary.thrown.count;
         summary.startTicks = walker.startTicks;
@@ -41,7 +41,7 @@ final class SessionSummary implements SessionWalker.Visitor {
     }
 
     @Override
-    public void enter(final long ordinal, final int depth, final int methodId, final long startTicks) {
+    public void enter(long ordinal, int depth, int methodId, long startTicks) {
         if (depth == 0) {
             rootCalls++;
             if (rootMethodId < 0) {
@@ -55,8 +55,8 @@ final class SessionSummary implements SessionWalker.Visitor {
     }
 
     @Override
-    public void exit(final long ordinal, final int depth, final int methodId, final long startTicks,
-            final long durTicks, final long selfTicks, final int exceptionId, final boolean unclosed) {
+    public void exit(long ordinal, int depth, int methodId, long startTicks,
+            long durTicks, long selfTicks, int exceptionId, boolean unclosed) {
         calls++;
         thrown.exit(ordinal, depth, methodId, durTicks, exceptionId);
         this.unclosed |= unclosed;

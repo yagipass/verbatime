@@ -16,7 +16,7 @@ public final class Recording {
 
     private volatile boolean delivered;
 
-    Recording(final long id, final String name, final TraceFileWriter writer, final boolean spooled) {
+    Recording(long id, String name, TraceFileWriter writer, boolean spooled) {
         this.id = id;
         this.name = name;
         this.writer = writer;

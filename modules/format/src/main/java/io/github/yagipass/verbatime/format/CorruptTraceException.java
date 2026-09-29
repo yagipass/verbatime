@@ -6,7 +6,7 @@ public final class CorruptTraceException extends RuntimeException {
 
     private final long offset;
 
-    CorruptTraceException(final long offset, final String message) {
+    CorruptTraceException(long offset, String message) {
         super(message);
         this.offset = offset;
     }

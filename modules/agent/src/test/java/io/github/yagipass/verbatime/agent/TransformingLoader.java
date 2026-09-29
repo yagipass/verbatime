@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.function.Function;
 
+import com.google.errorprone.annotations.Var;
+
 final class TransformingLoader extends ClassLoader {
 
     private final Transformer transformer;
@@ -13,32 +15,32 @@ final class TransformingLoader extends ClassLoader {
 
     private final Function<String, byte[]> source;
 
-    TransformingLoader(final Transformer transformer, final String prefix, final Function<String, byte[]> source) {
+    TransformingLoader(Transformer transformer, String prefix, Function<String, byte[]> source) {
         super(TransformingLoader.class.getClassLoader());
         this.transformer = transformer;
         this.prefix = prefix;
         this.source = source;
     }
 
-    static byte[] classpathBytes(final String binaryName) {
+    static byte[] classpathBytes(String binaryName) {
         try (InputStream in = TransformingLoader.class.getClassLoader().getResourceAsStream(binaryName.replace('.', '/') + ".class")) {
             return in == null ? null : in.readAllBytes();
-        } catch (final IOException e) {
+        } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
     @Override
-    protected Class<?> loadClass(final String name, final boolean resolve) throws ClassNotFoundException {
+    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         synchronized (getClassLoadingLock(name)) {
-            Class<?> c = findLoadedClass(name);
+            @Var Class<?> c = findLoadedClass(name);
             if (c == null && name.startsWith(prefix)) {
-                final byte[] bytes = source.apply(name);
+                byte[] bytes = source.apply(name);
                 if (bytes == null) {
                     throw new ClassNotFoundException(name);
                 }
-                final byte[] transformed = transformer.transform(null, this, name.replace('.', '/'), null, null, bytes);
-                final byte[] def = transformed != null ? transformed : bytes;
+                byte[] transformed = transformer.transform(null, this, name.replace('.', '/'), null, null, bytes);
+                byte[] def = transformed != null ? transformed : bytes;
                 c = defineClass(name, def, 0, def.length);
             }
             if (c == null) {

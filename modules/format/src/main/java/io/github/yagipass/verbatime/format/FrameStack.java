@@ -26,7 +26,7 @@ public final class FrameStack {
         this(new long[INITIAL_CAPACITY], new long[INITIAL_CAPACITY], new int[INITIAL_CAPACITY]);
     }
 
-    private FrameStack(final long[] startTicks, final long[] childNs, final int[] methodIds) {
+    private FrameStack(long[] startTicks, long[] childNs, int[] methodIds) {
         this.startTicks = startTicks;
         this.childNs = childNs;
         this.methodIds = methodIds;
@@ -36,9 +36,9 @@ public final class FrameStack {
         return sp;
     }
 
-    public void push(final long startTicks, final int methodId) {
+    public void push(long startTicks, int methodId) {
         if (sp == this.startTicks.length) {
-            final int cap = sp * 2;
+            int cap = sp * 2;
             this.startTicks = Arrays.copyOf(this.startTicks, cap);
             childNs = Arrays.copyOf(childNs, cap);
             methodIds = Arrays.copyOf(methodIds, cap);
@@ -49,7 +49,7 @@ public final class FrameStack {
         sp++;
     }
 
-    public void pop(final long endTicks) {
+    public void pop(long endTicks) {
         sp--;
         poppedStartTicks = startTicks[sp];
         poppedChildNs = childNs[sp];
@@ -85,8 +85,8 @@ public final class FrameStack {
     }
 
     public FrameStack copy() {
-        final int cap = Math.max(sp, INITIAL_CAPACITY);
-        final FrameStack c = new FrameStack(Arrays.copyOf(startTicks, cap), Arrays.copyOf(childNs, cap),
+        int cap = Math.max(sp, INITIAL_CAPACITY);
+        FrameStack c = new FrameStack(Arrays.copyOf(startTicks, cap), Arrays.copyOf(childNs, cap),
                 Arrays.copyOf(methodIds, cap));
         c.sp = sp;
         c.poppedStartTicks = poppedStartTicks;

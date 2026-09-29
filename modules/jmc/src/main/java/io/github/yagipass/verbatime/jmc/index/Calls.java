@@ -2,6 +2,8 @@ package io.github.yagipass.verbatime.jmc.index;
 
 import java.util.Arrays;
 
+import com.google.errorprone.annotations.Var;
+
 public final class Calls {
 
     private static final int INITIAL = 16;
@@ -24,17 +26,17 @@ public final class Calls {
 
     public int[] exceptionId;
 
-    public Calls(final long tid) {
+    public Calls(long tid) {
         this(tid, INITIAL);
     }
 
-    public Calls(final long tid, final int capacity) {
+    public Calls(long tid, int capacity) {
         this(tid, new long[capacity], new long[capacity], new long[capacity], new int[capacity], new int[capacity],
                 new boolean[capacity], new int[capacity]);
     }
 
-    private Calls(final long tid, final long[] startNs, final long[] durNs, final long[] selfNs, final int[] methodId,
-            final int[] depth, final boolean[] unclosed, final int[] exceptionId) {
+    private Calls(long tid, long[] startNs, long[] durNs, long[] selfNs, int[] methodId,
+            int[] depth, boolean[] unclosed, int[] exceptionId) {
         this.tid = tid;
         this.startNs = startNs;
         this.durNs = durNs;
@@ -45,10 +47,10 @@ public final class Calls {
         this.exceptionId = exceptionId;
     }
 
-    public void add(final long startNs, final long durNs, final long selfNs, final int methodId, final int depth,
-            final boolean unclosed, final int exceptionId) {
+    public void add(long startNs, long durNs, long selfNs, int methodId, int depth,
+            boolean unclosed, int exceptionId) {
         if (count == this.startNs.length) {
-            final int cap = count * 2;
+            int cap = count * 2;
             this.startNs = Arrays.copyOf(this.startNs, cap);
             this.durNs = Arrays.copyOf(this.durNs, cap);
             this.selfNs = Arrays.copyOf(this.selfNs, cap);
@@ -68,26 +70,26 @@ public final class Calls {
     }
 
     public void sortByStart() {
-        final Integer[] idx = new Integer[count];
+        Integer[] idx = new Integer[count];
         for (int i = 0; i < count; i++) {
             idx[i] = i;
         }
         Arrays.sort(idx, (x, y) -> {
-            int c = Long.compare(startNs[x], startNs[y]);
+            @Var int c = Long.compare(startNs[x], startNs[y]);
             if (c == 0) {
                 c = Integer.compare(depth[x], depth[y]);
             }
             return c != 0 ? c : Long.compare(durNs[x], durNs[y]);
         });
-        final long[] s = new long[count];
-        final long[] d = new long[count];
-        final long[] sf = new long[count];
-        final int[] mi = new int[count];
-        final int[] dp = new int[count];
-        final boolean[] un = new boolean[count];
-        final int[] ex = new int[count];
+        long[] s = new long[count];
+        long[] d = new long[count];
+        long[] sf = new long[count];
+        int[] mi = new int[count];
+        int[] dp = new int[count];
+        boolean[] un = new boolean[count];
+        int[] ex = new int[count];
         for (int i = 0; i < count; i++) {
-            final int j = idx[i];
+            int j = idx[i];
             s[i] = startNs[j];
             d[i] = durNs[j];
             sf[i] = selfNs[j];
@@ -105,8 +107,8 @@ public final class Calls {
         exceptionId = ex;
     }
 
-    public int dropShorterThan(final long d) {
-        int w = 0;
+    public int dropShorterThan(long d) {
+        @Var int w = 0;
         for (int r = 0; r < count; r++) {
             if (unclosed[r] || durNs[r] >= d) {
                 startNs[w] = startNs[r];
@@ -124,8 +126,8 @@ public final class Calls {
     }
 
     Calls copy() {
-        final int cap = Math.max(count, INITIAL);
-        final Calls c = new Calls(tid, Arrays.copyOf(startNs, cap), Arrays.copyOf(durNs, cap),
+        int cap = Math.max(count, INITIAL);
+        Calls c = new Calls(tid, Arrays.copyOf(startNs, cap), Arrays.copyOf(durNs, cap),
                 Arrays.copyOf(selfNs, cap), Arrays.copyOf(methodId, cap), Arrays.copyOf(depth, cap),
                 Arrays.copyOf(unclosed, cap), Arrays.copyOf(exceptionId, cap));
         c.count = count;

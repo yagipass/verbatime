@@ -2,6 +2,8 @@ package io.github.yagipass.verbatime.cli;
 
 import java.util.Arrays;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.format.EventCursor;
 import io.github.yagipass.verbatime.format.FrameStack;
 import io.github.yagipass.verbatime.format.Vbtm;
@@ -36,7 +38,7 @@ final class SessionWalker {
 
     long endTicks;
 
-    SessionWalker(final TraceFile file) {
+    SessionWalker(TraceFile file) {
         this.file = file;
     }
 
@@ -45,28 +47,28 @@ final class SessionWalker {
         halted = true;
     }
 
-    void walk(final TraceFile.Session s, final Visitor v) {
+    void walk(TraceFile.Session s, Visitor v) {
         stopped = false;
         halted = false;
         stack.clear();
-        long ordinal = 0;
-        long last = -1;
+        @Var long ordinal = 0;
+        @Var long last = -1;
         startTicks = s.chunks.isEmpty() ? 0 : s.chunks.get(0).baseTicks();
-        for (final TraceFile.Chunk c : s.chunks) {
+        for (TraceFile.Chunk c : s.chunks) {
             if (scratch.length < c.len()) {
                 scratch = new byte[c.len()];
             }
             file.data.copy(c.offset(), scratch, c.len());
-            final long base = Math.max(c.baseTicks(), last);
+            long base = Math.max(c.baseTicks(), last);
             if (last < 0) {
                 startTicks = base;
             }
             cursor.reset(scratch, 0, c.len(), base);
             while (!stopped) {
-                final EventCursor.Event e = cursor.next();
+                EventCursor.Event e = cursor.next();
                 if (e == EventCursor.Event.ENTER) {
                     last = cursor.ticks();
-                    final int depth = stack.depth();
+                    int depth = stack.depth();
                     if (depth == ordinals.length) {
                         ordinals = Arrays.copyOf(ordinals, depth * 2);
                     }
@@ -112,13 +114,13 @@ final class SessionWalker {
         }
     }
 
-    private void exit(final Visitor v, final int exceptionId, final boolean unclosed) {
-        final int depth = stack.depth();
+    private void exit(Visitor v, int exceptionId, boolean unclosed) {
+        int depth = stack.depth();
         v.exit(ordinals[depth], depth, stack.methodId(), stack.startNs() / Vbtm.NANOS_PER_TICK,
                 stack.durNs() / Vbtm.NANOS_PER_TICK, stack.selfNs() / Vbtm.NANOS_PER_TICK, exceptionId, unclosed);
     }
 
-    private static String fault(final EventCursor.Fault fault, final long value) {
+    private static String fault(EventCursor.Fault fault, long value) {
         return switch (fault) {
             case VARINT_TOO_LONG -> "varint too long";
             case METHOD_ID_LIMIT -> "method id " + value + " is outside the 2^22 format range";

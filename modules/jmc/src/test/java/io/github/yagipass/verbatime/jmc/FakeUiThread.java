@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
+import com.google.errorprone.annotations.Var;
+
 public final class FakeUiThread implements UiThread {
 
     private record Timer(long dueMs, Runnable r) {
@@ -17,12 +19,12 @@ public final class FakeUiThread implements UiThread {
     public long nowMs;
 
     @Override
-    public void post(final Runnable r) {
+    public void post(Runnable r) {
         posted.add(r);
     }
 
     @Override
-    public void postAfter(final int delayMs, final Runnable r) {
+    public void postAfter(int delayMs, Runnable r) {
         timers.add(new Timer(nowMs + delayMs, r));
     }
 
@@ -40,12 +42,12 @@ public final class FakeUiThread implements UiThread {
         }
     }
 
-    public void advance(final long ms) {
+    public void advance(long ms) {
         nowMs += ms;
-        boolean fired = true;
+        @Var boolean fired = true;
         while (fired) {
             fired = false;
-            for (final Timer t : List.copyOf(timers)) {
+            for (Timer t : List.copyOf(timers)) {
                 if (t.dueMs() <= nowMs) {
                     timers.remove(t);
                     t.r().run();

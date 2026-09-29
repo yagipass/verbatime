@@ -11,7 +11,7 @@ public interface UiThread {
 
     void postAfter(int delayMs, Runnable r);
 
-    default void post(final BooleanSupplier stillWanted, final Runnable r) {
+    default void post(BooleanSupplier stillWanted, Runnable r) {
         post(() -> {
             if (stillWanted.getAsBoolean()) {
                 r.run();
@@ -19,11 +19,11 @@ public interface UiThread {
         });
     }
 
-    static UiThread of(final Widget anchor) {
+    static UiThread of(Widget anchor) {
         return new Guarded(anchor.getDisplay(), () -> !anchor.isDisposed());
     }
 
-    static UiThread of(final Display display) {
+    static UiThread of(Display display) {
         return new Guarded(display, () -> !display.isDisposed());
     }
 
@@ -33,13 +33,13 @@ public interface UiThread {
 
         private final BooleanSupplier alive;
 
-        private Guarded(final Display display, final BooleanSupplier alive) {
+        private Guarded(Display display, BooleanSupplier alive) {
             this.display = display;
             this.alive = alive;
         }
 
         @Override
-        public void post(final Runnable r) {
+        public void post(Runnable r) {
             if (display.isDisposed()) {
                 return;
             }
@@ -51,11 +51,11 @@ public interface UiThread {
         }
 
         @Override
-        public void postAfter(final int delayMs, final Runnable r) {
+        public void postAfter(int delayMs, Runnable r) {
             if (display.isDisposed()) {
                 return;
             }
-            final Runnable guarded = () -> {
+            Runnable guarded = () -> {
                 if (alive.getAsBoolean()) {
                     r.run();
                 }

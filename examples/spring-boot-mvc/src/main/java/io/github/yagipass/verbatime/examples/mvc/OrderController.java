@@ -12,12 +12,12 @@ public class OrderController {
 
     private final OrderService orders;
 
-    OrderController(final OrderService orders) {
+    OrderController(OrderService orders) {
         this.orders = orders;
     }
 
     @GetMapping("/orders")
-    public Receipt place(@RequestParam(defaultValue = "widget") final String sku, @RequestParam(defaultValue = "1") final int qty) {
+    public Receipt place(@RequestParam(defaultValue = "widget") String sku, @RequestParam(defaultValue = "1") int qty) {
         return orders.placeOrder(sku, qty);
     }
 }

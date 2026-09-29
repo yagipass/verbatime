@@ -5,7 +5,7 @@ public final class Tracing {
     private Tracing() {
     }
 
-    public static void start(final TraceFileWriter w) {
+    public static void start(TraceFileWriter w) {
         MethodRegistry.attach(w);
         ExceptionRegistry.attach(w);
         Probe.attach(w);
@@ -14,7 +14,7 @@ public final class Tracing {
     }
 
     public static int stop() {
-        final int flushed = Probe.disableAndFlush();
+        int flushed = Probe.disableAndFlush();
         GcPauses.detach();
         Probe.detach();
         MethodRegistry.detach();

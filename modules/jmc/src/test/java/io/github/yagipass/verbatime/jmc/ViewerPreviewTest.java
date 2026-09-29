@@ -17,13 +17,13 @@ final class ViewerPreviewTest {
 
     @Test
     void thePreviewPageStubsTheHostInsideTheHostSlot() throws Exception {
-        final Path out = dir.resolve("preview.html");
+        Path out = dir.resolve("preview.html");
         ViewerPreview.main(new String[] { out.toString() });
-        final String html = Files.readString(out, StandardCharsets.UTF_8);
+        String html = Files.readString(out, StandardCharsets.UTF_8);
         assertFalse(html.contains("__VBTM"), "both markers are filled");
-        final int slot = html.indexOf("<script id=\"vbtmhost\">");
-        final int end = html.indexOf("</script>", slot);
-        final String hostScript = html.substring(slot, end);
+        int slot = html.indexOf("<script id=\"vbtmhost\">");
+        int end = html.indexOf("</script>", slot);
+        String hostScript = html.substring(slot, end);
         assertTrue(hostScript.contains("window.__WIN = {"), "the canned window reply is parked in the host slot");
         assertTrue(hostScript.contains("vbtmPageWindow(__WIN)"), "the stubbed host answers with the page function");
         assertTrue(hostScript.contains("window.vbtmHostRequestWindow = function"));

@@ -16,7 +16,7 @@ final class CallersCommandTest {
 
     @Test
     void callersAreGroupedByPath() throws IOException {
-        final Cli.Result r = Cli.vbtm("callers", TestTraces.trace(dir), "App::query");
+        Cli.Result r = Cli.vbtm("callers", TestTraces.trace(dir), "App::query");
         assertEquals(0, r.code(), r.err());
         assertTrue(r.line("    4").matches(" +4 +0\\.0490 +1\\.1 +App\\.query"), r.out());
         assertTrue(r.out().contains("<- App.handle, root"), r.out());

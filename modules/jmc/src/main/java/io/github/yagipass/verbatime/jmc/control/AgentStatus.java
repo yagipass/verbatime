@@ -9,7 +9,7 @@ record AgentStatus(int protocol, String pid, boolean recording, List<RootEntry> 
         long recordingBytes, boolean recordingTruncated, long lastRecordingId, String lastRecordingName,
         long lastRecordingStartEpochMs, long lastRecordingBytes, boolean lastRecordingTruncated) {
 
-    static AgentStatus parse(final Map<String, String> st) {
+    static AgentStatus parse(Map<String, String> st) {
         return new AgentStatus((int) longOr(st, "v", 0), st.getOrDefault("pid", "?"), "recording".equals(st.get("state")),
                 rootEntries(st), st.get("instrumentedClasses"), st.get("instrumentedMethods"),
                 longOr(st, "recording.id", 0), st.getOrDefault("recording.name", ""),
@@ -19,12 +19,12 @@ record AgentStatus(int protocol, String pid, boolean recording, List<RootEntry> 
                 longOr(st, "lastRecording.bytes", -1), "true".equals(st.get("lastRecording.truncated")));
     }
 
-    static List<RootEntry> rootEntries(final Map<String, String> st) {
-        final List<RootEntry> out = new ArrayList<>();
+    static List<RootEntry> rootEntries(Map<String, String> st) {
+        List<RootEntry> out = new ArrayList<>();
         for (int i = 0; st.containsKey("root." + i); i++) {
-            final String v = st.get("root." + i);
-            final int sp = v.indexOf(' ');
-            final String spec = sp < 0 ? v : v.substring(sp + 1);
+            String v = st.get("root." + i);
+            int sp = v.indexOf(' ');
+            String spec = sp < 0 ? v : v.substring(sp + 1);
             if (spec.isEmpty()) {
                 continue;
             }
@@ -33,14 +33,14 @@ record AgentStatus(int protocol, String pid, boolean recording, List<RootEntry> 
         return out;
     }
 
-    private static long longOr(final Map<String, String> st, final String key, final long dflt) {
-        final String v = st.get(key);
+    private static long longOr(Map<String, String> st, String key, long dflt) {
+        String v = st.get(key);
         if (v == null) {
             return dflt;
         }
         try {
             return Long.parseLong(v);
-        } catch (final NumberFormatException e) {
+        } catch (NumberFormatException e) {
             return dflt;
         }
     }

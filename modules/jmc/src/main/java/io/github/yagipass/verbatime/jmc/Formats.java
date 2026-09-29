@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.jmc.export.ExportNames;
 
 public final class Formats {
@@ -18,8 +20,8 @@ public final class Formats {
     private Formats() {
     }
 
-    public static String fmtDur(final long ns) {
-        final long v = Math.max(ns, 0);
+    public static String fmtDur(long ns) {
+        long v = Math.max(ns, 0);
         if (v < 1_000L) {
             return v + " ns";
         }
@@ -32,77 +34,77 @@ public final class Formats {
         return String.format(Locale.ROOT, "%.3f s", v / 1e9);
     }
 
-    public static String fmtTs(final long ns) {
+    public static String fmtTs(long ns) {
         return String.format(Locale.ROOT, "%.4f s", ns / 1e9);
     }
 
-    public static String fmtWall(final OffsetDateTime t) {
+    public static String fmtWall(OffsetDateTime t) {
         return WALL.format(t);
     }
 
-    public static String fmtInt(final long x) {
+    public static String fmtInt(long x) {
         return String.format(Locale.US, "%,d", x);
     }
 
-    public static String fmtPct(final double pct) {
-        final double v = pct > 0 && Double.isFinite(pct) ? pct : 0;
-        final int digits = v >= 10 ? 0 : v >= 1 ? 1 : 2;
+    public static String fmtPct(double pct) {
+        double v = pct > 0 && Double.isFinite(pct) ? pct : 0;
+        int digits = v >= 10 ? 0 : v >= 1 ? 1 : 2;
         return new BigDecimal(v).setScale(digits, RoundingMode.HALF_UP).toPlainString() + "%";
     }
 
-    public static String fmtBytes(final long b) {
+    public static String fmtBytes(long b) {
         return b < 1 << 20 ? (b + " B") : String.format(Locale.ROOT, "%.1f MB", b / 1048576.0);
     }
 
-    public static String fmtElapsed(final long millis) {
-        final long s = Math.max(0, millis / 1000);
-        final long h = s / 3600;
-        final long m = s % 3600 / 60;
+    public static String fmtElapsed(long millis) {
+        long s = Math.max(0, millis / 1000);
+        long h = s / 3600;
+        long m = s % 3600 / 60;
         return h > 0 ? String.format(Locale.ROOT, "%d:%02d:%02d", h, m, s % 60)
                 : String.format(Locale.ROOT, "%d:%02d", m, s % 60);
     }
 
-    public static String fmtLag(final long agentBytes, final long transferredBytes, final double agentBytesPerSec) {
-        final long behind = Math.max(agentBytes - transferredBytes, 0);
+    public static String fmtLag(long agentBytes, long transferredBytes, double agentBytesPerSec) {
+        long behind = Math.max(agentBytes - transferredBytes, 0);
         if (behind == 0) {
             return "up to date";
         }
-        final String s = fmtBytes(behind) + " behind";
+        String s = fmtBytes(behind) + " behind";
         if (agentBytesPerSec <= 0) {
             return s;
         }
         return s + ", about " + Math.max(Math.round(behind / agentBytesPerSec), 1) + " s";
     }
 
-    public static String plural(final int n, final String noun) {
+    public static String plural(int n, String noun) {
         return n + " " + (n == 1 ? noun : noun + "s");
     }
 
-    public static String shortName(final String full) {
+    public static String shortName(String full) {
         return ExportNames.shortName(full);
     }
 
-    public static String signature(final String full) {
-        final int p = full.indexOf('(');
+    public static String signature(String full) {
+        int p = full.indexOf('(');
         if (p < 0) {
             return shortName(full);
         }
-        final int close = full.indexOf(')', p);
+        int close = full.indexOf(')', p);
         if (close < 0) {
             return full;
         }
-        final List<String> args = parseTypes(full.substring(p + 1, close));
+        List<String> args = parseTypes(full.substring(p + 1, close));
         if (args == null) {
             return full;
         }
         return shortName(full) + "(" + String.join(", ", args) + ")";
     }
 
-    private static List<String> parseTypes(final String s) {
-        final List<String> out = new ArrayList<>();
-        int i = 0;
+    private static List<String> parseTypes(String s) {
+        List<String> out = new ArrayList<>();
+        @Var int i = 0;
         while (i < s.length()) {
-            final StringBuilder arr = new StringBuilder();
+            StringBuilder arr = new StringBuilder();
             while (i < s.length() && s.charAt(i) == '[') {
                 arr.append("[]");
                 i++;
@@ -110,17 +112,17 @@ public final class Formats {
             if (i >= s.length()) {
                 return null;
             }
-            final char c = s.charAt(i);
+            char c = s.charAt(i);
             if (c == 'L') {
-                final int semi = s.indexOf(';', i);
+                int semi = s.indexOf(';', i);
                 if (semi < 0) {
                     break;
                 }
-                final String fq = s.substring(i + 1, semi).replace('/', '.');
+                String fq = s.substring(i + 1, semi).replace('/', '.');
                 out.add(fq.substring(fq.lastIndexOf('.') + 1) + arr);
                 i = semi + 1;
             } else {
-                final String prim = primitive(c);
+                String prim = primitive(c);
                 if (prim == null) {
                     return null;
                 }
@@ -131,7 +133,7 @@ public final class Formats {
         return out;
     }
 
-    private static String primitive(final char c) {
+    private static String primitive(char c) {
         return switch (c) {
             case 'B' -> "byte";
             case 'C' -> "char";

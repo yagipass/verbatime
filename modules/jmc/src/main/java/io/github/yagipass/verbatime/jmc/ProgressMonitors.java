@@ -11,11 +11,11 @@ final class ProgressMonitors {
     private ProgressMonitors() {
     }
 
-    static TraceIndexer.ProgressListener of(final IProgressMonitor monitor) {
-        final int[] reported = { 0 };
+    static TraceIndexer.ProgressListener of(IProgressMonitor monitor) {
+        int[] reported = { 0 };
         return (done, total) -> {
-            final long raw = total > 0 ? done * TICKS / total : 0;
-            final int target = (int) Math.max(0, Math.min(raw, TICKS));
+            long raw = total > 0 ? done * TICKS / total : 0;
+            int target = (int) Math.max(0, Math.min(raw, TICKS));
             if (target > reported[0]) {
                 monitor.worked(target - reported[0]);
                 reported[0] = target;

@@ -2,6 +2,8 @@ package io.github.yagipass.verbatime.jmc.export;
 
 import java.util.Arrays;
 
+import com.google.errorprone.annotations.Var;
+
 final class OpenCalls {
 
     private static final int INITIAL = 256;
@@ -46,11 +48,11 @@ final class OpenCalls {
         return maxSize;
     }
 
-    int push(final int method, final long ticks) {
+    int push(int method, long ticks) {
         if (size == startTicks.length) {
             allocate();
         }
-        final int k = size;
+        int k = size;
         startTicks[k] = ticks;
         methodId[k] = method;
         childTicks[k] = 0;
@@ -72,20 +74,20 @@ final class OpenCalls {
         return --size;
     }
 
-    BelowFloorCounts belowFloorAt(final int k) {
-        BelowFloorCounts t = belowFloorAt[k];
+    BelowFloorCounts belowFloorAt(int k) {
+        @Var BelowFloorCounts t = belowFloorAt[k];
         if (t == null) {
             t = belowFloorAt[k] = new BelowFloorCounts();
         }
         return t;
     }
 
-    BelowFloorCounts belowFloorOrNull(final int k) {
+    BelowFloorCounts belowFloorOrNull(int k) {
         return belowFloorAt[k];
     }
 
     private void allocate() {
-        final int n = startTicks.length * 2;
+        int n = startTicks.length * 2;
         startTicks = Arrays.copyOf(startTicks, n);
         methodId = Arrays.copyOf(methodId, n);
         childTicks = Arrays.copyOf(childTicks, n);

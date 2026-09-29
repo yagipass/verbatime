@@ -1,5 +1,7 @@
 package io.github.yagipass.verbatime.agent.probe;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.format.EventEncoder;
 import io.github.yagipass.verbatime.format.Vbtm;
 
@@ -12,29 +14,29 @@ final class ChunkEncoder {
 
     private long clampedDeltas;
 
-    ChunkEncoder(final long originNanos) {
+    ChunkEncoder(long originNanos) {
         this.originNanos = originNanos;
     }
 
-    Encoded encode(final long[] buf, final int words, final long floorTicks, final int methodIdCount, final byte[] out,
-            final int offset) {
-        int p = offset;
-        long baseTicks = floorTicks;
-        long prevTicks = -1;
+    Encoded encode(long[] buf, int words, long floorTicks, int methodIdCount, byte[] out,
+            int offset) {
+        @Var int p = offset;
+        @Var long baseTicks = floorTicks;
+        @Var long prevTicks = -1;
         for (int i = 0; i < words; i += 2) {
-            final long nanos = buf[i];
-            final long packed = buf[i + 1];
+            long nanos = buf[i];
+            long packed = buf[i + 1];
             if (nanos == 0) {
                 break;
             }
-            final int lowBits = (int) (packed & 3);
-            final boolean enter = lowBits == 0;
+            int lowBits = (int) (packed & 3);
+            boolean enter = lowBits == 0;
             if (enter && (packed >>> 2) >= methodIdCount) {
                 break;
             }
-            final long rel = nanos - originNanos;
-            long ticks = rel <= 0 ? 0 : rel / Vbtm.NANOS_PER_TICK;
-            final long delta;
+            long rel = nanos - originNanos;
+            @Var long ticks = rel <= 0 ? 0 : rel / Vbtm.NANOS_PER_TICK;
+            long delta;
             if (prevTicks < 0) {
                 if (ticks < floorTicks) {
                     ticks = floorTicks;

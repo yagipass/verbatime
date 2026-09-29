@@ -12,7 +12,7 @@ final class JmxAgentTest {
 
     @Test
     void splitsAtFirstEqualsOnly() {
-        final Map<String, String> m = JmxAgent
+        Map<String, String> m = JmxAgent
                 .parseStatus(new String[] { "root.0=ok com.example.web.RequestHandler::handle",
                         "recording.file=rec-3-20260828-120000.vbtm", "future.key=a=b=c", });
         assertEquals("ok com.example.web.RequestHandler::handle", m.get("root.0"));
@@ -22,13 +22,13 @@ final class JmxAgentTest {
 
     @Test
     void preservesAgentLineOrder() {
-        final Map<String, String> m = JmxAgent.parseStatus(new String[] { "v=1", "pid=7", "state=idle" });
+        Map<String, String> m = JmxAgent.parseStatus(new String[] { "v=1", "pid=7", "state=idle" });
         assertEquals(List.of("v", "pid", "state"), List.copyOf(m.keySet()));
     }
 
     @Test
     void skipsMalformedLines() {
-        final Map<String, String> m = JmxAgent.parseStatus(new String[] { "v=1", "garbage", "=nokey", "" });
+        Map<String, String> m = JmxAgent.parseStatus(new String[] { "v=1", "garbage", "=nokey", "" });
         assertEquals(1, m.size());
         assertTrue(m.containsKey("v"));
     }

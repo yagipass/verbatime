@@ -15,7 +15,7 @@ import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
 final class ExportNamesTest {
 
     private static TraceSnapshot trace() throws IOException {
-        final TraceBuilder w = TestTraces.writer();
+        TraceBuilder w = TestTraces.writer();
         w.clazz(1, "pkg.a.X", "m()V", "m(I)V", "other()V");
         w.clazz(4, "pkg.b.X", "m()V");
         return TestTraces.index(w);
@@ -23,7 +23,7 @@ final class ExportNamesTest {
 
     @Test
     void collidingShortNamesAreNumberedInFirstUseOrder() throws IOException {
-        final ExportNames names = new ExportNames(trace());
+        ExportNames names = new ExportNames(trace());
         assertEquals("X.m", names.displayName(2), "the first id met keeps the bare name, whatever its id");
         assertEquals("X.m#2", names.displayName(1), "an overload met later is numbered");
         assertEquals("X.m#3", names.displayName(4), "a same-named class in another package is numbered too");
@@ -40,7 +40,7 @@ final class ExportNamesTest {
 
     @Test
     void unknownIdsAreNamedLikeTheViewerAndCanBeLookedUp() throws IOException {
-        final ExportNames names = new ExportNames(trace());
+        ExportNames names = new ExportNames(trace());
         assertEquals("<unknown#9>", names.displayName(9));
         assertEquals("<unknown#9>", names.fullName(9));
         assertEquals("<unknown#70000>", names.displayName(70_000), "ids beyond the registered range grow the table");

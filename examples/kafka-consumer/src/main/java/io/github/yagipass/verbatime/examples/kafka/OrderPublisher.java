@@ -13,12 +13,12 @@ public class OrderPublisher {
 
     private final KafkaTemplate<String, String> kafka;
 
-    OrderPublisher(final KafkaTemplate<String, String> kafka) {
+    OrderPublisher(KafkaTemplate<String, String> kafka) {
         this.kafka = kafka;
     }
 
     @PostMapping(value = "/orders", produces = MediaType.TEXT_PLAIN_VALUE)
-    public ResponseEntity<String> publish(@RequestParam(defaultValue = "widget") final String sku, @RequestParam(defaultValue = "1") final int qty) {
+    public ResponseEntity<String> publish(@RequestParam(defaultValue = "widget") String sku, @RequestParam(defaultValue = "1") int qty) {
         kafka.send(KafkaApplication.TOPIC, sku, sku + ":" + qty);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body("queued " + sku + ":" + qty);
     }

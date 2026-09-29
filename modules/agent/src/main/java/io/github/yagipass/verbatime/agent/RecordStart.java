@@ -6,7 +6,7 @@ public enum RecordStart {
 
     ONDEMAND, STARTUP;
 
-    static RecordStart parse(final String value) {
+    static RecordStart parse(String value) {
         return switch (value) {
             case "ondemand" -> ONDEMAND;
             case "startup" -> STARTUP;

@@ -14,7 +14,7 @@ final class ManualExecutor extends AbstractExecutorService {
     private boolean shutdown;
 
     @Override
-    public void execute(final Runnable r) {
+    public void execute(Runnable r) {
         if (shutdown) {
             throw new RejectedExecutionException("executor is shut down");
         }
@@ -39,7 +39,7 @@ final class ManualExecutor extends AbstractExecutorService {
     @Override
     public List<Runnable> shutdownNow() {
         shutdown = true;
-        final List<Runnable> dropped = List.copyOf(queue);
+        List<Runnable> dropped = List.copyOf(queue);
         queue.clear();
         return dropped;
     }
@@ -55,7 +55,7 @@ final class ManualExecutor extends AbstractExecutorService {
     }
 
     @Override
-    public boolean awaitTermination(final long timeout, final TimeUnit unit) {
+    public boolean awaitTermination(long timeout, TimeUnit unit) {
         return isTerminated();
     }
 }

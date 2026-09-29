@@ -10,7 +10,7 @@ final class FrameStackTest {
 
     @Test
     void poppingAChildChargesItsDurationToTheParentSoSelfIsTotalMinusChildren() {
-        final FrameStack s = new FrameStack();
+        FrameStack s = new FrameStack();
         s.push(100, 1);
         s.push(120, 2);
         assertEquals(2, s.depth());
@@ -32,7 +32,7 @@ final class FrameStackTest {
 
     @Test
     void selfNeverGoesNegativeWhenQuantisedChildrenOutlastTheParent() {
-        final FrameStack s = new FrameStack();
+        FrameStack s = new FrameStack();
         s.push(100, 1);
         s.push(100, 2);
         s.pop(110);
@@ -44,11 +44,11 @@ final class FrameStackTest {
 
     @Test
     void aCopyKeepsTheOpenFramesButIsIndependentOfLaterPushesAndPops() {
-        final FrameStack s = new FrameStack();
+        FrameStack s = new FrameStack();
         for (int i = 0; i < 100; i++) {
             s.push(i, i);
         }
-        final FrameStack c = s.copy();
+        FrameStack c = s.copy();
         s.pop(1_000);
         s.pop(1_000);
         assertEquals(98, s.depth());
@@ -63,12 +63,12 @@ final class FrameStackTest {
 
     @Test
     void aCopyTakenRightAfterAPopStillReportsThatFrameEvenBeyondTheInitialCapacity() {
-        final FrameStack s = new FrameStack();
+        FrameStack s = new FrameStack();
         for (int i = 0; i < 65; i++) {
             s.push(i, i);
         }
         s.pop(1_000);
-        final FrameStack c = s.copy();
+        FrameStack c = s.copy();
         assertEquals(64, c.depth());
         assertEquals(64, c.methodId());
         assertEquals(64 * T, c.startNs());
@@ -76,11 +76,11 @@ final class FrameStackTest {
         assertEquals(0, c.childNs());
         assertEquals(c.durNs(), c.selfNs());
 
-        final FrameStack shallow = new FrameStack();
+        FrameStack shallow = new FrameStack();
         shallow.push(100, 1);
         shallow.push(120, 2);
         shallow.pop(150);
-        final FrameStack sc = shallow.copy();
+        FrameStack sc = shallow.copy();
         assertEquals(30 * T, sc.durNs());
         assertEquals(2, sc.methodId());
     }

@@ -13,7 +13,7 @@ public class KafkaApplication {
 
     static final String TOPIC = "orders";
 
-    public static void main(final String[] args) {
+    public static void main(String[] args) {
         SpringApplication.run(KafkaApplication.class, args);
     }
 

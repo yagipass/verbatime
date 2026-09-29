@@ -4,17 +4,19 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import com.google.errorprone.annotations.Var;
+
 final class GcPauses {
 
     private final List<TraceFile.GcPause> byStart;
 
     private final long longestTicks;
 
-    GcPauses(final TraceFile file) {
+    GcPauses(TraceFile file) {
         byStart = new ArrayList<>(file.gcPauses);
         byStart.sort(Comparator.comparingLong(TraceFile.GcPause::startTicks));
-        long longest = 0;
-        for (final TraceFile.GcPause g : byStart) {
+        @Var long longest = 0;
+        for (TraceFile.GcPause g : byStart) {
             longest = Math.max(longest, g.durTicks());
         }
         longestTicks = longest;
@@ -25,17 +27,17 @@ final class GcPauses {
     }
 
     long totalTicks() {
-        long t = 0;
-        for (final TraceFile.GcPause g : byStart) {
+        @Var long t = 0;
+        for (TraceFile.GcPause g : byStart) {
             t += g.durTicks();
         }
         return t;
     }
 
-    List<TraceFile.GcPause> overlapping(final long startTicks, final long endTicks) {
-        final List<TraceFile.GcPause> r = new ArrayList<>();
+    List<TraceFile.GcPause> overlapping(long startTicks, long endTicks) {
+        List<TraceFile.GcPause> r = new ArrayList<>();
         for (int i = firstCandidate(startTicks); i < byStart.size(); i++) {
-            final TraceFile.GcPause g = byStart.get(i);
+            TraceFile.GcPause g = byStart.get(i);
             if (g.startTicks() >= endTicks) {
                 break;
             }
@@ -46,20 +48,20 @@ final class GcPauses {
         return r;
     }
 
-    long overlapTicks(final long startTicks, final long endTicks) {
-        long t = 0;
-        for (final TraceFile.GcPause g : overlapping(startTicks, endTicks)) {
+    long overlapTicks(long startTicks, long endTicks) {
+        @Var long t = 0;
+        for (TraceFile.GcPause g : overlapping(startTicks, endTicks)) {
             t += Math.min(endTicks, g.endTicks()) - Math.max(startTicks, g.startTicks());
         }
         return t;
     }
 
-    private int firstCandidate(final long startTicks) {
-        final long from = startTicks - longestTicks;
-        int lo = 0;
-        int hi = byStart.size();
+    private int firstCandidate(long startTicks) {
+        long from = startTicks - longestTicks;
+        @Var int lo = 0;
+        @Var int hi = byStart.size();
         while (lo < hi) {
-            final int mid = (lo + hi) >>> 1;
+            int mid = (lo + hi) >>> 1;
             if (byStart.get(mid).startTicks() < from) {
                 lo = mid + 1;
             } else {

@@ -13,14 +13,16 @@ final class CopyTexts {
 
     private static final String TREE_ROW = "%10s  %10s  %6s  %8s  %s";
 
+    private static final String ANCESTOR_ROW = "%5s  %10s  %12s  %s";
+
     private CopyTexts() {
     }
 
-    static String gcText(final TraceSnapshot.GcPauses.Overlap o, final long durNs) {
+    static String gcText(TraceSnapshot.GcPauses.Overlap o, long durNs) {
         if (o.pauses() == 0) {
             return null;
         }
-        final StringBuilder sb = new StringBuilder("GC ").append(Formats.fmtDur(o.ns())).append(" in ").append(o.pauses())
+        StringBuilder sb = new StringBuilder("GC ").append(Formats.fmtDur(o.ns())).append(" in ").append(o.pauses())
                 .append(o.pauses() == 1 ? " pause" : " pauses");
         if (durNs > 0) {
             sb.append(", ").append(Formats.fmtPct(Math.min(o.ns() * 100.0 / durNs, 100))).append(" of total");
@@ -28,34 +30,33 @@ final class CopyTexts {
         return sb.toString();
     }
 
-    static long sessionDurNs(final TraceSnapshot d, final long tid, final long ts) {
-        final Session s = d.sessionAt(tid, ts);
+    static long sessionDurNs(TraceSnapshot d, long tid, long ts) {
+        Session s = d.sessionAt(tid, ts);
         return s == null ? -1 : s.durNs();
     }
 
-    static String pctOfSession(final long durNs, final long sessionDurNs) {
+    static String pctOfSession(long durNs, long sessionDurNs) {
         return sessionDurNs > 0 ? Formats.fmtPct(durNs * 100.0 / sessionDurNs) : "";
     }
 
-    static String ancestorText(final TraceSnapshot d, final SelectedCall f) {
-        final long sessionDur = sessionDurNs(d, f.tid(), f.startNs());
-        final StringBuilder sb = new StringBuilder();
+    static String ancestorText(TraceSnapshot d, SelectedCall f) {
+        long sessionDur = sessionDurNs(d, f.tid(), f.startNs());
+        StringBuilder sb = new StringBuilder();
         sb.append(sessionText(d, f.tid(), f.startNs())).append(" on ").append(d.threadName(f.tid()));
         if (sessionDur >= 0) {
             sb.append(", ").append(Formats.fmtDur(sessionDur));
         }
-        final String row = "%5s  %10s  %12s  %s";
-        sb.append('\n').append(String.format(Locale.ROOT, row, "depth", "total", "% of session", "method"));
-        for (final SelectedCall.Ancestor a : f.pathFromRoot()) {
-            sb.append('\n').append(String.format(Locale.ROOT, row, a.depth(), Formats.fmtDur(a.durNs()),
+        sb.append('\n').append(String.format(Locale.ROOT, ANCESTOR_ROW, "depth", "total", "% of session", "method"));
+        for (SelectedCall.Ancestor a : f.pathFromRoot()) {
+            sb.append('\n').append(String.format(Locale.ROOT, ANCESTOR_ROW, a.depth(), Formats.fmtDur(a.durNs()),
                     pctOfSession(a.durNs(), sessionDur), d.methodName(a.methodId())));
         }
         return sb.toString();
     }
 
-    static String bottomUpText(final BottomUpModel m, final Predicate<BottomUpModel.Row> expanded) {
-        final StringBuilder sb = new StringBuilder();
-        final String order = m.sortKey().name().toLowerCase(Locale.ROOT) + (m.descending() ? " descending"
+    static String bottomUpText(BottomUpModel m, Predicate<BottomUpModel.Row> expanded) {
+        StringBuilder sb = new StringBuilder();
+        String order = m.sortKey().name().toLowerCase(Locale.ROOT) + (m.descending() ? " descending"
                 : " ascending");
         sb.append("bottom-up of ").append(Formats.signature(m.rootName())).append(", total ").append(Formats.fmtDur(m.rootTotalNs()))
                 .append(", ").append(Formats.fmtInt(m.size())).append(" methods, by ").append(order);
@@ -63,14 +64,14 @@ final class CopyTexts {
             sb.append(", call tree truncated");
         }
         appendTreeHeader(sb);
-        for (final BottomUpModel.Row r : m.rows()) {
+        for (BottomUpModel.Row r : m.rows()) {
             appendBottomUpRow(sb, m, r, 0, expanded);
         }
         return sb.toString();
     }
 
-    private static void appendBottomUpRow(final StringBuilder sb, final BottomUpModel m, final BottomUpModel.Row r,
-            final int level, final Predicate<BottomUpModel.Row> expanded) {
+    private static void appendBottomUpRow(StringBuilder sb, BottomUpModel m, BottomUpModel.Row r,
+            int level, Predicate<BottomUpModel.Row> expanded) {
         appendTreeRow(sb, level, r.selfNs(), r.totalNs(), m.pct(r.selfNs()), r.calls(), r.name());
         if (expanded.test(r)) {
             for (int i = 0; i < r.childCount(); i++) {
@@ -79,9 +80,9 @@ final class CopyTexts {
         }
     }
 
-    static String topDownText(final TopDownModel m, final Predicate<TopDownModel.Row> expanded) {
-        final StringBuilder sb = new StringBuilder();
-        final TopDownModel.Row root = m.root();
+    static String topDownText(TopDownModel m, Predicate<TopDownModel.Row> expanded) {
+        StringBuilder sb = new StringBuilder();
+        TopDownModel.Row root = m.root();
         sb.append("top-down of ").append(Formats.signature(root.name())).append(", total ").append(Formats.fmtDur(root.totalNs()))
                 .append(", ").append(Formats.fmtInt(m.size())).append(" call paths");
         if (m.truncated()) {
@@ -92,8 +93,8 @@ final class CopyTexts {
         return sb.toString();
     }
 
-    private static void appendTopDownRow(final StringBuilder sb, final TopDownModel m, final TopDownModel.Row r,
-            final int level, final Predicate<TopDownModel.Row> expanded) {
+    private static void appendTopDownRow(StringBuilder sb, TopDownModel m, TopDownModel.Row r,
+            int level, Predicate<TopDownModel.Row> expanded) {
         appendTreeRow(sb, level, r.selfNs(), r.totalNs(), m.pct(r.totalNs()), r.calls(), r.name());
         if (expanded.test(r)) {
             for (int i = 0; i < r.childCount(); i++) {
@@ -102,18 +103,18 @@ final class CopyTexts {
         }
     }
 
-    private static void appendTreeHeader(final StringBuilder sb) {
+    private static void appendTreeHeader(StringBuilder sb) {
         sb.append('\n').append(String.format(Locale.ROOT, TREE_ROW, "self", "total", "%", "calls", "method"));
     }
 
-    private static void appendTreeRow(final StringBuilder sb, final int level, final long selfNs, final long totalNs,
-            final double pct, final long calls, final String name) {
+    private static void appendTreeRow(StringBuilder sb, int level, long selfNs, long totalNs,
+            double pct, long calls, String name) {
         sb.append('\n').append(String.format(Locale.ROOT, TREE_ROW, Formats.fmtDur(selfNs), Formats.fmtDur(totalNs),
                 Formats.fmtPct(pct), Formats.fmtInt(calls), "  ".repeat(level) + name));
     }
 
-    static String sessionText(final TraceSnapshot d, final long tid, final long ts) {
-        final Session s = d.sessionAt(tid, ts);
+    static String sessionText(TraceSnapshot d, long tid, long ts) {
+        Session s = d.sessionAt(tid, ts);
         if (s == null) {
             return "not in a session";
         }

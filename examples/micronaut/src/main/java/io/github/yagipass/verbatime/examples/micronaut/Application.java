@@ -7,7 +7,7 @@ public final class Application {
     private Application() {
     }
 
-    public static void main(final String[] args) {
+    public static void main(String[] args) {
         Micronaut.run(Application.class, args);
     }
 }

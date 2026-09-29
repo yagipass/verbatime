@@ -47,20 +47,20 @@ final class SessionExportDialog extends Dialog {
 
     private boolean scheduled;
 
-    private SessionExportDialog(final Shell parent, final TraceSnapshot data, final Session preselected) {
+    private SessionExportDialog(Shell parent, TraceSnapshot data, Session preselected) {
         super(parent);
         this.data = data;
         this.preselected = preselected;
     }
 
-    static boolean openAndSchedule(final Shell parent, final TraceSnapshot data, final SelectedCall selection) {
-        final SessionExportDialog d = new SessionExportDialog(parent, data, SessionExportTexts.defaultSession(data, selection));
+    static boolean openAndSchedule(Shell parent, TraceSnapshot data, SelectedCall selection) {
+        SessionExportDialog d = new SessionExportDialog(parent, data, SessionExportTexts.defaultSession(data, selection));
         d.open();
         return d.scheduled;
     }
 
     @Override
-    protected void configureShell(final Shell shell) {
+    protected void configureShell(Shell shell) {
         super.configureShell(shell);
         shell.setText("Export session as text");
     }
@@ -71,16 +71,16 @@ final class SessionExportDialog extends Dialog {
     }
 
     @Override
-    protected Control createDialogArea(final Composite parent) {
-        final Composite area = (Composite) super.createDialogArea(parent);
+    protected Control createDialogArea(Composite parent) {
+        Composite area = (Composite) super.createDialogArea(parent);
         area.setLayout(new GridLayout(1, false));
-        final Color dim = area.getDisplay().getSystemColor(SWT.COLOR_WIDGET_DISABLED_FOREGROUND);
+        Color dim = area.getDisplay().getSystemColor(SWT.COLOR_WIDGET_DISABLED_FOREGROUND);
 
-        final Label head = new Label(area, SWT.NONE);
+        Label head = new Label(area, SWT.NONE);
         head.setText("Session of " + data.path.getFileName() + " to export");
 
         viewer = new TableViewer(area, SWT.SINGLE | SWT.FULL_SELECTION | SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL);
-        final GridData tableData = new GridData(SWT.FILL, SWT.FILL, true, true);
+        GridData tableData = new GridData(SWT.FILL, SWT.FILL, true, true);
         tableData.heightHint = viewer.getTable().getItemHeight() * 12;
         tableData.widthHint = 800;
         viewer.getTable().setLayoutData(tableData);
@@ -97,7 +97,7 @@ final class SessionExportDialog extends Dialog {
         viewer.setInput(data.sessions);
         viewer.addSelectionChangedListener(e -> updateState());
         viewer.addDoubleClickListener(e -> {
-            final Session s = selected();
+            Session s = selected();
             if (s != null && SessionExportTexts.isExportable(s)) {
                 okPressed();
             }
@@ -111,19 +111,19 @@ final class SessionExportDialog extends Dialog {
             });
         }
 
-        final Group floor = new Group(area, SWT.NONE);
+        Group floor = new Group(area, SWT.NONE);
         floor.setText("Floor");
         floor.setLayout(new RowLayout());
         floor.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
         for (int i = 0; i < FLOORS_US.length; i++) {
-            final Button b = new Button(floor, SWT.RADIO);
+            Button b = new Button(floor, SWT.RADIO);
             b.setText(FLOORS_US[i] > 0 ? FLOORS_US[i] + " µs" : "none");
             b.setData(Integer.valueOf(FLOORS_US[i]));
             b.setSelection(FLOORS_US[i] == DEFAULT_FLOOR_US);
             b.addListener(SWT.Selection, e -> updateState());
             radios[i] = b;
         }
-        final Label hint = new Label(area, SWT.WRAP);
+        Label hint = new Label(area, SWT.WRAP);
         hint.setText("Calls shorter than the floor are kept only as per-parent counts, so nothing is dropped. "
                 + "With no floor every call gets a line of its own. For a 1.3 s request of 5 million calls the file "
                 + "is about 15 MB at 10 µs, 45 MB at 1 µs, 4 MB at 100 µs and 290 MB with no floor, and a startup "
@@ -138,18 +138,18 @@ final class SessionExportDialog extends Dialog {
     }
 
     private static GridData wrapData() {
-        final GridData gd = new GridData(SWT.FILL, SWT.TOP, true, false);
+        GridData gd = new GridData(SWT.FILL, SWT.TOP, true, false);
         gd.widthHint = 400;
         return gd;
     }
 
-    private void column(final String title, final int width, final int style, final Function<Session, String> text,
-            final boolean mono) {
+    private void column(String title, int width, int style, Function<Session, String> text,
+            boolean mono) {
         Columns.addTable(viewer, title, width, style,
                 new Columns.ColumnLabels<>(Session.class, text, s -> SessionExportTexts.rootName(data, s), mono) {
                     @Override
-                    public Color getForeground(final Object element) {
-                        return element instanceof final Session s && !SessionExportTexts.isExportable(s)
+                    public Color getForeground(Object element) {
+                        return element instanceof Session s && !SessionExportTexts.isExportable(s)
                                 ? viewer.getControl().getDisplay().getSystemColor(SWT.COLOR_WIDGET_DISABLED_FOREGROUND)
                                 : null;
                     }
@@ -157,19 +157,19 @@ final class SessionExportDialog extends Dialog {
     }
 
     @Override
-    protected void createButtonsForButtonBar(final Composite parent) {
+    protected void createButtonsForButtonBar(Composite parent) {
         createButton(parent, IDialogConstants.OK_ID, "Export…", true);
         createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, false);
         updateState();
     }
 
     private Session selected() {
-        return viewer.getSelection() instanceof final IStructuredSelection sel
-                && sel.getFirstElement() instanceof final Session s ? s : null;
+        return viewer.getSelection() instanceof IStructuredSelection sel
+                && sel.getFirstElement() instanceof Session s ? s : null;
     }
 
     private int floorUs() {
-        for (final Button b : radios) {
+        for (Button b : radios) {
             if (!b.isDisposed() && b.getSelection()) {
                 return ((Integer) b.getData()).intValue();
             }
@@ -181,9 +181,9 @@ final class SessionExportDialog extends Dialog {
         if (fileLabel == null || fileLabel.isDisposed()) {
             return;
         }
-        final Session s = selected();
-        final boolean can = s != null && SessionExportTexts.isExportable(s);
-        final Button ok = getButton(IDialogConstants.OK_ID);
+        Session s = selected();
+        boolean can = s != null && SessionExportTexts.isExportable(s);
+        Button ok = getButton(IDialogConstants.OK_ID);
         if (ok != null) {
             ok.setEnabled(can);
         }
@@ -202,32 +202,32 @@ final class SessionExportDialog extends Dialog {
 
     @Override
     protected void okPressed() {
-        final Session s = selected();
+        Session s = selected();
         if (s == null || !SessionExportTexts.isExportable(s)) {
             return;
         }
-        final int floorUs = floorUs();
-        final FileDialog fd = new FileDialog(getShell(), SWT.SAVE | SWT.SHEET);
+        int floorUs = floorUs();
+        FileDialog fd = new FileDialog(getShell(), SWT.SAVE | SWT.SHEET);
         fd.setText("Export session #" + s.seq + " as text");
         fd.setOverwrite(true);
-        final Path parentDir = data.path.toAbsolutePath().getParent();
+        Path parentDir = data.path.toAbsolutePath().getParent();
         if (parentDir != null) {
             fd.setFilterPath(parentDir.toString());
         }
         fd.setFileName(SessionExportTexts.exportFileName(data.path.getFileName().toString(), s.seq, floorUs));
         fd.setFilterExtensions(new String[] { "*.txt", "*.*" });
         fd.setFilterNames(new String[] { "Text files", "All files" });
-        final String chosen = fd.open();
+        String chosen = fd.open();
         if (chosen == null) {
             return;
         }
-        final Path dest = Path.of(chosen);
+        Path dest = Path.of(chosen);
         if (dest.toAbsolutePath().equals(data.path.toAbsolutePath())
                 || chosen.toLowerCase(Locale.ROOT).endsWith(".vbtm")) {
             MessageDialog.openError(getShell(), "Export session", "Refusing to overwrite a recording: " + dest);
             return;
         }
-        final long floorNs = SessionExportTexts.floorNs(floorUs);
+        long floorNs = SessionExportTexts.floorNs(floorUs);
         super.okPressed();
         SessionExportJob.schedule(getParentShell(), data, s, floorNs, dest);
         scheduled = true;

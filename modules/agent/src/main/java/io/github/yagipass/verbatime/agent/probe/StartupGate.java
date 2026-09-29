@@ -3,6 +3,8 @@ package io.github.yagipass.verbatime.agent.probe;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import com.google.errorprone.annotations.Var;
+
 public final class StartupGate {
 
     private enum State {
@@ -18,23 +20,23 @@ public final class StartupGate {
     private StartupGate() {
     }
 
-    public static void arm(final long timeoutMs) {
+    public static void arm(long timeoutMs) {
         StartupGate.timeoutMs = timeoutMs;
         state = State.ARMED;
         latch = new CountDownLatch(1);
     }
 
     public static void await() {
-        final CountDownLatch l = latch;
+        CountDownLatch l = latch;
         if (l == null) {
             return;
         }
         state = State.WAITING;
         Log.info("waitstart: pausing before main() for up to " + (timeoutMs / 1000) + " s until startRecording arrives over JMX");
-        boolean released = false;
+        @Var boolean released = false;
         try {
             released = l.await(timeoutMs, TimeUnit.MILLISECONDS);
-        } catch (final InterruptedException e) {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             Log.warn("waitstart: interrupted while waiting, starting main()");
         }
@@ -48,7 +50,7 @@ public final class StartupGate {
     }
 
     public static void release() {
-        final CountDownLatch l = latch;
+        CountDownLatch l = latch;
         if (l != null) {
             l.countDown();
         }

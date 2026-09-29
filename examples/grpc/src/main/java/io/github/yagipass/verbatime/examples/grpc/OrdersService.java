@@ -12,19 +12,19 @@ public final class OrdersService extends OrdersGrpc.OrdersImplBase {
 
     private final OrderService orders;
 
-    public OrdersService(final OrderService orders) {
+    public OrdersService(OrderService orders) {
         this.orders = orders;
     }
 
     @Override
-    public void placeOrder(final OrderRequest request, final StreamObserver<Receipt> response) {
-        final String sku = request.getSku().isEmpty() ? "widget" : request.getSku();
-        final int qty = request.getQty() == 0 ? 1 : request.getQty();
+    public void placeOrder(OrderRequest request, StreamObserver<Receipt> response) {
+        String sku = request.getSku().isEmpty() ? "widget" : request.getSku();
+        int qty = request.getQty() == 0 ? 1 : request.getQty();
         try {
-            final io.github.yagipass.verbatime.examples.workload.Receipt receipt = orders.placeOrder(sku, qty);
+            io.github.yagipass.verbatime.examples.workload.Receipt receipt = orders.placeOrder(sku, qty);
             response.onNext(Receipt.newBuilder().setSku(receipt.sku()).setQty(receipt.qty()).setCents(receipt.cents()).setTxId(receipt.txId()).build());
             response.onCompleted();
-        } catch (final OutOfStockException e) {
+        } catch (OutOfStockException e) {
             response.onError(Status.FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
         }
     }

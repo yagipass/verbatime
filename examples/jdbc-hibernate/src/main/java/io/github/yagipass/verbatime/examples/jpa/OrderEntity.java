@@ -29,7 +29,7 @@ public class OrderEntity {
     protected OrderEntity() {
     }
 
-    public OrderEntity(final String sku, final int qty, final long cents, final String txId) {
+    public OrderEntity(String sku, int qty, long cents, String txId) {
         this.sku = sku;
         this.qty = qty;
         this.cents = cents;

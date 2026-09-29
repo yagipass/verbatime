@@ -24,7 +24,7 @@ public final class ChunkTable {
         this(INITIAL);
     }
 
-    private ChunkTable(final int capacity) {
+    private ChunkTable(int capacity) {
         payloadOffset = new long[capacity];
         payloadEnd = new long[capacity];
         baseTicks = new long[capacity];
@@ -33,11 +33,11 @@ public final class ChunkTable {
         endsSession = new boolean[capacity];
     }
 
-    void append(final long payloadOffset, final long payloadEnd, final long baseTicks, final long endTicks,
-            final int openDepthAtStart) {
-        final int i = count;
+    void append(long payloadOffset, long payloadEnd, long baseTicks, long endTicks,
+            int openDepthAtStart) {
+        int i = count;
         if (i == this.payloadOffset.length) {
-            final int cap = i * 2;
+            int cap = i * 2;
             this.payloadOffset = Arrays.copyOf(this.payloadOffset, cap);
             this.payloadEnd = Arrays.copyOf(this.payloadEnd, cap);
             this.baseTicks = Arrays.copyOf(this.baseTicks, cap);
@@ -54,16 +54,16 @@ public final class ChunkTable {
         count = i + 1;
     }
 
-    void markSessionEnd(final int i) {
+    void markSessionEnd(int i) {
         endsSession[i] = true;
     }
 
-    public long payloadLen(final int i) {
+    public long payloadLen(int i) {
         return payloadEnd[i] - payloadOffset[i];
     }
 
     ChunkTable copy() {
-        final ChunkTable c = new ChunkTable(Math.max(count, INITIAL));
+        ChunkTable c = new ChunkTable(Math.max(count, INITIAL));
         c.count = count;
         System.arraycopy(payloadOffset, 0, c.payloadOffset, 0, count);
         System.arraycopy(payloadEnd, 0, c.payloadEnd, 0, count);

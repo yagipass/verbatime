@@ -18,13 +18,13 @@ public class OrderController {
 
     private final OrderRepository repository;
 
-    OrderController(final OrderService orders, final OrderRepository repository) {
+    OrderController(OrderService orders, OrderRepository repository) {
         this.orders = orders;
         this.repository = repository;
     }
 
     @GetMapping("/orders")
-    public Mono<OrderEntity> place(@RequestParam(defaultValue = "widget") final String sku, @RequestParam(defaultValue = "1") final int qty) {
+    public Mono<OrderEntity> place(@RequestParam(defaultValue = "widget") String sku, @RequestParam(defaultValue = "1") int qty) {
         return Mono.fromSupplier(() -> orders.placeOrder(sku, qty)).flatMap(this::save);
     }
 
@@ -34,11 +34,11 @@ public class OrderController {
     }
 
     @GetMapping("/orders/{id}")
-    public Mono<ResponseEntity<OrderEntity>> find(@PathVariable final long id) {
+    public Mono<ResponseEntity<OrderEntity>> find(@PathVariable long id) {
         return repository.findById(id).map(ResponseEntity::ok).defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
-    Mono<OrderEntity> save(final Receipt receipt) {
+    Mono<OrderEntity> save(Receipt receipt) {
         return repository.save(OrderEntity.of(receipt.sku(), receipt.qty(), receipt.cents(), receipt.txId()));
     }
 }

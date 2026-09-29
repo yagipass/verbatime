@@ -35,18 +35,18 @@ final class TransferTest {
 
     private final Transfer.Listener listener = new Transfer.Listener() {
         @Override
-        public void progress(final long bytes) {
+        public void progress(long bytes) {
             progress.add(bytes);
             onProgress.accept(bytes);
         }
 
         @Override
-        public void finished(final long bytes) {
+        public void finished(long bytes) {
             finished = bytes;
         }
 
         @Override
-        public void failed(final String message) {
+        public void failed(String message) {
             failed = message;
         }
 
@@ -61,7 +61,7 @@ final class TransferTest {
         agent.chunks.add(new byte[3]);
         agent.chunks.add(new byte[2]);
         agent.readError = new IOException("boom");
-        final Path local = dir.resolve("r.vbtm");
+        Path local = dir.resolve("r.vbtm");
         new Transfer(agent, 1, local, 0, listener, 1).run(new NullProgressMonitor());
         assertEquals(5, Files.size(local));
         assertEquals(List.of(3L, 5L), progress);
@@ -75,7 +75,7 @@ final class TransferTest {
         agent.chunks.add(new byte[1]);
         agent.chunks.add(new byte[0]);
         agent.chunks.add(new byte[2]);
-        final Path local = dir.resolve("r.vbtm");
+        Path local = dir.resolve("r.vbtm");
         new Transfer(agent, 1, local, 0, listener, 1).run(new NullProgressMonitor());
         assertEquals(List.of(1L, 3L), progress, "an empty chunk is a pause, not progress");
         assertEquals(3L, finished);
@@ -85,7 +85,7 @@ final class TransferTest {
 
     @Test
     void openStreamStartsAtTheLocalOffsetSoResumedBytesAreNotDuplicated() throws IOException {
-        final Path local = dir.resolve("r.vbtm");
+        Path local = dir.resolve("r.vbtm");
         Files.write(local, new byte[4]);
         agent.chunks.add(new byte[2]);
         new Transfer(agent, 1, local, 4, listener, 1).run(new NullProgressMonitor());
@@ -98,8 +98,8 @@ final class TransferTest {
     void cancelStopsBetweenChunksWithoutReportingFailure() throws IOException {
         agent.chunks.add(new byte[1]);
         agent.chunks.add(new byte[1]);
-        final NullProgressMonitor monitor = new NullProgressMonitor();
-        final Path local = dir.resolve("r.vbtm");
+        NullProgressMonitor monitor = new NullProgressMonitor();
+        Path local = dir.resolve("r.vbtm");
         onProgress = bytes -> monitor.setCanceled(true);
         new Transfer(agent, 1, local, 0, listener, 1).run(monitor);
         assertEquals(1, Files.size(local), "the chunk in flight is kept, the next one is never read");
@@ -112,10 +112,10 @@ final class TransferTest {
 
     @Test
     void aCancelThatLandsDuringReadStreamKeepsTheChunkAndReportsStopped() throws IOException {
-        final NullProgressMonitor monitor = new NullProgressMonitor();
+        NullProgressMonitor monitor = new NullProgressMonitor();
         agent.onRead = () -> monitor.setCanceled(true);
         agent.chunks.add(new byte[3]);
-        final Path local = dir.resolve("r.vbtm");
+        Path local = dir.resolve("r.vbtm");
         new Transfer(agent, 1, local, 0, listener, 1).run(monitor);
         assertEquals(3, Files.size(local),
                 "the next transfer resumes from the file size, so bytes already fetched are kept rather than refetched");
@@ -128,7 +128,7 @@ final class TransferTest {
     @Test
     void anInterruptWhileWaitingForDataReportsStoppedAndKeepsTheFlag() throws IOException {
         agent.chunks.add(new byte[0]);
-        final Path local = dir.resolve("r.vbtm");
+        Path local = dir.resolve("r.vbtm");
         Thread.currentThread().interrupt();
         try {
             new Transfer(agent, 1, local, 0, listener, 60_000).run(new NullProgressMonitor());
@@ -144,7 +144,7 @@ final class TransferTest {
 
     @Test
     void aFailureAfterCancellationIsStoppedNotFailed() throws IOException {
-        final NullProgressMonitor monitor = new NullProgressMonitor();
+        NullProgressMonitor monitor = new NullProgressMonitor();
         agent.onRead = () -> monitor.setCanceled(true);
         agent.readError = new IOException("connection closed");
         new Transfer(agent, 1, dir.resolve("r.vbtm"), 0, listener, 1).run(monitor);

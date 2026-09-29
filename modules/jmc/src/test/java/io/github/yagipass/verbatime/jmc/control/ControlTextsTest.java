@@ -16,19 +16,19 @@ final class ControlTextsTest {
 
     @Test
     void deletePromptNamesEveryFileSoTheUserCanCheckBeforeConfirming() {
-        final List<Entry> three = List.of(rec("a.vbtm", 1 << 20), rec("b.vbtm", 2 << 20), rec("c.vbtm", -1));
+        List<Entry> three = List.of(rec("a.vbtm", 1 << 20), rec("b.vbtm", 2 << 20), rec("c.vbtm", -1));
         assertEquals("Delete 3 recordings, 3.0 MB in total?\n\na.vbtm\nb.vbtm\nc.vbtm\n\nThis cannot be undone.",
                 ControlTexts.deletePrompt(three, 0), "unknown sizes do not poison the total");
 
-        final Entry one = rec("only.vbtm", 512);
+        Entry one = rec("only.vbtm", 512);
         assertEquals("Delete only.vbtm, 512 B?\n" + one.file() + "\n\nThis cannot be undone.",
                 ControlTexts.deletePrompt(List.of(one), 0), "a single row keeps the full path");
     }
 
     @Test
     void deletePromptCapsTheListAndSaysHowManyAreSkipped() {
-        final List<Entry> twelve = IntStream.range(0, 12).mapToObj(i -> rec("r" + i + ".vbtm", 1)).toList();
-        final String text = ControlTexts.deletePrompt(twelve, 1);
+        List<Entry> twelve = IntStream.range(0, 12).mapToObj(i -> rec("r" + i + ".vbtm", 1)).toList();
+        String text = ControlTexts.deletePrompt(twelve, 1);
         assertTrue(text.startsWith("Delete 12 recordings, 12 B in total?\n"), text);
         assertTrue(text.contains("\nr9.vbtm\n\u2026 and 2 more\n"), text);
         assertFalse(text.contains("r10.vbtm"), "names past the cap collapse into the count");
@@ -62,7 +62,7 @@ final class ControlTextsTest {
         assertEquals("", ControlTexts.countText(null, null));
     }
 
-    private static Entry rec(final String name, final long size) {
+    private static Entry rec(String name, long size) {
         return new Entry(Path.of("/tmp/recordings/localhost_9010", name), "localhost_9010", size, 0);
     }
 }

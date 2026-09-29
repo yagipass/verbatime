@@ -1,5 +1,7 @@
 package io.github.yagipass.verbatime.jmc.index;
 
+import com.google.errorprone.annotations.Var;
+
 final class DurationHistogram {
 
     static final int SIZE = 1000 + 16 * 900;
@@ -15,31 +17,31 @@ final class DurationHistogram {
     private DurationHistogram() {
     }
 
-    static int bucketIndex(final long durNs) {
+    static int bucketIndex(long durNs) {
         if (durNs < 1000) {
             return (int) durNs;
         }
-        int d = 4;
+        @Var int d = 4;
         while (d < 19 && durNs >= POW10[d]) {
             d++;
         }
-        final int m = (int) (durNs / POW10[d - 3]);
+        int m = (int) (durNs / POW10[d - 3]);
         return 1000 + (d - 4) * 900 + (m - 100);
     }
 
-    static long bucketValue(final int index) {
+    static long bucketValue(int index) {
         if (index < 1000) {
             return index;
         }
-        final int r = index - 1000;
+        int r = index - 1000;
         return (r % 900 + 100) * POW10[r / 900 + 1];
     }
 
-    static long chooseThreshold(final long[] hist, final long total, final long budget) {
+    static long chooseThreshold(long[] hist, long total, long budget) {
         if (total <= budget) {
             return 0;
         }
-        long kept = 0;
+        @Var long kept = 0;
         for (int i = SIZE - 1; i >= 0; i--) {
             kept += hist[i];
             if (kept >= budget) {

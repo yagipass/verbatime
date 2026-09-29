@@ -9,7 +9,7 @@ import io.github.yagipass.verbatime.examples.workload.OrderService;
 @SpringBootApplication
 public class MvcApplication {
 
-    public static void main(final String[] args) {
+    public static void main(String[] args) {
         SpringApplication.run(MvcApplication.class, args);
     }
 

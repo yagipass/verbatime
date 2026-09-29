@@ -13,7 +13,7 @@ public final class TransferJob extends Job {
 
     private final Transfer pull;
 
-    TransferJob(final Transfer pull) {
+    TransferJob(Transfer pull) {
         super("Transferring recording #" + pull.recordingId());
         this.pull = pull;
         setUser(false);
@@ -24,10 +24,10 @@ public final class TransferJob extends Job {
         return pull.file();
     }
 
-    public static boolean isTransferring(final Path file) {
-        final Path wanted = file.toAbsolutePath();
-        for (final Job j : Job.getJobManager().find(FAMILY)) {
-            if (j instanceof final TransferJob p && p.file().toAbsolutePath().equals(wanted)) {
+    public static boolean isTransferring(Path file) {
+        Path wanted = file.toAbsolutePath();
+        for (Job j : Job.getJobManager().find(FAMILY)) {
+            if (j instanceof TransferJob p && p.file().toAbsolutePath().equals(wanted)) {
                 return true;
             }
         }
@@ -35,7 +35,7 @@ public final class TransferJob extends Job {
     }
 
     @Override
-    protected IStatus run(final IProgressMonitor monitor) {
+    protected IStatus run(IProgressMonitor monitor) {
         monitor.beginTask(getName(), IProgressMonitor.UNKNOWN);
         try {
             pull.run(monitor);
@@ -47,14 +47,14 @@ public final class TransferJob extends Job {
 
     @Override
     protected void canceling() {
-        final Thread t = getThread();
+        Thread t = getThread();
         if (t != null) {
             t.interrupt();
         }
     }
 
     @Override
-    public boolean belongsTo(final Object family) {
+    public boolean belongsTo(Object family) {
         return FAMILY.equals(family);
     }
 }

@@ -23,9 +23,12 @@ You need Docker with Compose v2, JDK 25, and free ports 8080 and 7091. From the 
 
 ```sh
 nix develop .#agent
-mvn -q -pl modules/format package -DskipTests
-java -cp modules/format/target/classes bench/Bench.java --quick
+mvn -q -pl modules/format package dependency:build-classpath -DskipTests -DincludeScope=compile -Dmdep.outputFile=target/bench.classpath
+java -cp "modules/format/target/classes:$(cat modules/format/target/bench.classpath)" bench/Bench.java --quick
 ```
+
+`bench.classpath` points at the Error Prone annotations jar, which the `@Var` annotations in the bench
+sources need.
 
 `--quick` takes a few minutes and checks the setup. Drop it for the full run, which takes about an
 hour. Results go to `bench/results/<timestamp>/`. Open `summary.md` there.

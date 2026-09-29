@@ -17,19 +17,19 @@ final class SessionExportJob {
     private SessionExportJob() {
     }
 
-    static void schedule(final Shell parent, final TraceSnapshot data, final Session s, final long floorNs,
-            final Path dest) {
-        final UiThread ui = UiThread.of(parent.getDisplay());
-        final Job job = Job.create("Exporting session #" + s.seq + " of " + data.path.getFileName(), monitor -> {
+    static void schedule(Shell parent, TraceSnapshot data, Session s, long floorNs,
+            Path dest) {
+        UiThread ui = UiThread.of(parent.getDisplay());
+        Job job = Job.create("Exporting session #" + s.seq + " of " + data.path.getFileName(), monitor -> {
             monitor.beginTask(dest.getFileName().toString(), ProgressMonitors.TICKS);
             try {
-                final SessionExporter.Result r = SessionExporter.export(data, s, floorNs, dest, ProgressMonitors.of(monitor));
+                SessionExporter.Result r = SessionExporter.export(data, s, floorNs, dest, ProgressMonitors.of(monitor));
                 ui.post(() -> MessageDialog.openInformation(shellOrNull(parent), "Export session",
                         SessionExportTexts.summary(dest, s, floorNs, r)));
                 return Status.OK_STATUS;
-            } catch (final TraceIndexer.CancelledException c) {
+            } catch (TraceIndexer.CancelledException c) {
                 return Status.CANCEL_STATUS;
-            } catch (final Exception e) {
+            } catch (Exception e) {
                 ui.post(() -> MessageDialog.openError(shellOrNull(parent), "Export session",
                         "Failed to export session #" + s.seq + " to " + dest + ":\n" + e));
                 return Status.OK_STATUS;
@@ -42,7 +42,7 @@ final class SessionExportJob {
         job.schedule();
     }
 
-    private static Shell shellOrNull(final Shell s) {
+    private static Shell shellOrNull(Shell s) {
         return s.isDisposed() ? null : s;
     }
 }

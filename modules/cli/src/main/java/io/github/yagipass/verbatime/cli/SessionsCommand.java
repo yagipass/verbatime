@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import com.google.errorprone.annotations.Var;
+
 final class SessionsCommand {
 
     static final String HELP = """
@@ -33,33 +35,33 @@ final class SessionsCommand {
     private SessionsCommand() {
     }
 
-    static int run(final List<String> argv, final PrintStream stdout) {
-        final Args args = Args.parse("sessions", argv, Set.of("root", "thread", "sort", "limit"), Set.of("json"));
+    static int run(List<String> argv, PrintStream stdout) {
+        Args args = Args.parse("sessions", argv, Set.of("root", "thread", "sort", "limit"), Set.of("json"));
         args.rejectPositionalsBeyond(1);
-        final TraceFile file = TraceFile.open(args.positional(0, "the .vbtm file"));
-        final Out out = new Out(stdout, args.has("json"));
-        final Names names = new Names(file);
-        final String sort = args.choice("sort", "start", "start", "dur", "calls");
-        final int limit = args.positiveInt("limit", 20);
-        final MethodPattern root = args.has("root") ? MethodPattern.resolve(file, names, args.value("root"), true)
+        TraceFile file = TraceFile.open(args.positional(0, "the .vbtm file"));
+        Out out = new Out(stdout, args.has("json"));
+        Names names = new Names(file);
+        String sort = args.choice("sort", "start", "start", "dur", "calls");
+        int limit = args.positiveInt("limit", 20);
+        MethodPattern root = args.has("root") ? MethodPattern.resolve(file, names, args.value("root"), true)
                 : null;
-        final String thread = args.value("thread");
+        String thread = args.value("thread");
 
-        final SessionWalker walker = new SessionWalker(file);
-        final GcPauses gc = new GcPauses(file);
-        final List<SessionSummary> all = new ArrayList<>(file.sessions.size());
-        long totalCalls = 0;
-        long lengthTicks = 0;
-        final Set<Long> tids = new HashSet<>();
-        for (final TraceFile.Session s : file.sessions) {
-            final SessionSummary summary = SessionSummary.of(walker, s);
+        SessionWalker walker = new SessionWalker(file);
+        GcPauses gc = new GcPauses(file);
+        List<SessionSummary> all = new ArrayList<>(file.sessions.size());
+        @Var long totalCalls = 0;
+        @Var long lengthTicks = 0;
+        Set<Long> tids = new HashSet<>();
+        for (TraceFile.Session s : file.sessions) {
+            SessionSummary summary = SessionSummary.of(walker, s);
             all.add(summary);
             totalCalls += summary.calls;
             lengthTicks = Math.max(lengthTicks, summary.endTicks());
             tids.add(s.tid);
         }
 
-        final String recorded = RECORDED.format(file.wallClock(0));
+        String recorded = RECORDED.format(file.wallClock(0));
         out.text("file: " + file.fileName() + "  status: " + file.statusText() + "  recorded: " + recorded);
         out.text("length: " + Formats.ms(lengthTicks) + " ms  threads: " + Formats.grouped(tids.size())
                 + "  sessions: " + Formats.grouped(file.sessions.size()) + "  calls: " + Formats.grouped(totalCalls)
@@ -72,8 +74,8 @@ final class SessionsCommand {
                 .put("sessions", file.sessions.size()).put("calls", totalCalls).put("methods", file.methodCount)
                 .put("gc_pauses", gc.count()).ms("gc_ms", gc.totalTicks()));
 
-        final List<SessionSummary> rows = new ArrayList<>();
-        for (final SessionSummary summary : all) {
+        List<SessionSummary> rows = new ArrayList<>();
+        for (SessionSummary summary : all) {
             if (root != null && !root.matches(summary.rootMethodId)) {
                 continue;
             }
@@ -83,21 +85,21 @@ final class SessionsCommand {
             rows.add(summary);
         }
         rows.sort(order(sort));
-        final boolean filtered = root != null || thread != null;
+        boolean filtered = root != null || thread != null;
         out.text((filtered
                 ? Formats.grouped(rows.size()) + " of " + Formats.plural(all.size(), "session") + " match"
                 : Formats.plural(rows.size(), "session")) + ", sorted by " + sort + ", showing "
                 + Formats.grouped(Math.min(limit, rows.size())));
         out.text("");
-        final Out.Table table = new Out.Table(">id", ">start", ">dur", ">calls", ">depth", ">throws", ">gc_ms",
+        Out.Table table = new Out.Table(">id", ">start", ">dur", ">calls", ">depth", ">throws", ">gc_ms",
                 "thread", "root");
-        final int shown = Math.min(limit, rows.size());
-        final Legend legend = new Legend(names);
+        int shown = Math.min(limit, rows.size());
+        Legend legend = new Legend(names);
         for (int i = 0; i < shown; i++) {
-            final SessionSummary summary = rows.get(i);
-            final long gcTicks = gc.overlapTicks(summary.startTicks, summary.endTicks());
-            final String threadName = file.threadName(summary.session.tid);
-            final String rootName = summary.rootMethodId < 0 ? "<no calls>" : names.displayName(summary.rootMethodId);
+            SessionSummary summary = rows.get(i);
+            long gcTicks = gc.overlapTicks(summary.startTicks, summary.endTicks());
+            String threadName = file.threadName(summary.session.tid);
+            String rootName = summary.rootMethodId < 0 ? "<no calls>" : names.displayName(summary.rootMethodId);
             table.add(String.valueOf(summary.session.number), Formats.ms(summary.startTicks),
                     Formats.ms(summary.durTicks), Formats.grouped(summary.calls), String.valueOf(summary.maxDepth),
                     Formats.grouped(summary.throwCount), Formats.ms(gcTicks), threadName,
@@ -118,8 +120,8 @@ final class SessionsCommand {
         return file.exitCode();
     }
 
-    private static Comparator<SessionSummary> order(final String sort) {
-        final Comparator<SessionSummary> key = switch (sort) {
+    private static Comparator<SessionSummary> order(String sort) {
+        Comparator<SessionSummary> key = switch (sort) {
             case "dur" -> Comparator.comparingLong(summary -> -summary.durTicks);
             case "calls" -> Comparator.comparingLong(summary -> -summary.calls);
             default -> Comparator.comparingLong(summary -> summary.startTicks);

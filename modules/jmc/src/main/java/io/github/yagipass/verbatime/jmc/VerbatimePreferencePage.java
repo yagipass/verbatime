@@ -22,7 +22,7 @@ public final class VerbatimePreferencePage extends FieldEditorPreferencePage imp
     }
 
     @Override
-    public void init(final IWorkbench workbench) {
+    public void init(IWorkbench workbench) {
     }
 
     @Override
@@ -32,7 +32,7 @@ public final class VerbatimePreferencePage extends FieldEditorPreferencePage imp
 
     private static final class RecordingsDirEditor extends DirectoryFieldEditor {
 
-        private RecordingsDirEditor(final String name, final String label, final Composite parent) {
+        private RecordingsDirEditor(String name, String label, Composite parent) {
             super(name, label, parent);
             setErrorMessage("Not a directory");
         }
@@ -40,9 +40,9 @@ public final class VerbatimePreferencePage extends FieldEditorPreferencePage imp
         @Override
         protected boolean doCheckState() {
             try {
-                final Path p = Path.of(getTextControl().getText().trim());
+                Path p = Path.of(getTextControl().getText().trim());
                 return !Files.exists(p) || Files.isDirectory(p);
-            } catch (final InvalidPathException e) {
+            } catch (InvalidPathException e) {
                 return false;
             }
         }

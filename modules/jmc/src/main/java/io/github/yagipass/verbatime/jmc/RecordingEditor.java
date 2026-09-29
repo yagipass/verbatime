@@ -24,6 +24,8 @@ import org.eclipse.ui.IPathEditorInput;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.part.EditorPart;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.jmc.index.MappedTrace;
 import io.github.yagipass.verbatime.jmc.index.TraceIndexer;
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
@@ -80,13 +82,13 @@ public final class RecordingEditor extends EditorPart {
         this(UiThread::of);
     }
 
-    private RecordingEditor(final Function<Display, UiThread> uiThreads) {
+    private RecordingEditor(Function<Display, UiThread> uiThreads) {
         this.uiThreads = uiThreads;
     }
 
     @Override
-    public void init(final IEditorSite site, final IEditorInput input) throws PartInitException {
-        final IPathEditorInput pathInput = input instanceof final IPathEditorInput p ? p
+    public void init(IEditorSite site, IEditorInput input) throws PartInitException {
+        IPathEditorInput pathInput = input instanceof IPathEditorInput p ? p
                 : input.getAdapter(IPathEditorInput.class);
         if (pathInput == null || pathInput.getPath() == null) {
             throw new PartInitException("Cannot open " + input.getName() + ": no file path in editor input");
@@ -98,7 +100,7 @@ public final class RecordingEditor extends EditorPart {
     }
 
     @Override
-    public void createPartControl(final Composite parent) {
+    public void createPartControl(Composite parent) {
         container = new Composite(parent, SWT.NONE);
         container.setLayout(new FillLayout());
         ui = uiThreads.apply(container.getDisplay());
@@ -109,51 +111,51 @@ public final class RecordingEditor extends EditorPart {
                     + "a closed recording stays mapped until garbage collection, which blocks deleting it on Windows");
         }
         queryWorker = Executors.newSingleThreadExecutor(r -> {
-            final Thread t = new Thread(r, "vbtm-query-worker");
+            Thread t = new Thread(r, "vbtm-query-worker");
             t.setDaemon(true);
             return t;
         });
         startLoad(false);
     }
 
-    private void startLoad(final boolean live) {
+    private void startLoad(boolean live) {
         if (loadRunning) {
             return;
         }
         loadRunning = true;
 
-        final boolean inPlace = bridge.isOpen();
+        boolean inPlace = bridge.isOpen();
         if (!inPlace) {
             closeViewerAndShow("Loading: " + file.getFileName() + " …");
         }
-        final long gen = bridge.generation();
-        final ViewerJson.SentNames names = inPlace ? sentNames.copy() : new ViewerJson.SentNames();
-        final ViewerJson.SentSessions cursor = inPlace ? sessionCursor.copy() : new ViewerJson.SentSessions();
+        long gen = bridge.generation();
+        ViewerJson.SentNames names = inPlace ? sentNames.copy() : new ViewerJson.SentNames();
+        ViewerJson.SentSessions cursor = inPlace ? sessionCursor.copy() : new ViewerJson.SentSessions();
 
         if (indexer == null) {
             indexer = TraceIndexer.open(file, TraceIndexer.DEFAULT_OVERVIEW_BUDGET);
         }
-        final TraceIndexer ix = indexer;
-        final boolean[] applied = { false };
-        final Job job = Job.create("Loading recording: " + file.getFileName(), monitor -> {
+        TraceIndexer ix = indexer;
+        boolean[] applied = { false };
+        Job job = Job.create("Loading recording: " + file.getFileName(), monitor -> {
             monitor.beginTask(file.getFileName().toString(), ProgressMonitors.TICKS);
-            TraceSnapshot data = null;
-            boolean handedOff = false;
+            @Var TraceSnapshot data = null;
+            @Var boolean handedOff = false;
             try {
                 ix.advance(ProgressMonitors.of(monitor));
                 data = ix.snapshot();
-                final TraceSnapshot snapshot = data;
-                final String payload = inPlace ? ViewerJson.metaJson(snapshot, names, cursor)
+                TraceSnapshot snapshot = data;
+                String payload = inPlace ? ViewerJson.metaJson(snapshot, names, cursor)
                         : ViewerHtml.page(snapshot, names, cursor);
                 applied[0] = true;
                 handedOff = true;
                 bridge.postIfCurrent(gen, () -> {
-                    final TraceSnapshot prev = trace;
+                    TraceSnapshot prev = trace;
                     trace = snapshot;
                     sessionCursor = cursor;
                     if (inPlace) {
                         loadRunning = false;
-                        final ViewerJson.SentNames merged = sentNames.copy();
+                        ViewerJson.SentNames merged = sentNames.copy();
                         merged.or(names);
                         if (cursor.lastReset()) {
                             bridge.dropPendingReplies();
@@ -174,17 +176,17 @@ public final class RecordingEditor extends EditorPart {
                     }
                 }, snapshot::release);
                 return Status.OK_STATUS;
-            } catch (final TraceIndexer.CancelledException c) {
+            } catch (TraceIndexer.CancelledException c) {
                 if (!inPlace) {
                     bridge.postIfCurrent(gen, () -> closeViewerAndShow("Loading cancelled. Reopen the editor to retry."));
                 }
                 return Status.CANCEL_STATUS;
-            } catch (final TraceIndexer.NotTraceFormatException e) {
-                final String msg = e.getMessage();
+            } catch (TraceIndexer.NotTraceFormatException e) {
+                String msg = e.getMessage();
                 bridge.postIfCurrent(gen, () -> closeViewerAndShow(msg));
                 return Status.OK_STATUS;
-            } catch (final Exception e) {
-                final String msg = "Failed to load: " + e;
+            } catch (Exception e) {
+                String msg = "Failed to load: " + e;
                 bridge.postIfCurrent(gen, () -> {
                     if (indexer == ix) {
                         indexer = null;
@@ -217,7 +219,7 @@ public final class RecordingEditor extends EditorPart {
         return container == null || container.isDisposed();
     }
 
-    public void reload(final boolean live) {
+    public void reload(boolean live) {
         if (!isDisposed() && !loadRunning) {
             startLoad(live);
         }
@@ -231,34 +233,34 @@ public final class RecordingEditor extends EditorPart {
         return selection;
     }
 
-    public void addListener(final Listener l) {
+    public void addListener(Listener l) {
         listeners.add(l);
     }
 
-    public void removeListener(final Listener l) {
+    public void removeListener(Listener l) {
         listeners.remove(l);
     }
 
-    public void zoomTo(final SelectedCall f) {
+    public void zoomTo(SelectedCall f) {
         if (f != null && trace != null) {
             bridge.zoomTo(f);
         }
     }
 
-    public void searchFor(final int methodId) {
-        final TraceSnapshot data = trace;
+    public void searchFor(int methodId) {
+        TraceSnapshot data = trace;
         if (data != null) {
             bridge.searchFor(methodId, data.methodName(methodId));
         }
     }
 
     public void openExportDialog() {
-        final TraceSnapshot data = trace;
+        TraceSnapshot data = trace;
         if (data == null || isDisposed()) {
             return;
         }
         data.buffer.retain();
-        boolean scheduled = false;
+        @Var boolean scheduled = false;
         try {
             scheduled = SessionExportDialog.openAndSchedule(getSite().getShell(), data, selection);
         } finally {
@@ -268,7 +270,7 @@ public final class RecordingEditor extends EditorPart {
         }
     }
 
-    private void closeViewerAndShow(final String text) {
+    private void closeViewerAndShow(String text) {
         bridge.close();
         if (statusLabel == null || statusLabel.isDisposed()) {
             statusLabel = new Label(container, SWT.WRAP);
@@ -277,7 +279,7 @@ public final class RecordingEditor extends EditorPart {
         container.layout(true);
     }
 
-    private void showBrowser(final String html) {
+    private void showBrowser(String html) {
         if (statusLabel != null && !statusLabel.isDisposed()) {
             statusLabel.dispose();
             statusLabel = null;
@@ -295,7 +297,7 @@ public final class RecordingEditor extends EditorPart {
         }
 
         @Override
-        public void requestWindow(final long reqId, final long t0Ns, final long t1Ns, final int px) {
+        public void requestWindow(long reqId, long t0Ns, long t1Ns, int px) {
             serveWindow(reqId, t0Ns, t1Ns, px);
         }
 
@@ -305,17 +307,17 @@ public final class RecordingEditor extends EditorPart {
         }
 
         @Override
-        public void select(final SelectedCall frame) {
+        public void select(SelectedCall frame) {
             onSelect(frame);
         }
 
         @Override
-        public void requestSearch(final long reqId, final String query) {
+        public void requestSearch(long reqId, String query) {
             serveSearch(reqId, query);
         }
 
         @Override
-        public void requestMatch(final long reqId, final boolean forward, final long posNs) {
+        public void requestMatch(long reqId, boolean forward, long posNs) {
             serveMatch(reqId, forward, posNs);
         }
 
@@ -325,64 +327,64 @@ public final class RecordingEditor extends EditorPart {
         }
     }
 
-    private void serveWindow(final long reqId, final long t0, final long t1, final int px) {
-        final TraceSnapshot data = trace;
+    private void serveWindow(long reqId, long t0, long t1, int px) {
+        TraceSnapshot data = trace;
         if (data == null) {
             return;
         }
-        final long gen = bridge.generation();
+        long gen = bridge.generation();
         queryWorker.execute(() -> {
             if (bridge.generation() != gen) {
                 return;
             }
             try {
-                int budget = WindowExtractor.DEFAULT_CALL_BUDGET;
-                Window r = WindowExtractor.extract(data, t0, t1, px, budget);
-                ViewerJson.SentNames trial = sentNames.copy();
-                String json = ViewerJson.windowJson(data, r, reqId, trial);
+                @Var int budget = WindowExtractor.DEFAULT_CALL_BUDGET;
+                @Var Window r = WindowExtractor.extract(data, t0, t1, px, budget);
+                @Var ViewerJson.SentNames trial = sentNames.copy();
+                @Var String json = ViewerJson.windowJson(data, r, reqId, trial);
                 while (json.length() > ViewerBridge.MAX_RESPONSE_CHARS && budget > 1000) {
                     budget /= 2;
                     r = WindowExtractor.extract(data, t0, t1, px, budget);
                     trial = sentNames.copy();
                     json = ViewerJson.windowJson(data, r, reqId, trial);
                 }
-                final ViewerJson.SentNames committed = trial;
-                final String reply = json;
+                ViewerJson.SentNames committed = trial;
+                String reply = json;
                 bridge.postIfCurrent(gen, () -> {
                     sentNames = committed;
                     bridge.windowReply(reply);
                 });
-            } catch (final Exception e) {
-                final String msg = String.valueOf(e);
+            } catch (Exception e) {
+                String msg = String.valueOf(e);
                 bridge.postIfCurrent(gen, () -> bridge.windowError(reqId, msg));
             }
         });
     }
 
-    private void onSelect(final SelectedCall f) {
-        final long seq = ++selectionSeq;
+    private void onSelect(SelectedCall f) {
+        long seq = ++selectionSeq;
         if (f == null) {
             setSelection(null);
             return;
         }
         setSelection(f);
-        final TraceSnapshot data = trace;
+        TraceSnapshot data = trace;
         if (data == null) {
             return;
         }
-        final long gen = bridge.generation();
+        long gen = bridge.generation();
         queryWorker.execute(() -> {
             if (bridge.generation() != gen) {
                 return;
             }
-            final SubtreeAggregate agg;
+            SubtreeAggregate agg;
             try {
                 agg = SubtreeAggregate.compute(data, f.tid(), f.startNs(), f.durNs(), f.depth(), f.methodId());
-            } catch (final Exception ex) {
+            } catch (Exception ex) {
                 ILog.get().error("Subtree aggregation failed for tid=" + f.tid()
                         + " start=" + f.startNs() + " dur=" + f.durNs() + " depth=" + f.depth() + " methodId="
                         + f.methodId() + " in " + file, ex);
-                final String msg = "Aggregation failed: " + ex;
+                String msg = "Aggregation failed: " + ex;
                 bridge.postIfCurrent(gen, () -> {
                     if (selectionSeq == seq && selection != null) {
                         setSelection(selection.withSubtreeError(msg));
@@ -398,34 +400,34 @@ public final class RecordingEditor extends EditorPart {
         });
     }
 
-    private void setSelection(final SelectedCall f) {
+    private void setSelection(SelectedCall f) {
         selection = f;
-        for (final Listener l : listeners) {
+        for (Listener l : listeners) {
             l.selectionChanged();
         }
     }
 
     private void fireTraceChanged() {
-        for (final Listener l : listeners) {
+        for (Listener l : listeners) {
             l.traceChanged();
         }
     }
 
-    private void serveSearch(final long reqId, final String rawQuery) {
-        final TraceSnapshot data = trace;
+    private void serveSearch(long reqId, String rawQuery) {
+        TraceSnapshot data = trace;
         if (data == null) {
             return;
         }
-        final String query = rawQuery.toLowerCase(Locale.ROOT);
-        final long gen = bridge.generation();
+        String query = rawQuery.toLowerCase(Locale.ROOT);
+        long gen = bridge.generation();
         queryWorker.execute(() -> {
             if (bridge.generation() != gen) {
                 return;
             }
-            final BitSet ids = new BitSet();
-            long calls = 0;
+            BitSet ids = new BitSet();
+            @Var long calls = 0;
             if (!query.isEmpty()) {
-                final String[] names = data.methodNames;
+                String[] names = data.methodNames;
                 for (int id = 0; id < names.length; id++) {
                     if (names[id] != null && names[id].toLowerCase(Locale.ROOT).contains(query)) {
                         ids.set(id);
@@ -436,23 +438,23 @@ public final class RecordingEditor extends EditorPart {
                 }
             }
             matchedMethodIds = ids;
-            final String reply = ViewerJson.searchJson(reqId, ids, calls);
+            String reply = ViewerJson.searchJson(reqId, ids, calls);
             bridge.postIfCurrent(gen, () -> bridge.searchReply(reply));
         });
     }
 
-    private void serveMatch(final long reqId, final boolean forward, final long posNs) {
-        final TraceSnapshot data = trace;
+    private void serveMatch(long reqId, boolean forward, long posNs) {
+        TraceSnapshot data = trace;
         if (data == null) {
             return;
         }
-        final long gen = bridge.generation();
+        long gen = bridge.generation();
         queryWorker.execute(() -> {
             if (bridge.generation() != gen) {
                 return;
             }
-            final BitSet ids = matchedMethodIds;
-            MatchSearch.Match m = null;
+            BitSet ids = matchedMethodIds;
+            @Var MatchSearch.Match m = null;
             if (!ids.isEmpty()) {
                 m = forward ? MatchSearch.nextMatch(data, ids, posNs) : MatchSearch.prevMatch(data, ids, posNs);
                 if (m == null) {
@@ -460,7 +462,7 @@ public final class RecordingEditor extends EditorPart {
                             : MatchSearch.prevMatch(data, ids, Long.MAX_VALUE);
                 }
             }
-            final String reply = ViewerJson.matchJson(reqId, m);
+            String reply = ViewerJson.matchJson(reqId, m);
             bridge.postIfCurrent(gen, () -> bridge.matchReply(reply));
         });
     }
@@ -481,12 +483,12 @@ public final class RecordingEditor extends EditorPart {
         if (loadJob != null) {
             loadJob.cancel();
         }
-        final TraceIndexer ix = indexer;
+        TraceIndexer ix = indexer;
         indexer = null;
         if (ix != null) {
             ix.close();
         }
-        final TraceSnapshot t = trace;
+        TraceSnapshot t = trace;
         trace = null;
         if (queryWorker != null) {
             if (t != null) {
@@ -504,7 +506,7 @@ public final class RecordingEditor extends EditorPart {
     }
 
     @Override
-    public void doSave(final IProgressMonitor monitor) {
+    public void doSave(IProgressMonitor monitor) {
     }
 
     @Override

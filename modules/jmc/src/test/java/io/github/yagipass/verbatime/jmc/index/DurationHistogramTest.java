@@ -6,14 +6,16 @@ import java.util.Random;
 
 import org.junit.jupiter.api.Test;
 
+import com.google.errorprone.annotations.Var;
+
 final class DurationHistogramTest {
 
-    private static long pyBucket(final long durNs) {
+    private static long pyBucket(long durNs) {
         if (durNs < 1000) {
             return durNs;
         }
-        final int digits = Long.toString(durNs).length();
-        long k = 1;
+        int digits = Long.toString(durNs).length();
+        @Var long k = 1;
         for (int i = 0; i < digits - 3; i++) {
             k *= 10;
         }
@@ -25,12 +27,12 @@ final class DurationHistogramTest {
         for (long v = 0; v < 5000; v++) {
             assertEquals(pyBucket(v), DurationHistogram.bucketValue(DurationHistogram.bucketIndex(v)), "v=" + v);
         }
-        final Random rng = new Random(7);
+        Random rng = new Random(7);
         for (int i = 0; i < 200_000; i++) {
-            final long v = Math.floorMod(rng.nextLong(), 4_000_000_000_000L);
+            long v = Math.floorMod(rng.nextLong(), 4_000_000_000_000L);
             assertEquals(pyBucket(v), DurationHistogram.bucketValue(DurationHistogram.bucketIndex(v)), "v=" + v);
         }
-        for (final long v : new long[] { 999, 1000, 1001, 9_999, 10_000, 999_999_999_999L, 1_000_000_000_000L,
+        for (long v : new long[] { 999, 1000, 1001, 9_999, 10_000, 999_999_999_999L, 1_000_000_000_000L,
                 Long.MAX_VALUE / 2 }) {
             assertEquals(pyBucket(v), DurationHistogram.bucketValue(DurationHistogram.bucketIndex(v)), "v=" + v);
         }
@@ -38,7 +40,7 @@ final class DurationHistogramTest {
 
     @Test
     void chooseThresholdMatchesPythonSemantics() {
-        long[] hist = new long[DurationHistogram.SIZE];
+        @Var long[] hist = new long[DurationHistogram.SIZE];
         hist[DurationHistogram.bucketIndex(500)] = 10;
         assertEquals(0, DurationHistogram.chooseThreshold(hist, 10, 10));
         hist = new long[DurationHistogram.SIZE];

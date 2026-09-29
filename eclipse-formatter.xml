@@ -18,5 +18,9 @@
 <setting id="org.eclipse.jdt.core.formatter.insert_space_before_closing_brace_in_array_initializer" value="insert"/>
 <setting id="org.eclipse.jdt.core.formatter.comment.format_javadoc_comments" value="false"/>
 <setting id="org.eclipse.jdt.core.formatter.comment.format_block_comments" value="false"/>
+<!-- Keeps @Var on the same line as the local variable. JDT reads the local_variable key only when one of the
+     type, enum_constant, field, method or package keys is also set, so the field key restates its default. -->
+<setting id="org.eclipse.jdt.core.formatter.insert_new_line_after_annotation_on_field" value="insert"/>
+<setting id="org.eclipse.jdt.core.formatter.insert_new_line_after_annotation_on_local_variable" value="do not insert"/>
 </profile>
 </profiles>

@@ -19,7 +19,7 @@ public final class E2EMain {
     private E2EMain() {
     }
 
-    public static void main(final String[] args) throws Exception {
+    public static void main(String[] args) throws Exception {
         if (io.github.yagipass.verbatime.agent.probe.Probe.class.getClassLoader() != null) {
             System.err.println("[e2e] FAIL: Probe should be bootstrap-defined but came from " + io.github.yagipass.verbatime.agent.probe.Probe.class.getClassLoader());
             System.exit(1);
@@ -29,15 +29,15 @@ public final class E2EMain {
             System.exit(1);
         }
 
-        final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        final ObjectName control = new ObjectName("verbatime:type=Control");
+        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+        ObjectName control = new ObjectName("verbatime:type=Control");
         server.invoke(control, "replaceRoots", new Object[] { new String[] { "io.github.yagipass.verbatime.fixtures.Fixture::root", "io.github.yagipass.verbatime.fixtures.Fixture::rootThrows", "io.github.yagipass.verbatime.fixtures.Fixture::rootAllocates" } }, new String[] { "[Ljava.lang.String;" });
-        final long id = (Long) server.invoke(control, "startRecording", new Object[] { "e2e" }, new String[] { "java.lang.String" });
+        long id = (Long) server.invoke(control, "startRecording", new Object[] { "e2e" }, new String[] { "java.lang.String" });
         System.err.println("[e2e] recording #" + id + " started over JMX");
-        final CountDownLatch majorGc = subscribeAfterAgent();
+        CountDownLatch majorGc = subscribeAfterAgent();
 
-        final Fixture fx = new Fixture();
-        final String r = fx.root();
+        Fixture fx = new Fixture();
+        String r = fx.root();
         if (r == null || r.isEmpty()) {
             System.err.println("[e2e] FAIL: instrumented root() returned '" + r + "'");
             System.exit(1);
@@ -46,10 +46,10 @@ public final class E2EMain {
             fx.rootThrows();
             System.err.println("[e2e] FAIL: rootThrows() did not throw");
             System.exit(1);
-        } catch (final IllegalStateException expected) {
+        } catch (IllegalStateException expected) {
             System.err.println("[e2e] ok: rootThrows() threw " + expected.getClass().getSimpleName());
         }
-        final int allocated = fx.rootAllocates();
+        int allocated = fx.rootAllocates();
         if (allocated <= 0) {
             System.err.println("[e2e] FAIL: instrumented rootAllocates() returned " + allocated);
             System.exit(1);
@@ -65,9 +65,9 @@ public final class E2EMain {
     }
 
     private static CountDownLatch subscribeAfterAgent() {
-        final CountDownLatch latch = new CountDownLatch(1);
-        for (final GarbageCollectorMXBean gc : ManagementFactory.getGarbageCollectorMXBeans()) {
-            if (gc instanceof final NotificationEmitter emitter) {
+        CountDownLatch latch = new CountDownLatch(1);
+        for (GarbageCollectorMXBean gc : ManagementFactory.getGarbageCollectorMXBeans()) {
+            if (gc instanceof NotificationEmitter emitter) {
                 emitter.addNotificationListener((n, handback) -> {
                     if (GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION.equals(n.getType()) && GarbageCollectionNotificationInfo.from((CompositeData) n.getUserData()).getGcAction().contains("major")) {
                         latch.countDown();

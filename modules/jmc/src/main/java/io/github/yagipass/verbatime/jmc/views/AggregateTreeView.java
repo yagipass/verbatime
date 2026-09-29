@@ -34,15 +34,15 @@ abstract class AggregateTreeView<M extends AggregateTreeView.AggregateTreeModel<
 
     private HeaderWithCopyButton copyHead;
 
-    AggregateTreeView(final Class<R> rowType, final String copyTip, final String heading) {
+    AggregateTreeView(Class<R> rowType, String copyTip, String heading) {
         this.rowType = rowType;
         this.copyTip = copyTip;
         this.heading = heading;
     }
 
     @Override
-    protected final void createContent(final Composite parent) {
-        final GridLayout layout = new GridLayout(1, false);
+    protected final void createContent(Composite parent) {
+        GridLayout layout = new GridLayout(1, false);
         layout.marginWidth = 4;
         layout.marginHeight = 4;
         parent.setLayout(layout);
@@ -60,7 +60,7 @@ abstract class AggregateTreeView<M extends AggregateTreeView.AggregateTreeModel<
         ColumnViewerToolTipSupport.enableFor(viewer);
         createColumns();
         viewer.addPostSelectionChangedListener(e -> {
-            final Object first = e.getStructuredSelection().getFirstElement();
+            Object first = e.getStructuredSelection().getFirstElement();
             if (editor() != null && rowType.isInstance(first)) {
                 editor().searchFor(methodId(rowType.cast(first)));
             }
@@ -75,8 +75,8 @@ abstract class AggregateTreeView<M extends AggregateTreeView.AggregateTreeModel<
         return model;
     }
 
-    final TreeColumn column(final String title, final int width, final int style,
-            final Function<R, String> text, final boolean mono) {
+    final TreeColumn column(String title, int width, int style,
+            Function<R, String> text, boolean mono) {
         return Columns.addTree(viewer, title, width, style, new Columns.ColumnLabels<>(rowType, text, this::name, mono));
     }
 
@@ -99,16 +99,16 @@ abstract class AggregateTreeView<M extends AggregateTreeView.AggregateTreeModel<
         if (viewer == null || viewer.getControl().isDisposed()) {
             return;
         }
-        final TraceSnapshot d = trace();
-        final SelectedCall f = selection();
-        final SubtreeAggregate agg = f != null ? f.subtree() : null;
+        TraceSnapshot d = trace();
+        SelectedCall f = selection();
+        SubtreeAggregate agg = f != null ? f.subtree() : null;
         if (d != null && agg != null && model != null && model.aggregate() == agg) {
             return;
         }
         model = d == null || agg == null ? null : build(d, agg);
         copyHead.copy().setEnabled(model != null);
         setInput(model);
-        final String empty = emptyReason(d, f);
+        String empty = emptyReason(d, f);
         setContentDescription(empty != null ? empty
                 : f.subtreeError() != null ? f.subtreeError() : model == null ? "Aggregating…" : describe(d, f, model));
     }

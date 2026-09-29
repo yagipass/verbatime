@@ -29,8 +29,8 @@ final class FormatsTest {
 
     @Test
     void wallClockReadsLikeTheTooltipAndKeepsTheServerOffset() throws IOException {
-        final long epochMs = OffsetDateTime.parse("2026-09-03T14:02:11.318+09:00").toInstant().toEpochMilli();
-        final TraceSnapshot jp = TestTraces.index(new TraceBuilder(epochMs, 9 * 3600).thread(1, "t").end());
+        long epochMs = OffsetDateTime.parse("2026-09-03T14:02:11.318+09:00").toInstant().toEpochMilli();
+        TraceSnapshot jp = TestTraces.index(new TraceBuilder(epochMs, 9 * 3600).thread(1, "t").end());
         assertEquals("2026-09-03 14:02:11.3180 +09:00", Formats.fmtWall(jp.wallClock(0)));
         assertEquals("2026-09-03 14:02:12.2383 +09:00", Formats.fmtWall(jp.wallClock(920_300_000L)));
         assertEquals("2026-09-03 14:02:12.2383 +09:00", Formats.fmtWall(jp.wallClock(920_399_900L)),
@@ -38,10 +38,10 @@ final class FormatsTest {
         assertEquals("2026-09-04 00:00:00.0000 +09:00", Formats.fmtWall(jp.wallClock(35_868_682_000_000L)),
                 "the date rolls over with the server's clock, so a long recording keeps its day right");
 
-        final TraceSnapshot ny = TestTraces.index(new TraceBuilder(epochMs, -4 * 3600).thread(1, "t").end());
+        TraceSnapshot ny = TestTraces.index(new TraceBuilder(epochMs, -4 * 3600).thread(1, "t").end());
         assertEquals("2026-09-03 01:02:11.3180 -04:00", Formats.fmtWall(ny.wallClock(0)),
                 "the file's offset is shown as recorded, whatever zone the viewer runs in");
-        final TraceSnapshot utc = TestTraces.index(new TraceBuilder(epochMs, 0).thread(1, "t").end());
+        TraceSnapshot utc = TestTraces.index(new TraceBuilder(epochMs, 0).thread(1, "t").end());
         assertEquals("2026-09-03 05:02:11.3180 +00:00", Formats.fmtWall(utc.wallClock(0)),
                 "UTC prints as +00:00, not Z, so every line has the same shape");
     }

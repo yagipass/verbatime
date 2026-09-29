@@ -5,7 +5,7 @@ public final class TestMain {
     private TestMain() {
     }
 
-    public static void main(final String[] args) {
+    public static void main(String[] args) {
         run("ConfigTest", io.github.yagipass.verbatime.agent.ConfigTest::run);
         run("ConfigWarningTest", io.github.yagipass.verbatime.agent.ConfigWarningTest::run);
         run("LogTest", LogTest::run);
@@ -24,18 +24,18 @@ public final class TestMain {
     public static void report() {
         System.err.println();
         System.err.println("[test] " + Check.passed() + " checks passed, " + Check.failures().size() + " failed");
-        for (final String f : Check.failures()) {
+        for (String f : Check.failures()) {
             System.err.println("[test]   FAIL " + f);
         }
         System.exit(Check.failures().isEmpty() ? 0 : 1);
     }
 
-    public static void run(final String name, final Check.ThrowingRunnable body) {
+    public static void run(String name, Check.ThrowingRunnable body) {
         System.err.println("[test] === " + name);
-        final int before = Check.failures().size();
+        int before = Check.failures().size();
         try {
             body.run();
-        } catch (final Throwable t) {
+        } catch (Throwable t) {
             Check.fail(name + " threw " + t);
             t.printStackTrace(System.err);
         }

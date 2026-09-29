@@ -8,10 +8,10 @@ public final class Main {
     private Main() {
     }
 
-    public static void main(final String[] args) {
-        final int port = 8080;
-        final OrdersService service = new OrdersService(new OrderService());
-        final WebServer server = WebServer.builder().port(port).routing(routing -> routing.register("/", service)).build();
+    public static void main(String[] args) {
+        int port = 8080;
+        OrdersService service = new OrdersService(new OrderService());
+        WebServer server = WebServer.builder().port(port).routing(routing -> routing.register("/", service)).build();
         server.start();
         System.out.println("helidon-se listening on port " + server.port());
     }

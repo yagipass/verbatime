@@ -10,7 +10,7 @@ final class NodeStack {
 
     private int size;
 
-    void push(final int node) {
+    void push(int node) {
         if (size == nodes.length) {
             nodes = Arrays.copyOf(nodes, size * 2);
             states = Arrays.copyOf(states, size * 2);
@@ -36,7 +36,7 @@ final class NodeStack {
         return states[size - 1];
     }
 
-    void setState(final int state) {
+    void setState(int state) {
         states[size - 1] = state;
     }
 

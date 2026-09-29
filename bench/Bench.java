@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.google.errorprone.annotations.Var;
+
 public final class Bench {
 
     private record Endpoint(String name, String path) {
@@ -74,13 +76,13 @@ public final class Bench {
     private Bench() {
     }
 
-    public static void main(final String[] args) throws Exception {
-        final Bench bench = new Bench();
+    public static void main(String[] args) throws Exception {
+        Bench bench = new Bench();
         bench.parse(args);
         bench.run();
     }
 
-    private void parse(final String[] args) {
+    private void parse(String[] args) {
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
                 case "--quick" -> {
@@ -97,8 +99,8 @@ public final class Bench {
                 case "--with-orders" -> endpoints.add(SEED);
                 case "--no-pin" -> pinned = false;
                 case "--pin" -> {
-                    for (final String pin : args[++i].split(",(?=[a-z]+=)")) {
-                        final int eq = pin.indexOf('=');
+                    for (String pin : args[++i].split(",(?=[a-z]+=)")) {
+                        int eq = pin.indexOf('=');
                         if (eq <= 0 || !pins.containsKey(pin.substring(0, eq))) {
                             throw new IllegalArgumentException("--pin takes app=..,db=..,load=.., got '" + pin + "'");
                         }
@@ -117,7 +119,7 @@ public final class Bench {
         if (!Files.exists(Path.of(EXAMPLE_COMPOSE)) || !Files.exists(Path.of(BENCH_COMPOSE))) {
             throw new IllegalStateException("run from the repository root: " + EXAMPLE_COMPOSE + " not found");
         }
-        final String docker = exec(Map.of(), "docker", "info", "--format", "{{.NCPU}} CPUs, {{.MemTotal}} bytes, {{.OperatingSystem}}, {{.Architecture}}").strip();
+        String docker = exec(Map.of(), "docker", "info", "--format", "{{.NCPU}} CPUs, {{.MemTotal}} bytes, {{.OperatingSystem}}, {{.Architecture}}").strip();
         if (pinned && Integer.parseInt(docker.substring(0, docker.indexOf(' '))) < PINNED_CPUS && pins.equals(Map.of("app", "0-3", "db", "4-5", "load", "6-7"))) {
             throw new IllegalStateException("the default pinning needs " + PINNED_CPUS + " CPUs but Docker has " + docker
                     + ". Pass --pin app=..,db=..,load=.. or --no-pin");
@@ -126,7 +128,7 @@ public final class Bench {
         Files.createDirectories(results);
         Runtime.getRuntime().addShutdownHook(new Thread(this::downAfterInterrupt, "bench-down"));
 
-        final List<String> header = List.of(
+        List<String> header = List.of(
                 "date: " + LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
                 "commit: " + exec(Map.of(), "git", "rev-parse", "--short", "HEAD").strip() + (exec(Map.of(), "git", "status", "--porcelain").isBlank() ? "" : " + uncommitted changes"),
                 "docker: " + docker,
@@ -139,28 +141,28 @@ public final class Bench {
         compose(env("A"), "build", "app");
         compose(env("A"), "down", "-v");
         for (int round = 1; round <= rounds; round++) {
-            final List<String> order = new ArrayList<>(variants);
+            List<String> order = new ArrayList<>(variants);
             Collections.rotate(order, -(round - 1));
-            for (final String variant : order) {
+            for (String variant : order) {
                 runVariant(round, variant);
                 Files.writeString(results.resolve("samples.csv"), Report.csv(samples));
             }
         }
-        final String summary = Report.render(header, startups, samples);
+        String summary = Report.render(header, startups, samples);
         Files.writeString(results.resolve("summary.md"), summary);
         System.out.println();
         System.out.println(summary);
         System.out.println("written to " + results);
     }
 
-    private void runVariant(final int round, final String variant) throws Exception {
-        final Map<String, String> env = env(variant);
-        final boolean recording = variant.equals(Report.RECORDING);
+    private void runVariant(int round, String variant) throws Exception {
+        Map<String, String> env = env(variant);
+        boolean recording = variant.equals(Report.RECORDING);
         System.out.println("round " + round + " variant " + variant + ": starting");
         upEnv = env;
         try {
             compose(env, "up", "-d", "--wait");
-            final Matcher started = STARTED.matcher(compose(env, "logs", "--no-color", "app"));
+            Matcher started = STARTED.matcher(compose(env, "logs", "--no-color", "app"));
             if (!started.find()) {
                 throw new IllegalStateException("the app log has no 'Started ... (process running for ...)' line");
             }
@@ -173,12 +175,12 @@ public final class Bench {
                 load(env, round + "-" + variant + "-seed", Load.count(url(SEED), SEED_REQUESTS));
                 if (recording) {
                     control.replaceRoots(root);
-                    final String resolved = control.status().get("root.0");
+                    String resolved = control.status().get("root.0");
                     if (resolved == null || !resolved.startsWith("ok ")) {
                         throw new IllegalStateException("root " + root + " is not instrumented: root.0=" + resolved);
                     }
                 }
-                for (final Endpoint endpoint : endpoints) {
+                for (Endpoint endpoint : endpoints) {
                     samples.add(measure(round, variant, endpoint, env, control));
                 }
                 if (!variant.equals(Report.BASELINE) && !recording && !"idle".equals(control.status().get("state"))) {
@@ -191,75 +193,75 @@ public final class Bench {
         }
     }
 
-    private Report.Sample measure(final int round, final String variant, final Endpoint endpoint, final Map<String, String> env,
-            final Control control) throws Exception {
-        final boolean recording = variant.equals(Report.RECORDING);
-        final String tag = round + "-" + variant + "-" + endpoint.name();
+    private Report.Sample measure(int round, String variant, Endpoint endpoint, Map<String, String> env,
+            Control control) throws Exception {
+        boolean recording = variant.equals(Report.RECORDING);
+        String tag = round + "-" + variant + "-" + endpoint.name();
         System.out.println("round " + round + " variant " + variant + ": " + endpoint.path());
         if (recording) {
             control.startRecording(tag);
         }
-        final Load.Result warm = load(env, tag + "-warmup", Load.closedLoop(url(endpoint), warmup, WARMUP_CONNECTIONS));
+        Load.Result warm = load(env, tag + "-warmup", Load.closedLoop(url(endpoint), warmup, WARMUP_CONNECTIONS));
 
-        final long cpu0 = control.processCpuNanos();
-        final Control.Gc gc0 = control.gc();
-        final Load.Result fixed = load(env, tag + "-fixed", Load.fixedRate(url(endpoint), duration, rate));
-        final long cpu1 = control.processCpuNanos();
-        final Control.Gc gc1 = control.gc();
+        long cpu0 = control.processCpuNanos();
+        Control.Gc gc0 = control.gc();
+        Load.Result fixed = load(env, tag + "-fixed", Load.fixedRate(url(endpoint), duration, rate));
+        long cpu1 = control.processCpuNanos();
+        Control.Gc gc1 = control.gc();
 
-        final Load.Result saturation = load(env, tag + "-saturation", Load.closedLoop(url(endpoint), duration, SATURATION_CONNECTIONS));
+        Load.Result saturation = load(env, tag + "-saturation", Load.closedLoop(url(endpoint), duration, SATURATION_CONNECTIONS));
 
-        double bytesPerRequest = Double.NaN;
-        double eventsPerRequest = Double.NaN;
+        @Var double bytesPerRequest = Double.NaN;
+        @Var double eventsPerRequest = Double.NaN;
         if (recording) {
             bytesPerRequest = (double) stopRecording(control) / (warm.requests() + fixed.requests() + saturation.requests());
             eventsPerRequest = calibrate(tag, endpoint, env, control);
         }
-        final double thousands = fixed.requests() / 1e3;
+        double thousands = fixed.requests() / 1e3;
         return new Report.Sample(round, variant, endpoint.path(), rate, fixed, (cpu1 - cpu0) / 1e6 / fixed.requests(),
                 (gc1.count() - gc0.count()) / thousands, (gc1.millis() - gc0.millis()) / thousands, saturation.requestsPerSec(),
                 bytesPerRequest, eventsPerRequest);
     }
 
-    private double calibrate(final String tag, final Endpoint endpoint, final Map<String, String> env, final Control control)
+    private double calibrate(String tag, Endpoint endpoint, Map<String, String> env, Control control)
             throws Exception {
-        final long id = control.startRecording(tag + "-calibration");
+        long id = control.startRecording(tag + "-calibration");
         load(env, tag + "-calibration", Load.count(url(endpoint), CALIBRATION_REQUESTS));
         stopRecording(control);
-        final long[] events = TraceStats.eventsPerSession(control.download(id));
+        long[] events = TraceStats.eventsPerSession(control.download(id));
         if (events.length < CALIBRATION_REQUESTS) {
             throw new IllegalStateException("the calibration recording has " + events.length + " sessions for " + CALIBRATION_REQUESTS + " requests");
         }
         return Report.median(Arrays.stream(events).sorted().asDoubleStream().toArray());
     }
 
-    private static long stopRecording(final Control control) throws Exception {
+    private static long stopRecording(Control control) throws Exception {
         if (control.status().containsKey("recording.truncated")) {
             throw new IllegalStateException("the agent stopped writing the recording while it ran");
         }
         control.stopRecording();
-        final Map<String, String> status = control.status();
-        final long bytes = Long.parseLong(status.getOrDefault("lastRecording.bytes", "0"));
+        Map<String, String> status = control.status();
+        long bytes = Long.parseLong(status.getOrDefault("lastRecording.bytes", "0"));
         if (status.containsKey("lastRecording.truncated") || bytes == 0) {
             throw new IllegalStateException("the recording is truncated or empty: " + status);
         }
         return bytes;
     }
 
-    private Load.Result load(final Map<String, String> env, final String tag, final List<String> ohaArgs) throws Exception {
-        final List<String> command = new ArrayList<>(List.of("run", "--rm", "--no-deps", "-T", "load"));
+    private Load.Result load(Map<String, String> env, String tag, List<String> ohaArgs) throws Exception {
+        List<String> command = new ArrayList<>(List.of("run", "--rm", "--no-deps", "-T", "load"));
         command.addAll(ohaArgs);
-        final String json = compose(env, command.toArray(String[]::new));
+        String json = compose(env, command.toArray(String[]::new));
         Files.writeString(results.resolve(tag + ".json"), json);
         return Load.parse(json);
     }
 
-    private static String url(final Endpoint endpoint) {
+    private static String url(Endpoint endpoint) {
         return "http://app:8080" + endpoint.path();
     }
 
-    private Map<String, String> env(final String variant) {
-        final Map<String, String> env = new HashMap<>();
+    private Map<String, String> env(String variant) {
+        Map<String, String> env = new HashMap<>();
         env.put("BENCH_JAVA_TOOL_OPTIONS", variant.equals(Report.BASELINE) ? JMX_FLAGS : AGENT_FLAG + " " + JMX_FLAGS);
         env.put("BENCH_CPUS_APP", pinned ? pins.get("app") : "");
         env.put("BENCH_CPUS_DB", pinned ? pins.get("db") : "");
@@ -268,29 +270,29 @@ public final class Bench {
     }
 
     private void downAfterInterrupt() {
-        final Map<String, String> env = upEnv;
+        Map<String, String> env = upEnv;
         if (env != null) {
             try {
                 compose(env, "down", "-v");
-            } catch (final Exception e) {
+            } catch (Exception e) {
                 System.err.println("could not stop the containers: " + e);
             }
         }
     }
 
-    private String compose(final Map<String, String> env, final String... args) throws IOException, InterruptedException {
-        final List<String> command = new ArrayList<>(List.of("docker", "compose", "-p", "verbatime-bench", "-f", EXAMPLE_COMPOSE, "-f", BENCH_COMPOSE));
+    private String compose(Map<String, String> env, String... args) throws IOException, InterruptedException {
+        List<String> command = new ArrayList<>(List.of("docker", "compose", "-p", "verbatime-bench", "-f", EXAMPLE_COMPOSE, "-f", BENCH_COMPOSE));
         command.addAll(List.of(args));
         return exec(env, command.toArray(String[]::new));
     }
 
-    private String exec(final Map<String, String> env, final String... command) throws IOException, InterruptedException {
-        final ProcessBuilder builder = new ProcessBuilder(command);
+    private String exec(Map<String, String> env, String... command) throws IOException, InterruptedException {
+        ProcessBuilder builder = new ProcessBuilder(command);
         builder.environment().putAll(env);
-        final File log = results == null ? null : results.resolve("commands.log").toFile();
+        File log = results == null ? null : results.resolve("commands.log").toFile();
         builder.redirectError(log == null ? ProcessBuilder.Redirect.DISCARD : ProcessBuilder.Redirect.appendTo(log));
-        final Process process = builder.start();
-        final String stdout = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        Process process = builder.start();
+        String stdout = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
         if (process.waitFor() != 0) {
             throw new IllegalStateException(String.join(" ", command) + " exited with " + process.exitValue()
                     + (log == null ? "" : ", see " + log));

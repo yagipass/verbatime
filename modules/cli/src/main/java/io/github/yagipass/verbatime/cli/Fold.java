@@ -21,8 +21,8 @@ final class Fold {
 
     Map<Integer, Long> countByMethod;
 
-    void add(final int methodId, final long startTicks, final long durTicks, final long subtreeCalls,
-            final boolean threw) {
+    void add(int methodId, long startTicks, long durTicks, long subtreeCalls,
+            boolean threw) {
         count++;
         nested += subtreeCalls;
         ticks += durTicks;
@@ -37,7 +37,7 @@ final class Fold {
     }
 
     Fold copy() {
-        final Fold c = new Fold();
+        Fold c = new Fold();
         c.count = count;
         c.nested = nested;
         c.thrown = thrown;
@@ -58,17 +58,17 @@ final class Fold {
         countByMethod = null;
     }
 
-    String methodsText(final Names names, final int max) {
+    String methodsText(Names names, int max) {
         return methodsText(countByMethod, names, max);
     }
 
-    static String methodsText(final Map<Integer, Long> countByMethod, final Names names, final int max) {
-        final List<Map.Entry<Integer, Long>> e = new ArrayList<>(countByMethod.entrySet());
+    static String methodsText(Map<Integer, Long> countByMethod, Names names, int max) {
+        List<Map.Entry<Integer, Long>> e = new ArrayList<>(countByMethod.entrySet());
         e.sort((x, y) -> {
-            final int c = Long.compare(y.getValue(), x.getValue());
+            int c = Long.compare(y.getValue(), x.getValue());
             return c != 0 ? c : Integer.compare(x.getKey(), y.getKey());
         });
-        final StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < e.size() && i < max; i++) {
             if (i > 0) {
                 sb.append(", ");

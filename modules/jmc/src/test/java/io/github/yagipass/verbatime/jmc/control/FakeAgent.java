@@ -57,7 +57,7 @@ final class FakeAgent implements Agent {
     }
 
     @Override
-    public String[] searchMethods(final String query, final int max) throws IOException {
+    public String[] searchMethods(String query, int max) throws IOException {
         searchQueries.add(query);
         if (searchError != null) {
             throw searchError;
@@ -66,7 +66,7 @@ final class FakeAgent implements Agent {
     }
 
     @Override
-    public void replaceRoots(final String[] specs) throws IOException {
+    public void replaceRoots(String[] specs) throws IOException {
         replacedRoots.add(specs);
     }
 
@@ -88,13 +88,13 @@ final class FakeAgent implements Agent {
     }
 
     @Override
-    public long openStream(final long recordingId, final long fromOffset) {
+    public long openStream(long recordingId, long fromOffset) {
         openedAt.add(fromOffset);
         return nextStreamId++;
     }
 
     @Override
-    public byte[] readStream(final long streamId) throws IOException {
+    public byte[] readStream(long streamId) throws IOException {
         onRead.run();
         if (!chunks.isEmpty()) {
             return chunks.poll();
@@ -106,7 +106,7 @@ final class FakeAgent implements Agent {
     }
 
     @Override
-    public void closeStream(final long streamId) {
+    public void closeStream(long streamId) {
         closedStreams.add(streamId);
     }
 

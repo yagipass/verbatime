@@ -42,7 +42,7 @@ public final class TraceFileWriter {
 
     private volatile long committedBytes;
 
-    private TraceFileWriter(final Path path, final FileOutputStream out) {
+    private TraceFileWriter(Path path, FileOutputStream out) {
         this.path = path;
         this.out = out;
         this.uptimeAtOriginMs = ManagementFactory.getRuntimeMXBean().getUptime();
@@ -53,9 +53,9 @@ public final class TraceFileWriter {
         this.encoder = new ChunkEncoder(originNanos);
     }
 
-    public static TraceFileWriter open(final Path path) throws IOException {
-        final FileOutputStream out = new FileOutputStream(path.toFile());
-        final TraceFileWriter w = new TraceFileWriter(path.toAbsolutePath(), out);
+    public static TraceFileWriter open(Path path) throws IOException {
+        FileOutputStream out = new FileOutputStream(path.toFile());
+        TraceFileWriter w = new TraceFileWriter(path.toAbsolutePath(), out);
         out.write(RecordEncoder.header(w.startEpochMs, w.utcOffsetSeconds));
         w.committedBytes = Vbtm.HEADER_BYTES;
         return w;
@@ -82,91 +82,91 @@ public final class TraceFileWriter {
     }
 
     @SuppressWarnings("NonAtomicVolatileUpdate")
-    private void advanceCommitted(final long n) {
+    private void advanceCommitted(long n) {
         committedBytes += n;
     }
 
-    void writeClass(final int baseId, final String className, final List<String> sigs) {
+    void writeClass(int baseId, String className, List<String> sigs) {
         if (stopped) {
             return;
         }
         writeRecord(RecordEncoder.clazz(baseId, className, sigs));
     }
 
-    void writeException(final int id, final String className) {
+    void writeException(int id, String className) {
         if (stopped) {
             return;
         }
         writeRecord(RecordEncoder.exception(id, className));
     }
 
-    void writeGc(final long startMs, final long durMs, final int action, final String collector, final String cause) {
+    void writeGc(long startMs, long durMs, int action, String collector, String cause) {
         if (stopped) {
             return;
         }
-        final long[] ticks = toTicks(startMs, durMs, uptimeAtOriginMs);
+        long[] ticks = toTicks(startMs, durMs, uptimeAtOriginMs);
         if (ticks == null) {
             return;
         }
         writeRecord(RecordEncoder.gc(ticks[0], ticks[1], action, collector, cause));
     }
 
-    private synchronized void writeRecord(final byte[] rec) {
+    private synchronized void writeRecord(byte[] rec) {
         if (!stopped) {
             writeLocked(rec);
         }
     }
 
-    private void writeLocked(final byte[] rec) {
+    private void writeLocked(byte[] rec) {
         writeLocked(rec, 0, rec.length);
     }
 
-    private void writeLocked(final byte[] b, final int off, final int len) {
+    private void writeLocked(byte[] b, int off, int len) {
         try {
             out.write(b, off, len);
             advanceCommitted(len);
-        } catch (final IOException e) {
+        } catch (IOException e) {
             stopOnFailure(e);
         }
     }
 
-    static long[] toTicks(final long startMs, final long durMs, final long uptimeAtOriginMs) {
-        final long endMs = startMs + Math.max(durMs, 0);
+    static long[] toTicks(long startMs, long durMs, long uptimeAtOriginMs) {
+        long endMs = startMs + Math.max(durMs, 0);
         if (endMs <= uptimeAtOriginMs) {
             return null;
         }
-        final long s = Math.max(startMs - uptimeAtOriginMs, 0);
-        final long e = endMs - uptimeAtOriginMs;
+        long s = Math.max(startMs - uptimeAtOriginMs, 0);
+        long e = endMs - uptimeAtOriginMs;
         return new long[] { s * Vbtm.TICKS_PER_MS, (e - s) * Vbtm.TICKS_PER_MS };
     }
 
-    synchronized void appendChunk(final Session r, final boolean sessionEnd) {
+    synchronized void appendChunk(Session r, boolean sessionEnd) {
         try {
             if (!r.truncatedByStop) {
                 appendChunkLocked(r, sessionEnd);
             }
-        } catch (final Throwable t) {
+        } catch (Throwable t) {
             stopOnFailure(t);
         } finally {
             r.pos = 0;
         }
     }
 
-    synchronized void flushTruncated(final Session r) {
+    synchronized void flushTruncated(Session r) {
         try {
             r.truncatedByStop = true;
             appendChunkLocked(r, false);
-        } catch (final Throwable t) {
+        } catch (Throwable t) {
             stopOnFailure(t);
         }
     }
 
-    private void appendChunkLocked(final Session r, final boolean sessionEnd) {
-        final int words = r.pos;
+    private void appendChunkLocked(Session r, boolean sessionEnd) {
+        int words = r.pos;
         if (stopped || (words == 0 && (r.firstChunkPending || !sessionEnd))) {
             return;
         }
-        final String name = r.owner.getName();
+        String name = r.owner.getName();
         if (!name.equals(seenThreads.get(r.tid))) {
             seenThreads.put(r.tid, name);
             writeLocked(RecordEncoder.thread(r.tid, name));
@@ -175,11 +175,11 @@ public final class TraceFileWriter {
             }
         }
         ensureScratch((words / 2) * EventEncoder.MAX_BYTES + CHUNK_HEADER_ROOM);
-        final byte[] b = scratch;
-        final ChunkEncoder.Encoded e = encoder.encode(r.buf, words, r.lastTicks, MethodRegistry.size(), b, CHUNK_HEADER_ROOM);
-        final int payloadLen = e.endOffset() - CHUNK_HEADER_ROOM;
-        final byte[] head = new byte[CHUNK_HEADER_ROOM];
-        final int h = RecordEncoder.chunkHeader(head, 0, r.tid, e.baseTicks(), payloadLen, sessionEnd);
+        byte[] b = scratch;
+        ChunkEncoder.Encoded e = encoder.encode(r.buf, words, r.lastTicks, MethodRegistry.size(), b, CHUNK_HEADER_ROOM);
+        int payloadLen = e.endOffset() - CHUNK_HEADER_ROOM;
+        byte[] head = new byte[CHUNK_HEADER_ROOM];
+        int h = RecordEncoder.chunkHeader(head, 0, r.tid, e.baseTicks(), payloadLen, sessionEnd);
         System.arraycopy(head, 0, b, CHUNK_HEADER_ROOM - h, h);
         writeLocked(b, CHUNK_HEADER_ROOM - h, h + payloadLen);
         r.firstChunkPending = false;
@@ -190,7 +190,7 @@ public final class TraceFileWriter {
 
     public synchronized void close() {
         if (!stopped) {
-            final long clamped = encoder.clampedDeltas();
+            long clamped = encoder.clampedDeltas();
             if (clamped > 0) {
                 Log.warn("clamped " + Log.plural(clamped, "non-monotonic event timestamp"));
             }
@@ -199,12 +199,12 @@ public final class TraceFileWriter {
         }
         try {
             out.close();
-        } catch (final IOException e) {
+        } catch (IOException e) {
             Log.warn("closing " + path + ": " + e);
         }
     }
 
-    private void stopOnFailure(final Throwable e) {
+    private void stopOnFailure(Throwable e) {
         if (!stopped) {
             stopped = true;
             failed = true;
@@ -212,7 +212,7 @@ public final class TraceFileWriter {
         }
     }
 
-    private void ensureScratch(final int needed) {
+    private void ensureScratch(int needed) {
         if (scratch.length < needed) {
             scratch = new byte[needed];
         }

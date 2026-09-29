@@ -1,5 +1,7 @@
 package io.github.yagipass.verbatime.format;
 
+import com.google.errorprone.annotations.Var;
+
 public final class EventEncoder {
 
     public static final int MAX_BYTES = Varint.MAX_BYTES + 5;
@@ -11,16 +13,16 @@ public final class EventEncoder {
     private EventEncoder() {
     }
 
-    public static int enter(final byte[] b, int off, final long delta, final long methodId) {
+    public static int enter(byte[] b, @Var int off, long delta, long methodId) {
         off = Varint.put(b, off, delta << 1);
         return Varint.put(b, off, methodId);
     }
 
-    public static int exit(final byte[] b, final int off, final long delta) {
+    public static int exit(byte[] b, int off, long delta) {
         return Varint.put(b, off, (delta << 2) | EXIT_BIT);
     }
 
-    public static int exitThrow(final byte[] b, int off, final long delta, final long exceptionId) {
+    public static int exitThrow(byte[] b, @Var int off, long delta, long exceptionId) {
         off = Varint.put(b, off, (delta << 2) | THROW_BIT | EXIT_BIT);
         return Varint.put(b, off, exceptionId);
     }

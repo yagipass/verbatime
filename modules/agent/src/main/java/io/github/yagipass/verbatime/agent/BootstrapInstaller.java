@@ -13,6 +13,8 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 
+import com.google.errorprone.annotations.Var;
+
 final class BootstrapInstaller {
 
     private static final String PROBE_PREFIX = "io/github/yagipass/verbatime/agent/probe/";
@@ -22,41 +24,41 @@ final class BootstrapInstaller {
     private BootstrapInstaller() {
     }
 
-    static void install(final Instrumentation inst) {
-        final Path self = selfLocation();
+    static void install(Instrumentation inst) {
+        Path self = selfLocation();
         if (Files.isDirectory(self)) {
             System.err.println("[verbatime] running from " + self + ", so the probe classes stay on the class path");
             return;
         }
         try {
-            final Path probeJar = extractBootstrapJar(self);
+            Path probeJar = extractBootstrapJar(self);
             inst.appendToBootstrapClassLoaderSearch(new JarFile(probeJar.toFile()));
             probeJar.toFile().deleteOnExit();
-        } catch (final IOException e) {
+        } catch (IOException e) {
             System.err.println("[verbatime] cannot install the probe classes on the bootstrap class path: " + e);
             throw new UncheckedIOException(e);
         }
     }
 
     private static Path selfLocation() {
-        final CodeSource cs = BootstrapInstaller.class.getProtectionDomain().getCodeSource();
+        CodeSource cs = BootstrapInstaller.class.getProtectionDomain().getCodeSource();
         if (cs == null || cs.getLocation() == null) {
             throw new IllegalStateException("cannot locate the agent jar");
         }
         try {
             return Path.of(cs.getLocation().toURI());
-        } catch (final URISyntaxException e) {
+        } catch (URISyntaxException e) {
             throw new IllegalStateException("cannot locate the agent jar: " + cs.getLocation(), e);
         }
     }
 
-    static Path extractBootstrapJar(final Path agentJar) throws IOException {
-        final Path tmp = Files.createTempFile("verbatime-probe-", ".jar");
-        int copied = 0;
+    static Path extractBootstrapJar(Path agentJar) throws IOException {
+        Path tmp = Files.createTempFile("verbatime-probe-", ".jar");
+        @Var int copied = 0;
         try (JarFile in = new JarFile(agentJar.toFile()); JarOutputStream out = new JarOutputStream(Files.newOutputStream(tmp))) {
-            final Enumeration<JarEntry> entries = in.entries();
+            Enumeration<JarEntry> entries = in.entries();
             while (entries.hasMoreElements()) {
-                final JarEntry e = entries.nextElement();
+                JarEntry e = entries.nextElement();
                 if (e.isDirectory() || !isBootstrapEntry(e.getName())) {
                     continue;
                 }
@@ -74,7 +76,7 @@ final class BootstrapInstaller {
         return tmp;
     }
 
-    private static boolean isBootstrapEntry(final String name) {
+    private static boolean isBootstrapEntry(String name) {
         return name.startsWith(PROBE_PREFIX) || name.startsWith(FORMAT_PREFIX);
     }
 }

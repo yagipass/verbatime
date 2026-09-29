@@ -4,36 +4,38 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.agent.probe.Log;
 
 public record Config(List<String> includes, List<String> excludes, List<RootSpec> roots, String out, String spoolDir, long waitStartMs, RecordStart recordStart) {
 
-    static Config parse(final String args) {
+    static Config parse(String args) {
         return parse(args, Log::warn);
     }
 
-    static Config parse(final String args, final Consumer<String> warn) {
-        final List<String> includes = new ArrayList<>();
-        final List<String> excludes = new ArrayList<>();
-        final List<RootSpec> roots = new ArrayList<>();
-        boolean includeIgnored = false;
-        String out = null;
-        String spoolDir = null;
-        long waitStartMs = 0;
-        RecordStart recordStart = RecordStart.ONDEMAND;
+    static Config parse(String args, Consumer<String> warn) {
+        List<String> includes = new ArrayList<>();
+        List<String> excludes = new ArrayList<>();
+        List<RootSpec> roots = new ArrayList<>();
+        @Var boolean includeIgnored = false;
+        @Var String out = null;
+        @Var String spoolDir = null;
+        @Var long waitStartMs = 0;
+        @Var RecordStart recordStart = RecordStart.ONDEMAND;
 
         if (args != null) {
-            for (final String part : args.split(",", -1)) {
-                final String p = part.trim();
+            for (String part : args.split(",", -1)) {
+                String p = part.trim();
                 if (p.isEmpty()) {
                     continue;
                 }
-                final int eq = p.indexOf('=');
+                int eq = p.indexOf('=');
                 if (eq <= 0) {
                     throw new IllegalArgumentException("expected key=value, got '" + p + "'");
                 }
-                final String key = p.substring(0, eq).trim();
-                final String value = p.substring(eq + 1).trim();
+                String key = p.substring(0, eq).trim();
+                String value = p.substring(eq + 1).trim();
                 switch (key) {
                     case "include" -> includeIgnored |= addPrefixesReportingIgnored(includes, value, key, warn);
                     case "exclude" -> addPrefixesReportingIgnored(excludes, value, key, warn);
@@ -65,16 +67,16 @@ public record Config(List<String> includes, List<String> excludes, List<RootSpec
         if (includeIgnored && includes.isEmpty()) {
             warn.accept("no include= prefix is left after ignoring the ones above, so every class is instrumented as if include= were omitted");
         }
-        final Config cfg = new Config(List.copyOf(includes), List.copyOf(excludes), List.copyOf(roots), out, spoolDir, waitStartMs, recordStart);
-        for (final RootSpec spec : cfg.roots()) {
+        Config cfg = new Config(List.copyOf(includes), List.copyOf(excludes), List.copyOf(roots), out, spoolDir, waitStartMs, recordStart);
+        for (RootSpec spec : cfg.roots()) {
             cfg.requireInstrumentable(spec);
         }
         return cfg;
     }
 
-    private static void addRoots(final List<RootSpec> target, final String value) {
-        for (final String s : value.split("\\+", -1)) {
-            final String spec = s.trim();
+    private static void addRoots(List<RootSpec> target, String value) {
+        for (String s : value.split("\\+", -1)) {
+            String spec = s.trim();
             if (spec.isEmpty()) {
                 continue;
             }
@@ -85,7 +87,7 @@ public record Config(List<String> includes, List<String> excludes, List<RootSpec
         }
     }
 
-    private static void rejectStartupWithout(final List<RootSpec> roots, final String out, final String spoolDir, final long waitStartMs) {
+    private static void rejectStartupWithout(List<RootSpec> roots, String out, String spoolDir, long waitStartMs) {
         if (roots.isEmpty()) {
             throw new IllegalArgumentException("record=startup needs roots=, as in roots=pkg.Cls::method: no JMX client sets them in this mode");
         }
@@ -100,19 +102,19 @@ public record Config(List<String> includes, List<String> excludes, List<RootSpec
         }
     }
 
-    public void requireInstrumentable(final RootSpec spec) {
-        final String internal = spec.internalClassName();
+    public void requireInstrumentable(RootSpec spec) {
+        String internal = spec.internalClassName();
         if (Transformer.isNeverInstrumented(internal) || !selects(internal)) {
             throw new IllegalArgumentException("root " + spec + " is not instrumentable: " + spec.className() + " is excluded from instrumentation");
         }
     }
 
-    private static long parseWaitStart(final String value) {
-        final String digits = value.endsWith("s") ? value.substring(0, value.length() - 1) : value;
-        final long seconds;
+    private static long parseWaitStart(String value) {
+        String digits = value.endsWith("s") ? value.substring(0, value.length() - 1) : value;
+        long seconds;
         try {
             seconds = Long.parseLong(digits);
-        } catch (final NumberFormatException e) {
+        } catch (NumberFormatException e) {
             throw new IllegalArgumentException("waitstart= needs a number of seconds such as waitstart=60s, got '" + value + "'");
         }
         if (seconds <= 0) {
@@ -121,16 +123,16 @@ public record Config(List<String> includes, List<String> excludes, List<RootSpec
         return seconds * 1000L;
     }
 
-    private static boolean addPrefixesReportingIgnored(final List<String> target, final String value, final String key, final Consumer<String> warn) {
-        boolean ignored = false;
-        for (final String s : value.split("\\+", -1)) {
-            final String p = s.trim();
+    private static boolean addPrefixesReportingIgnored(List<String> target, String value, String key, Consumer<String> warn) {
+        @Var boolean ignored = false;
+        for (String s : value.split("\\+", -1)) {
+            String p = s.trim();
             if (p.isEmpty()) {
                 continue;
             }
-            final String internal = p.replace('.', '/');
+            String internal = p.replace('.', '/');
             rejectMalformedPrefix(internal, p, key);
-            final String never = Transformer.neverInstrumentedPrefix(internal + "/");
+            String never = Transformer.neverInstrumentedPrefix(internal + "/");
             if (never != null) {
                 warn.accept(key + "=" + p + " is ignored: classes under " + never.replace('/', '.') + "* are never instrumented, whichever jar they come from");
                 ignored = true;
@@ -141,10 +143,10 @@ public record Config(List<String> includes, List<String> excludes, List<RootSpec
         return ignored;
     }
 
-    private static void rejectMalformedPrefix(final String internal, final String given, final String key) {
-        final String suggested = key + "=" + stripToSuggestion(given);
+    private static void rejectMalformedPrefix(String internal, String given, String key) {
+        String suggested = key + "=" + stripToSuggestion(given);
         if (internal.indexOf('*') >= 0) {
-            final String everything = key.equals("include") ? " To instrument everything, omit include=." : "";
+            String everything = key.equals("include") ? " To instrument everything, omit include=." : "";
             throw new IllegalArgumentException(key + "=" + given + " is not a package or class prefix: wildcards are not supported, write "
                     + suggested + ". Sub-packages and nested classes are matched automatically." + everything);
         }
@@ -153,8 +155,8 @@ public record Config(List<String> includes, List<String> excludes, List<RootSpec
         }
     }
 
-    private static String stripToSuggestion(final String given) {
-        String s = given.replace("*", "");
+    private static String stripToSuggestion(String given) {
+        @Var String s = given.replace("*", "");
         while (s.startsWith(".") || s.startsWith("/")) {
             s = s.substring(1);
         }
@@ -164,23 +166,23 @@ public record Config(List<String> includes, List<String> excludes, List<RootSpec
         return s.isEmpty() ? "com.example" : s;
     }
 
-    public boolean selects(final String internalName) {
+    public boolean selects(String internalName) {
         if (!includes.isEmpty() && !matchesAny(includes, internalName)) {
             return false;
         }
         return !matchesAny(excludes, internalName);
     }
 
-    private static boolean matchesAny(final List<String> prefixes, final String internalName) {
+    private static boolean matchesAny(List<String> prefixes, String internalName) {
         for (int i = 0, n = prefixes.size(); i < n; i++) {
-            final String p = prefixes.get(i);
-            final int len = p.length();
+            String p = prefixes.get(i);
+            int len = p.length();
             if (internalName.length() == len) {
                 if (internalName.equals(p)) {
                     return true;
                 }
             } else if (internalName.length() > len && internalName.startsWith(p)) {
-                final char c = internalName.charAt(len);
+                char c = internalName.charAt(len);
                 if (c == '/' || c == '$') {
                     return true;
                 }
@@ -198,7 +200,7 @@ public record Config(List<String> includes, List<String> excludes, List<RootSpec
     }
 
     String describe() {
-        final StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
         sb.append("include=").append(includeText());
         sb.append(" exclude=").append(excludeText());
         if (!roots.isEmpty()) {
@@ -218,8 +220,8 @@ public record Config(List<String> includes, List<String> excludes, List<RootSpec
     }
 
     public String rootsText() {
-        final StringBuilder sb = new StringBuilder();
-        for (final RootSpec s : roots) {
+        StringBuilder sb = new StringBuilder();
+        for (RootSpec s : roots) {
             if (sb.length() > 0) {
                 sb.append('+');
             }
@@ -228,9 +230,9 @@ public record Config(List<String> includes, List<String> excludes, List<RootSpec
         return sb.toString();
     }
 
-    private static String dotted(final List<String> internal) {
-        final StringBuilder sb = new StringBuilder();
-        for (final String s : internal) {
+    private static String dotted(List<String> internal) {
+        StringBuilder sb = new StringBuilder();
+        for (String s : internal) {
             if (sb.length() > 0) {
                 sb.append('+');
             }

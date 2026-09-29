@@ -17,19 +17,19 @@ public class OrderConsumer {
 
     private final AtomicLong rejected = new AtomicLong();
 
-    OrderConsumer(final OrderService orders) {
+    OrderConsumer(OrderService orders) {
         this.orders = orders;
     }
 
     @KafkaListener(topics = KafkaApplication.TOPIC)
-    public void onOrder(final String message) {
-        final int colon = message.indexOf(':');
-        final String sku = colon < 0 ? message : message.substring(0, colon);
-        final int qty = colon < 0 ? 1 : Integer.parseInt(message.substring(colon + 1));
+    public void onOrder(String message) {
+        int colon = message.indexOf(':');
+        String sku = colon < 0 ? message : message.substring(0, colon);
+        int qty = colon < 0 ? 1 : Integer.parseInt(message.substring(colon + 1));
         try {
             orders.placeOrder(sku, qty);
             placed.incrementAndGet();
-        } catch (final OutOfStockException e) {
+        } catch (OutOfStockException e) {
             rejected.incrementAndGet();
         }
     }

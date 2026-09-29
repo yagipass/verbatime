@@ -11,18 +11,18 @@ final class Names {
 
     private final boolean[] collides;
 
-    Names(final TraceFile file) {
+    Names(TraceFile file) {
         this.file = file;
-        final int n = file.methodCount;
+        int n = file.methodCount;
         display = new String[n];
         collides = new boolean[n];
-        final Map<String, Integer> seen = new HashMap<>();
+        Map<String, Integer> seen = new HashMap<>();
         for (int id = 0; id < n; id++) {
             if (file.methodClass(id) == null) {
                 continue;
             }
-            final String base = simpleClass(file.methodClass(id)) + "." + methodName(file.methodSig(id));
-            final int k = seen.merge(base, 1, Integer::sum);
+            String base = simpleClass(file.methodClass(id)) + "." + methodName(file.methodSig(id));
+            int k = seen.merge(base, 1, Integer::sum);
             display[id] = k == 1 ? base : base + "#" + k;
         }
         for (int id = 0; id < n; id++) {
@@ -32,29 +32,29 @@ final class Names {
         }
     }
 
-    String displayName(final int id) {
+    String displayName(int id) {
         return id >= 0 && id < display.length && display[id] != null ? display[id] : "<method " + id + ">";
     }
 
-    String fullName(final int id) {
-        final String cls = file.methodClass(id);
+    String fullName(int id) {
+        String cls = file.methodClass(id);
         return cls == null ? displayName(id) : cls + "." + file.methodSig(id);
     }
 
-    boolean collides(final int id) {
+    boolean collides(int id) {
         return id >= 0 && id < collides.length && collides[id];
     }
 
-    static String simpleClass(final String className) {
+    static String simpleClass(String className) {
         return className.substring(className.lastIndexOf('.') + 1);
     }
 
-    static String methodName(final String sig) {
-        final int p = sig.indexOf('(');
+    static String methodName(String sig) {
+        int p = sig.indexOf('(');
         return p < 0 ? sig : sig.substring(0, p);
     }
 
-    static String sanitize(final String s) {
+    static String sanitize(String s) {
         if (s.indexOf('\n') < 0 && s.indexOf('\r') < 0 && s.indexOf('\t') < 0) {
             return s;
         }
