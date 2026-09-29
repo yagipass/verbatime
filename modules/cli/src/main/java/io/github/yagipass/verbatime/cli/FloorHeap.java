@@ -1,16 +1,18 @@
 package io.github.yagipass.verbatime.cli;
 
+import com.google.errorprone.annotations.Var;
+
 final class FloorHeap {
 
     private final long[] heap;
 
     private int size;
 
-    FloorHeap(final int capacity) {
+    FloorHeap(int capacity) {
         heap = new long[Math.max(capacity, 1)];
     }
 
-    void offer(final long ticks) {
+    void offer(long ticks) {
         if (size < heap.length) {
             heap[size] = ticks;
             siftUp(size++);
@@ -24,9 +26,9 @@ final class FloorHeap {
         return size < heap.length ? 0 : Math.max(heap[0], 1);
     }
 
-    private void siftUp(int i) {
+    private void siftUp(@Var int i) {
         while (i > 0) {
-            final int parent = (i - 1) >>> 1;
+            int parent = (i - 1) >>> 1;
             if (heap[parent] <= heap[i]) {
                 return;
             }
@@ -35,11 +37,11 @@ final class FloorHeap {
         }
     }
 
-    private void siftDown(int i) {
+    private void siftDown(@Var int i) {
         while (true) {
-            final int l = 2 * i + 1;
-            final int r = l + 1;
-            int m = i;
+            int l = 2 * i + 1;
+            int r = l + 1;
+            @Var int m = i;
             if (l < size && heap[l] < heap[m]) {
                 m = l;
             }
@@ -54,8 +56,8 @@ final class FloorHeap {
         }
     }
 
-    private void swap(final int a, final int b) {
-        final long t = heap[a];
+    private void swap(int a, int b) {
+        long t = heap[a];
         heap[a] = heap[b];
         heap[b] = t;
     }

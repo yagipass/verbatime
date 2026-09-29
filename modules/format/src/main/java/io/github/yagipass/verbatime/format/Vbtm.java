@@ -65,7 +65,7 @@ public final class Vbtm {
         return MAGIC.getBytes(StandardCharsets.US_ASCII);
     }
 
-    public static boolean hasMagic(final byte[] b, final int off, final int len) {
+    public static boolean hasMagic(byte[] b, int off, int len) {
         if (len < MAGIC_BYTES) {
             return false;
         }

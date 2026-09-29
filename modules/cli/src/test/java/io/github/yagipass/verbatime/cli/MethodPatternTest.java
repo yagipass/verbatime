@@ -16,8 +16,8 @@ final class MethodPatternTest {
 
     @Test
     void aPatternThatNamesSeveralMethodsIsRejectedUnlessAll() throws IOException {
-        final Path t = TestTraces.trace(dir);
-        final Cli.Result r = Cli.vbtm("find", t, "App::handle");
+        Path t = TestTraces.trace(dir);
+        Cli.Result r = Cli.vbtm("find", t, "App::handle");
         assertEquals(1, r.code());
         assertTrue(r.err().contains("'App::handle' matches 2 methods:"), r.err());
         assertTrue(r.err().contains("hint: "), r.err());

@@ -11,7 +11,7 @@ import io.github.yagipass.verbatime.examples.workload.OutOfStockException;
 public class OutOfStockAdvice {
 
     @ExceptionHandler(OutOfStockException.class)
-    public ResponseEntity<String> outOfStock(final OutOfStockException e) {
+    public ResponseEntity<String> outOfStock(OutOfStockException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
     }
 }

@@ -24,29 +24,29 @@ public final class OrderServlet extends HttpServlet {
     }
 
     @Override
-    protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
-        final String sku = param(req, "sku", "widget");
-        final int qty;
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String sku = param(req, "sku", "widget");
+        int qty;
         try {
             qty = Integer.parseInt(param(req, "qty", "1"));
-        } catch (final NumberFormatException e) {
+        } catch (NumberFormatException e) {
             text(resp, HttpServletResponse.SC_BAD_REQUEST, "qty must be an integer");
             return;
         }
         try {
-            final Receipt receipt = orders.placeOrder(sku, qty);
+            Receipt receipt = orders.placeOrder(sku, qty);
             text(resp, HttpServletResponse.SC_OK, receipt.toText());
-        } catch (final OutOfStockException e) {
+        } catch (OutOfStockException e) {
             text(resp, HttpServletResponse.SC_CONFLICT, e.getMessage());
         }
     }
 
-    private static String param(final HttpServletRequest req, final String name, final String dflt) {
-        final String v = req.getParameter(name);
+    private static String param(HttpServletRequest req, String name, String dflt) {
+        String v = req.getParameter(name);
         return v == null || v.isEmpty() ? dflt : v;
     }
 
-    static void text(final HttpServletResponse resp, final int status, final String body) throws IOException {
+    static void text(HttpServletResponse resp, int status, String body) throws IOException {
         resp.setStatus(status);
         resp.setContentType("text/plain;charset=UTF-8");
         resp.getWriter().println(body);

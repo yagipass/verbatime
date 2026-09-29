@@ -28,7 +28,7 @@ final class SpyView implements ControlPresenter.View {
         }
 
         @Override
-        public void reload(final boolean recording) {
+        public void reload(boolean recording) {
             reloads.add(recording);
         }
     }
@@ -56,17 +56,17 @@ final class SpyView implements ControlPresenter.View {
     }
 
     @Override
-    public void render(final ViewState p) {
+    public void render(ViewState p) {
         states.add(p);
     }
 
     @Override
-    public void message(final String text) {
+    public void message(String text) {
         messages.add(text);
     }
 
     @Override
-    public void rootCandidates(final String[] specs) {
+    public void rootCandidates(String[] specs) {
         candidates.add(specs);
     }
 
@@ -76,7 +76,7 @@ final class SpyView implements ControlPresenter.View {
     }
 
     @Override
-    public EditorHandle openEditor(final Path file) {
+    public EditorHandle openEditor(Path file) {
         opened.add(file);
         return editor;
     }

@@ -19,21 +19,21 @@ final class SelectedCallTest {
 
     @Test
     void ancestorsArriveAsFlatTriplesRootFirstAndGetTheirRealDepths() {
-        final Object[] raw = { 10_000.0, 20_000.0, 1.0, 10_500.0, 3_000.0, 4.0 };
+        Object[] raw = { 10_000.0, 20_000.0, 1.0, 10_500.0, 3_000.0, 4.0 };
         assertEquals(List.of(new Ancestor(10_000, 20_000, 0, 1), new Ancestor(10_500, 3_000, 1, 4)),
                 SelectedCall.parseAncestors(raw, 2), "the page sends doubles, and the chain ends one above the frame");
     }
 
     @Test
     void aChainCutShortByTheLoadedWindowKeepsRealDepths() {
-        final Object[] raw = { 10_500.0, 3_000.0, 4.0 };
+        Object[] raw = { 10_500.0, 3_000.0, 4.0 };
         assertEquals(List.of(new Ancestor(10_500, 3_000, 4, 4)), SelectedCall.parseAncestors(raw, 5),
                 "only the parent was in the window, so the chain starts at depth 4, not 0");
     }
 
     @Test
     void chainEndsWithTheFrameItself() {
-        final SelectedCall f = new SelectedCall(7, 10_500, 3_000, 1_000, 1, 4, -1, false,
+        SelectedCall f = new SelectedCall(7, 10_500, 3_000, 1_000, 1, 4, -1, false,
                 List.of(new Ancestor(10_000, 20_000, 0, 1)), null, null);
         assertEquals(List.of(new Ancestor(10_000, 20_000, 0, 1), new Ancestor(10_500, 3_000, 1, 4)), f.pathFromRoot());
         assertEquals(List.of(new Ancestor(10_500, 3_000, 1, 4)),
@@ -61,9 +61,9 @@ final class SelectedCallTest {
 
     @Test
     void aFoundAggregateReplacesTheChartSelfTimeAndClearsAnEarlierError() throws IOException {
-        final SelectedCall f = new SelectedCall(1, 10_000, 10_000, 10_000, 0, 0, -1, false, List.of(), null, null)
+        SelectedCall f = new SelectedCall(1, 10_000, 10_000, 10_000, 0, 0, -1, false, List.of(), null, null)
                 .withSubtreeError("Aggregation failed: boom");
-        final SelectedCall done = f.withSubtree(SubtreeAggregate.compute(rootWithChild(), 1, 10_000, 10_000, 0, 0));
+        SelectedCall done = f.withSubtree(SubtreeAggregate.compute(rootWithChild(), 1, 10_000, 10_000, 0, 0));
         assertNull(done.subtreeError(), "the views treat subtree and subtreeError as exclusive, so a stale error must go");
         assertEquals(6_000, done.effectiveSelfNs(),
                 "the aggregate knows the children the chart window may have dropped, so its self wins");
@@ -71,20 +71,20 @@ final class SelectedCallTest {
 
     @Test
     void aNotFoundAggregateBecomesAnErrorInsteadOfAPlaceholderTree() throws IOException {
-        final SelectedCall f = new SelectedCall(1, 50_000, 1_000, 400, 0, 0, -1, false, List.of(), null, null);
-        final SubtreeAggregate agg = SubtreeAggregate.compute(rootWithChild(), 1, 50_000, 1_000, 0, 0);
+        SelectedCall f = new SelectedCall(1, 50_000, 1_000, 400, 0, 0, -1, false, List.of(), null, null);
+        SubtreeAggregate agg = SubtreeAggregate.compute(rootWithChild(), 1, 50_000, 1_000, 0, 0);
         assertEquals(false, agg.found());
-        final SelectedCall done = f.withSubtree(agg);
+        SelectedCall done = f.withSubtree(agg);
         assertNull(done.subtree(), "a placeholder root would draw as a one-row tree with self == total == durNs");
         assertSame(SelectedCall.NOT_FOUND, done.subtreeError());
         assertEquals(400, done.effectiveSelfNs(), "Call Details keeps the chart self rather than the seeded durNs");
     }
 
     private static TraceSnapshot rootWithChild() throws IOException {
-        final TraceBuilder w = TestTraces.writer();
+        TraceBuilder w = TestTraces.writer();
         w.thread(1, "main");
         w.clazz(0, "pkg.A", "root()V", "child()V");
-        final TraceBuilder.Payload p = new TraceBuilder.Payload(100);
+        TraceBuilder.Payload p = new TraceBuilder.Payload(100);
         p.enter(100, 0).enter(110, 1).exit(150).exit(200);
         w.chunk(1, 100, p.bytes(), true);
         return TestTraces.index(w);

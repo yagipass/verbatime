@@ -9,7 +9,7 @@ public final class PrivateMain {
         main(new String[0]);
     }
 
-    private static void main(final String[] args) {
+    private static void main(String[] args) {
         System.out.println("root() = " + new Fixture().root() + " with " + args.length + " args");
     }
 }

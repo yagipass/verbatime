@@ -10,10 +10,10 @@ public final class OrderService {
 
     private final AuditLog audit = new AuditLog();
 
-    public Receipt placeOrder(final String sku, final int qty) {
-        final long cents = pricing.price(sku, qty);
+    public Receipt placeOrder(String sku, int qty) {
+        long cents = pricing.price(sku, qty);
         inventory.reserve(sku, qty);
-        final String txId = payment.charge(cents);
+        String txId = payment.charge(cents);
         audit.append("order sku=" + sku + " qty=" + qty + " cents=" + cents + " tx=" + txId);
         return new Receipt(sku, qty, cents, txId);
     }

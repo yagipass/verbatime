@@ -28,8 +28,8 @@ final class GoldenTrace {
     private GoldenTrace() {
     }
 
-    static byte[] bytes(final int... v) {
-        final byte[] b = new byte[v.length];
+    static byte[] bytes(int... v) {
+        byte[] b = new byte[v.length];
         for (int i = 0; i < v.length; i++) {
             b[i] = (byte) v[i];
         }

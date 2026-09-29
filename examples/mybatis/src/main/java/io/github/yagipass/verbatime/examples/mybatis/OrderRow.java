@@ -19,7 +19,7 @@ public final class OrderRow {
     public OrderRow() {
     }
 
-    public OrderRow(final String sku, final int qty, final long cents, final String txId) {
+    public OrderRow(String sku, int qty, long cents, String txId) {
         this.sku = sku;
         this.qty = qty;
         this.cents = cents;
@@ -30,7 +30,7 @@ public final class OrderRow {
         return id;
     }
 
-    public void setId(final Long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -38,7 +38,7 @@ public final class OrderRow {
         return sku;
     }
 
-    public void setSku(final String sku) {
+    public void setSku(String sku) {
         this.sku = sku;
     }
 
@@ -46,7 +46,7 @@ public final class OrderRow {
         return qty;
     }
 
-    public void setQty(final int qty) {
+    public void setQty(int qty) {
         this.qty = qty;
     }
 
@@ -54,7 +54,7 @@ public final class OrderRow {
         return cents;
     }
 
-    public void setCents(final long cents) {
+    public void setCents(long cents) {
         this.cents = cents;
     }
 
@@ -62,7 +62,7 @@ public final class OrderRow {
         return txId;
     }
 
-    public void setTxId(final String txId) {
+    public void setTxId(String txId) {
         this.txId = txId;
     }
 
@@ -70,7 +70,7 @@ public final class OrderRow {
         return createdAt;
     }
 
-    public void setCreatedAt(final LocalDateTime createdAt) {
+    public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
 }

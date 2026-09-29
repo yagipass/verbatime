@@ -21,6 +21,8 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.jmc.FakeUiThread;
 import io.github.yagipass.verbatime.jmc.control.ControlPresenter.State;
 import io.github.yagipass.verbatime.jmc.recordings.LocalRecordings;
@@ -57,7 +59,7 @@ final class ControlPresenterTest {
     final long[] now = { 1_700_000_000_000L };
 
     private ControlPresenter connection() {
-        final ControlPresenter.Settings settings = new ControlPresenter.Settings() {
+        ControlPresenter.Settings settings = new ControlPresenter.Settings() {
             @Override
             public String roots() {
                 return initialRoots;
@@ -69,7 +71,7 @@ final class ControlPresenterTest {
             }
 
             @Override
-            public void save(final String target, final String roots) {
+            public void save(String target, String roots) {
                 saved.put("target", target);
                 saved.put("roots", roots);
             }
@@ -90,7 +92,7 @@ final class ControlPresenterTest {
     }
 
     private ControlPresenter connected() {
-        final ControlPresenter c = connection();
+        ControlPresenter c = connection();
         c.connect(TARGET);
         bg.runAll();
         uiThread.runPosted();
@@ -101,8 +103,8 @@ final class ControlPresenterTest {
         return Map.of("v", "4", "pid", "7", "state", "idle", "roots", "1", "root.0", "ok a.B::m");
     }
 
-    private static Map<String, String> recording(final long id, final long startEpochMs, final long agentBytes) {
-        final Map<String, String> m = new HashMap<>(Map.of("v", "4", "pid", "7", "state", "recording", "roots", "1",
+    private static Map<String, String> recording(long id, long startEpochMs, long agentBytes) {
+        Map<String, String> m = new HashMap<>(Map.of("v", "4", "pid", "7", "state", "recording", "roots", "1",
                 "root.0", "ok a.B::m", "recording.id", Long.toString(id), "recording.name", "run",
                 "recording.startEpochMs", Long.toString(startEpochMs)));
         if (agentBytes >= 0) {
@@ -111,21 +113,21 @@ final class ControlPresenterTest {
         return m;
     }
 
-    private static Map<String, String> stopped(final long lastBytes) {
+    private static Map<String, String> stopped(long lastBytes) {
         return new HashMap<>(Map.of("v", "4", "pid", "7", "state", "idle", "roots", "1", "root.0", "ok a.B::m",
                 "lastRecording.bytes", Long.toString(lastBytes)));
     }
 
-    private static Map<String, String> stoppedAfter(final long id, final long startEpochMs, final long lastBytes) {
-        final Map<String, String> m = stopped(lastBytes);
+    private static Map<String, String> stoppedAfter(long id, long startEpochMs, long lastBytes) {
+        Map<String, String> m = stopped(lastBytes);
         m.put("lastRecording.id", Long.toString(id));
         m.put("lastRecording.name", "run");
         m.put("lastRecording.startEpochMs", Long.toString(startEpochMs));
         return m;
     }
 
-    private Path localCopy(final long id, final int bytes) throws IOException {
-        final Path local = LocalRecordings.localFile(recordings, LocalRecordings.fileSafe(TARGET), "run", id,
+    private Path localCopy(long id, int bytes) throws IOException {
+        Path local = LocalRecordings.localFile(recordings, LocalRecordings.fileSafe(TARGET), "run", id,
                 Long.toString(now[0]));
         Files.createDirectories(local.getParent());
         Files.write(local, new byte[bytes]);
@@ -138,8 +140,8 @@ final class ControlPresenterTest {
         uiThread.runPosted();
     }
 
-    private void runCancelledAfterOneChunk(final Transfer p) {
-        final NullProgressMonitor monitor = new NullProgressMonitor();
+    private void runCancelledAfterOneChunk(Transfer p) {
+        NullProgressMonitor monitor = new NullProgressMonitor();
         agent.onRead = () -> monitor.setCanceled(true);
         agent.chunks.add(new byte[3]);
         p.run(monitor);
@@ -150,7 +152,7 @@ final class ControlPresenterTest {
 
     @Test
     void connectSavesTheTargetOnlyAfterTheAgentAnsweredStatus() {
-        final ControlPresenter c = connection();
+        ControlPresenter c = connection();
         c.connect(TARGET);
         assertEquals(State.CONNECTING, c.state());
         assertTrue(saved.isEmpty(), "a target that never answered is not remembered as the last good one");
@@ -165,7 +167,7 @@ final class ControlPresenterTest {
     @Test
     void connectionFailureReturnsToDisconnectedWithTheReasonAndSavesNothing() {
         dialError = new IOException("Connection refused");
-        final ControlPresenter c = connection();
+        ControlPresenter c = connection();
         c.connect(TARGET);
         bg.runAll();
         uiThread.runPosted();
@@ -177,7 +179,7 @@ final class ControlPresenterTest {
 
     @Test
     void aStatusFailureWhileConnectedBecomesLostNotADisconnect() {
-        final ControlPresenter c = connected();
+        ControlPresenter c = connected();
         agent.statusError = new IOException("broken pipe");
         poll();
         assertEquals(State.LOST, c.state());
@@ -190,7 +192,7 @@ final class ControlPresenterTest {
     @Test
     void userDisconnectClearsRootsAndSaysDisconnectedWhileLostKeepsTheUrlAndSaysWhy() {
         agent.steady = idleWithRoot();
-        final ControlPresenter c = connected();
+        ControlPresenter c = connected();
         assertEquals(1, view.last().roots().size());
         c.disconnect();
         assertEquals(State.DISCONNECTED, c.state());
@@ -215,7 +217,7 @@ final class ControlPresenterTest {
 
     @Test
     void aLateReplyFromAPreviousClientIsIgnoredAfterDisconnect() {
-        final ControlPresenter c = connected();
+        ControlPresenter c = connected();
         uiThread.advance(ControlPresenter.POLL_MS);
         c.disconnect();
         bg.runAll();
@@ -226,14 +228,14 @@ final class ControlPresenterTest {
 
     @Test
     void aDialThatNeverAnswersTimesOutAndTheNextConnectDoesNotQueueBehindIt() {
-        final ControlPresenter c = connection();
+        ControlPresenter c = connection();
         c.connect(TARGET);
         uiThread.advance(ControlPresenter.CONNECT_TIMEOUT_MS);
         assertEquals(State.DISCONNECTED, c.state());
         assertEquals(State.DISCONNECTED, view.last().state());
         assertEquals("Connection timed out after 30 s: " + TARGET, view.lastMessage());
         assertTrue(saved.isEmpty());
-        final ManualExecutor stuck = executors.get(0);
+        ManualExecutor stuck = executors.get(0);
         assertEquals(1, stuck.deferred(), "the dial is still blocked on its own thread");
         c.connect(TARGET);
         assertEquals(2, executors.size(), "a reconnect gets a fresh thread instead of waiting for the stuck dial");
@@ -245,10 +247,10 @@ final class ControlPresenterTest {
 
     @Test
     void aDialThatAnswersAfterTheTimeoutIsClosedInsteadOfTakingOverTheView() {
-        final ControlPresenter c = connection();
+        ControlPresenter c = connection();
         c.connect(TARGET);
         uiThread.advance(ControlPresenter.CONNECT_TIMEOUT_MS);
-        final ManualExecutor stuck = executors.get(0);
+        ManualExecutor stuck = executors.get(0);
         stuck.runAll();
         uiThread.runPosted();
         assertEquals(State.DISCONNECTED, c.state());
@@ -261,7 +263,7 @@ final class ControlPresenterTest {
 
     @Test
     void cancellingAConnectReturnsToDisconnectedAndTheLateDialIsDropped() {
-        final ControlPresenter c = connection();
+        ControlPresenter c = connection();
         c.connect(TARGET);
         c.cancelConnect();
         assertEquals(State.DISCONNECTED, c.state());
@@ -278,9 +280,9 @@ final class ControlPresenterTest {
 
     @Test
     void aStatusCallThatNeverReturnsBecomesLostAndAReconnectDoesNotWaitForIt() {
-        final ControlPresenter c = connected();
+        ControlPresenter c = connected();
         uiThread.advance(ControlPresenter.POLL_MS);
-        final ManualExecutor stuck = bg;
+        ManualExecutor stuck = bg;
         assertEquals(1, stuck.deferred());
         now[0] += ControlPresenter.STALL_TIMEOUT_MS;
         uiThread.advance(ControlPresenter.POLL_MS);
@@ -289,7 +291,7 @@ final class ControlPresenterTest {
         assertEquals("Connection lost: the agent has not answered for 15 s", view.lastMessage());
         assertTrue(stuck.isShutdown());
 
-        final FakeAgent second = new FakeAgent();
+        FakeAgent second = new FakeAgent();
         reconnectAgents.add(second);
         c.connect(TARGET);
         bg.runAll();
@@ -307,16 +309,16 @@ final class ControlPresenterTest {
 
     @Test
     void disconnectingWhileACallIsStuckLetsTheUserReconnectAtOnce() {
-        final ControlPresenter c = connected();
+        ControlPresenter c = connected();
         c.startRecording();
-        final ManualExecutor stuck = bg;
+        ManualExecutor stuck = bg;
         assertEquals(1, stuck.deferred());
         c.disconnect();
         assertEquals(State.DISCONNECTED, c.state());
         assertTrue(stuck.isShutdown());
         assertEquals(2, stuck.deferred(), "the close waits behind the stuck call instead of blocking the view");
 
-        final FakeAgent second = new FakeAgent();
+        FakeAgent second = new FakeAgent();
         reconnectAgents.add(second);
         c.connect(TARGET);
         bg.runAll();
@@ -334,7 +336,7 @@ final class ControlPresenterTest {
     void recordingLocksRootsAndSwapsStartForStop() {
         agent.steady = recording(5, now[0], 0);
         connected();
-        final ControlPresenter.ViewState p = view.last();
+        ControlPresenter.ViewState p = view.last();
         assertTrue(p.recording());
         assertTrue(p.rootsLocked());
         assertFalse(p.canStart());
@@ -345,7 +347,7 @@ final class ControlPresenterTest {
     @Test
     void startNeedsARootSoAnEmptyAgentGetsAHintInsteadOfAButton() {
         connected();
-        final ControlPresenter.ViewState p = view.last();
+        ControlPresenter.ViewState p = view.last();
         assertFalse(p.canStart());
         assertEquals("Idle. Add a root to start recording", p.statusText());
     }
@@ -353,7 +355,7 @@ final class ControlPresenterTest {
     @Test
     void startAndStopAreSentOnceAndTheirButtonsStayOffUntilAPollConfirms() {
         agent.steady = idleWithRoot();
-        final ControlPresenter c = connected();
+        ControlPresenter c = connected();
         assertTrue(view.last().canStart());
         c.startRecording();
         c.startRecording();
@@ -379,7 +381,7 @@ final class ControlPresenterTest {
     @Test
     void aStartOrStopTheAgentRefusesReenablesItsButtonAndSaysWhy() {
         agent.steady = idleWithRoot();
-        final ControlPresenter c = connected();
+        ControlPresenter c = connected();
         agent.startError = new IOException("output directory is not writable");
         c.startRecording();
         bg.runAll();
@@ -412,7 +414,7 @@ final class ControlPresenterTest {
 
     @Test
     void addingARootPersistsTheJoinedListAndClearsTheSearchBox() {
-        final ControlPresenter c = connected();
+        ControlPresenter c = connected();
         c.addRoot("a.B::m");
         bg.runAll();
         uiThread.runPosted();
@@ -434,7 +436,7 @@ final class ControlPresenterTest {
 
     @Test
     void resumesPullFromLocalFileSizeSoAReconnectDoesNotRedownload() throws IOException {
-        final Path local = LocalRecordings.localFile(recordings, LocalRecordings.fileSafe(TARGET), "run", 5,
+        Path local = LocalRecordings.localFile(recordings, LocalRecordings.fileSafe(TARGET), "run", 5,
                 Long.toString(now[0]));
         Files.createDirectories(local.getParent());
         Files.write(local, new byte[10]);
@@ -447,7 +449,7 @@ final class ControlPresenterTest {
 
     @Test
     void recordingTextShowsElapsedPulledAndLagFromTheInjectedClock() {
-        final long start = now[0];
+        long start = now[0];
         now[0] = start + 61_000;
         agent.steady = recording(5, start, 2L << 20);
         connected();
@@ -456,7 +458,7 @@ final class ControlPresenterTest {
 
     @Test
     void writeRateAveragesSuccessivePollsSoTheEstimateDoesNotJitter() {
-        final long start = now[0];
+        long start = now[0];
         agent.statuses.add(recording(5, start, 0));
         agent.statuses.add(recording(5, start, 1L << 20));
         agent.statuses.add(recording(5, start, 2L << 20));
@@ -479,7 +481,7 @@ final class ControlPresenterTest {
 
     @Test
     void writeRateResetsWhenANewPullStartsSoAnOldRecordingDoesNotSkewIt() {
-        final long start = now[0];
+        long start = now[0];
         agent.statuses.add(recording(5, start, 0));
         agent.statuses.add(recording(5, start, 2L << 20));
         agent.statuses.add(recording(5, start, 4L << 20));
@@ -507,7 +509,7 @@ final class ControlPresenterTest {
 
     @Test
     void searchWaitsForTypingToPauseAndDropsResultsOfASupersededQuery() {
-        final ControlPresenter c = connected();
+        ControlPresenter c = connected();
         agent.searchResults = new String[] { "a.B::abc" };
         c.search("ab");
         c.search("abc");
@@ -522,14 +524,14 @@ final class ControlPresenterTest {
 
     @Test
     void searchIsSkippedBelowTwoCharsAndOnProtocolsBeforeFour() {
-        final ControlPresenter c = connected();
-        final int timers = uiThread.pendingTimers();
+        ControlPresenter c = connected();
+        int timers = uiThread.pendingTimers();
         c.search("a");
         assertEquals(0, view.candidates.get(view.candidates.size() - 1).length);
         assertEquals(timers, uiThread.pendingTimers(), "a one-letter query does not even start the debounce timer");
 
         agent.steady = Map.of("v", "3", "pid", "7", "state", "idle", "roots", "0");
-        final ControlPresenter old = connected();
+        ControlPresenter old = connected();
         old.search("abc");
         assertEquals(0, view.candidates.get(view.candidates.size() - 1).length);
         assertEquals(0, agent.searchQueries.size(), "an agent without searchMethods is never asked");
@@ -537,14 +539,14 @@ final class ControlPresenterTest {
 
     @Test
     void searchFailureTellsTheUserOnceInsteadOfSilentlyGoingDark() {
-        final ControlPresenter c = connected();
+        ControlPresenter c = connected();
         agent.searchError = new IOException("no such operation");
         c.search("abc");
         uiThread.advance(ControlPresenter.SEARCH_DEBOUNCE_MS);
         bg.runAll();
         uiThread.runPosted();
         assertEquals("Method search is not available on this agent: no such operation", view.lastMessage());
-        final int messages = view.messages.size();
+        int messages = view.messages.size();
         c.search("abcd");
         uiThread.advance(ControlPresenter.SEARCH_DEBOUNCE_MS);
         assertEquals(0, bg.deferred());
@@ -589,23 +591,23 @@ final class ControlPresenterTest {
         agent.statuses.add(recording(5, now[0], 0));
         agent.statuses.add(recording(6, now[0], 0));
         connected();
-        final CountDownLatch parked = new CountDownLatch(1);
-        final CountDownLatch released = new CountDownLatch(1);
-        final NullProgressMonitor monitor = new NullProgressMonitor();
-        final int[] reads = { 0 };
+        CountDownLatch parked = new CountDownLatch(1);
+        CountDownLatch released = new CountDownLatch(1);
+        NullProgressMonitor monitor = new NullProgressMonitor();
+        int[] reads = { 0 };
         agent.onRead = () -> {
             if (reads[0]++ == 1) {
                 parked.countDown();
                 try {
                     released.await();
-                } catch (final InterruptedException e) {
+                } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
             }
         };
         agent.chunks.add(new byte[1]);
-        final Transfer first = pulls.get(0);
-        final Thread job = new Thread(() -> first.run(monitor));
+        Transfer first = pulls.get(0);
+        Thread job = new Thread(() -> first.run(monitor));
         job.start();
         assertTrue(parked.await(5, TimeUnit.SECONDS));
         uiThread.runPosted();
@@ -682,7 +684,7 @@ final class ControlPresenterTest {
     @Test
     void disposeCancelsThePullAndClosesTheClient() {
         agent.steady = recording(5, now[0], 0);
-        final ControlPresenter c = connected();
+        ControlPresenter c = connected();
         c.dispose();
         assertEquals(pulls, cancelled);
         bg.runAll();
@@ -695,7 +697,7 @@ final class ControlPresenterTest {
         connected();
         agent.steady = stopped(500);
         poll();
-        ControlPresenter.ViewState p = view.last();
+        @Var ControlPresenter.ViewState p = view.last();
         assertTrue(p.statusText().startsWith("Transferring #5"), p.statusText());
         assertFalse(p.canStart(), "a new start would make the agent discard the undelivered rest of #5");
         assertFalse(p.canStop());
@@ -714,26 +716,26 @@ final class ControlPresenterTest {
         connected();
         agent.steady = stopped(500);
         poll();
-        final Transfer first = pulls.get(0);
+        Transfer first = pulls.get(0);
         agent.steady = recording(6, now[0], 0);
         poll();
         assertEquals(List.of(first), cancelled);
         runCancelledAfterOneChunk(first);
         assertEquals(2, pulls.size());
-        final String stoppedMsg = view.messages.stream().filter(m -> m.startsWith("Transfer of ")).reduce((a, b) -> b)
+        String stoppedMsg = view.messages.stream().filter(m -> m.startsWith("Transfer of ")).reduce((a, b) -> b)
                 .orElse("");
         assertTrue(stoppedMsg.contains("stopped at") && stoppedMsg.contains("recording #6"), stoppedMsg);
     }
 
     @Test
     void aReconnectFetchesTheRestOfAStoppedRecordingTheAgentStillHolds() throws IOException {
-        final Path local = localCopy(5, 10);
+        Path local = localCopy(5, 10);
         agent.steady = stoppedAfter(5, now[0], 500);
         connected();
         assertEquals(1, pulls.size(), "the agent keeps the spool until it is delivered, so the tail is still there");
         assertEquals(5, pulls.get(0).recordingId());
         assertEquals(local, pulls.get(0).file());
-        final ControlPresenter.ViewState p = view.last();
+        ControlPresenter.ViewState p = view.last();
         assertTrue(p.statusText().startsWith("Transferring #5"), p.statusText());
         assertFalse(p.canStart(), "Start would make the agent discard what the local copy is still missing");
         pulls.get(0).run(new NullProgressMonitor());
@@ -766,7 +768,7 @@ final class ControlPresenterTest {
         localCopy(5, 10);
         agent.steady = stoppedAfter(5, now[0], 500);
         agent.readError = new IOException("cannot read the spool");
-        final ControlPresenter c = connected();
+        ControlPresenter c = connected();
         pulls.get(0).run(new NullProgressMonitor());
         uiThread.runPosted();
         assertTrue(view.lastMessage().contains("failed"), view.lastMessage());
@@ -783,7 +785,7 @@ final class ControlPresenterTest {
     @Test
     void anAgentThatDoesNotReportTheStartTimeIsNotResumed() throws IOException {
         localCopy(5, 10);
-        final Map<String, String> old = stopped(500);
+        Map<String, String> old = stopped(500);
         old.put("lastRecording.id", "5");
         old.put("lastRecording.name", "run");
         agent.steady = old;
@@ -795,8 +797,8 @@ final class ControlPresenterTest {
     @Test
     void aReconnectDuringATransferWaitsForTheOldPullToStopBeforeMeasuringTheFile() throws IOException {
         agent.steady = recording(5, now[0], 0);
-        final ControlPresenter c = connected();
-        final Transfer first = pulls.get(0);
+        ControlPresenter c = connected();
+        Transfer first = pulls.get(0);
         c.disconnect();
         assertEquals(List.of(first), cancelled);
         c.connect(TARGET);
@@ -817,13 +819,13 @@ final class ControlPresenterTest {
     @Test
     void waitingForTheOldPullCountsAsTransferringSoStartCannotDiscardTheRest() {
         agent.steady = recording(5, now[0], 0);
-        final ControlPresenter c = connected();
+        ControlPresenter c = connected();
         c.disconnect();
         agent.steady = stoppedAfter(5, now[0], 500);
         c.connect(TARGET);
         bg.runAll();
         uiThread.runPosted();
-        final ControlPresenter.ViewState p = view.last();
+        ControlPresenter.ViewState p = view.last();
         assertTrue(p.transferring());
         assertFalse(p.canStart(), "a new start would make the agent discard the undelivered rest of #5");
         assertTrue(p.statusText().startsWith("Stopping the previous transfer before saving #5"), p.statusText());
@@ -832,8 +834,8 @@ final class ControlPresenterTest {
     @Test
     void aDisconnectWhileWaitingDropsThePendingAttach() {
         agent.steady = recording(5, now[0], 0);
-        final ControlPresenter c = connected();
-        final Transfer first = pulls.get(0);
+        ControlPresenter c = connected();
+        Transfer first = pulls.get(0);
         c.disconnect();
         c.connect(TARGET);
         bg.runAll();
@@ -847,7 +849,7 @@ final class ControlPresenterTest {
     void aPullCancelledFromOutsideIsResumedOnTheNextPoll() {
         agent.steady = recording(5, now[0], 0);
         connected();
-        final Transfer first = pulls.get(0);
+        Transfer first = pulls.get(0);
         runCancelledAfterOneChunk(first);
         assertTrue(cancelled.isEmpty(), "the Progress view cancelled it, not the connection");
         assertTrue(view.lastMessage().startsWith("Transfer of ") && view.lastMessage().endsWith(" stopped"), view.lastMessage());
@@ -858,8 +860,8 @@ final class ControlPresenterTest {
 
     @Test
     void aPendingRedrawKeepsStartOffWhileTransferring() {
-        final List<RootEntry> roots = List.of(new RootEntry("a.B::m", true));
-        final ControlPresenter.ViewState p = ControlPresenter.ViewState.connected("x", false, roots, "", "Transferring", false,
+        List<RootEntry> roots = List.of(new RootEntry("a.B::m", true));
+        ControlPresenter.ViewState p = ControlPresenter.ViewState.connected("x", false, roots, "", "Transferring", false,
                 false, true);
         assertTrue(p.withPending(false, false).withPending(false, false).transferring());
         assertFalse(p.withPending(false, false).canStart(), "renderPending must not re-enable Start mid-transfer");

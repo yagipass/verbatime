@@ -34,7 +34,7 @@ final class ThrowsCommand {
 
     private record Key(int exceptionId, int throwerId, int catcherId) {
 
-        static Key of(final String by, final int exceptionId, final int throwerId, final int catcherId) {
+        static Key of(String by, int exceptionId, int throwerId, int catcherId) {
             if (by == null) {
                 return new Key(exceptionId, throwerId, catcherId);
             }
@@ -60,11 +60,11 @@ final class ThrowsCommand {
 
         long slowestOrdinal;
 
-        Row(final Key key) {
+        Row(Key key) {
             this.key = key;
         }
 
-        void add(final int session, final long ordinal, final long durTicks) {
+        void add(int session, long ordinal, long durTicks) {
             calls++;
             totalTicks += durTicks;
             if (calls == 1 || durTicks > slowestTicks) {
@@ -93,24 +93,24 @@ final class ThrowsCommand {
 
         long totalTicks;
 
-        ThrowRows(final String by) {
+        ThrowRows(String by) {
             this.by = by;
         }
 
         @Override
-        public void enter(final long ordinal, final int depth, final int methodId, final long startTicks) {
+        public void enter(long ordinal, int depth, int methodId, long startTicks) {
             thrown.enter(depth, methodId);
         }
 
         @Override
-        public void exit(final long ordinal, final int depth, final int methodId, final long startTicks,
-                final long durTicks, final long selfTicks, final int exceptionId, final boolean unclosed) {
+        public void exit(long ordinal, int depth, int methodId, long startTicks,
+                long durTicks, long selfTicks, int exceptionId, boolean unclosed) {
             thrown.exit(ordinal, depth, methodId, durTicks, exceptionId);
         }
 
         @Override
-        public void thrown(final int exceptionId, final int throwerId, final long throwerOrdinal,
-                final long throwerDurTicks, final int catcherId) {
+        public void thrown(int exceptionId, int throwerId, long throwerOrdinal,
+                long throwerDurTicks, int catcherId) {
             exceptionIds.add(exceptionId);
             totalTicks += throwerDurTicks;
             rows.computeIfAbsent(Key.of(by, exceptionId, throwerId, catcherId), Row::new).add(session,
@@ -118,26 +118,26 @@ final class ThrowsCommand {
         }
     }
 
-    static int run(final List<String> argv, final PrintStream stdout) {
-        final Args args = Args.parse("throws", argv, Set.of("by", "sort", "limit"), Set.of("json"));
+    static int run(List<String> argv, PrintStream stdout) {
+        Args args = Args.parse("throws", argv, Set.of("by", "sort", "limit"), Set.of("json"));
         args.rejectPositionalsBeyond(2);
-        final TraceFile file = TraceFile.open(args.positional(0, "the .vbtm file"));
-        final Out out = new Out(stdout, args.has("json"));
-        final Names names = new Names(file);
-        final Scope scope = Scope.of(file, args.positionalOrNull(1));
-        final String by = args.has("by") ? args.choice("by", "class", "class", "thrower", "catcher") : null;
-        final String sort = args.choice("sort", "total", "total", "calls");
-        final int limit = args.positiveInt("limit", 30);
+        TraceFile file = TraceFile.open(args.positional(0, "the .vbtm file"));
+        Out out = new Out(stdout, args.has("json"));
+        Names names = new Names(file);
+        Scope scope = Scope.of(file, args.positionalOrNull(1));
+        String by = args.has("by") ? args.choice("by", "class", "class", "thrower", "catcher") : null;
+        String sort = args.choice("sort", "total", "total", "calls");
+        int limit = args.positiveInt("limit", 30);
 
-        final ThrowRows collected = new ThrowRows(by);
-        final SessionWalker walker = new SessionWalker(file);
-        for (final TraceFile.Session s : scope.sessions) {
+        ThrowRows collected = new ThrowRows(by);
+        SessionWalker walker = new SessionWalker(file);
+        for (TraceFile.Session s : scope.sessions) {
             collected.session = s.number;
             walker.walk(s, collected);
             collected.thrown.sessionEnded();
         }
 
-        final List<Row> rows = new ArrayList<>(collected.rows.values());
+        List<Row> rows = new ArrayList<>(collected.rows.values());
         rows.sort(order(sort));
 
         out.text("scope: " + scope.label + ", " + Formats.plural(collected.thrown.count, "throw") + ", "
@@ -151,20 +151,20 @@ final class ThrowsCommand {
             out.status(file);
             return file.exitCode();
         }
-        final int shown = Math.min(limit, rows.size());
-        final String keyText = by == null ? "class, thrower and catcher" : by;
+        int shown = Math.min(limit, rows.size());
+        String keyText = by == null ? "class, thrower and catcher" : by;
         out.text("by " + keyText + ", sorted by " + sort + ", showing " + Formats.grouped(shown) + ". units: ms");
         out.text("");
-        final Out.Table table = table(by);
-        final Legend legend = new Legend(names);
+        Out.Table table = table(by);
+        Legend legend = new Legend(names);
         for (int i = 0; i < shown; i++) {
-            final Row r = rows.get(i);
-            final Key k = r.key;
-            final String slowest = r.slowest().toString();
-            final String thrower = k.throwerId() < 0 ? null : names.displayName(k.throwerId());
-            final String catcher = k.catcherId() < 0 ? null : names.displayName(k.catcherId());
-            final String exception = k.exceptionId() < 0 ? null : file.exceptionName(k.exceptionId());
-            final List<String> cells = new ArrayList<>(List.of(Formats.grouped(r.calls), Formats.ms(r.totalTicks),
+            Row r = rows.get(i);
+            Key k = r.key;
+            String slowest = r.slowest().toString();
+            String thrower = k.throwerId() < 0 ? null : names.displayName(k.throwerId());
+            String catcher = k.catcherId() < 0 ? null : names.displayName(k.catcherId());
+            String exception = k.exceptionId() < 0 ? null : file.exceptionName(k.exceptionId());
+            List<String> cells = new ArrayList<>(List.of(Formats.grouped(r.calls), Formats.ms(r.totalTicks),
                     slowest));
             if (by == null || by.equals("thrower")) {
                 cells.add(thrower);
@@ -189,8 +189,8 @@ final class ThrowsCommand {
         return file.exitCode();
     }
 
-    private static Comparator<Row> order(final String sort) {
-        final Comparator<Row> byIds = Comparator.comparingInt((Row r) -> r.key.exceptionId())
+    private static Comparator<Row> order(String sort) {
+        Comparator<Row> byIds = Comparator.comparingInt((Row r) -> r.key.exceptionId())
                 .thenComparingInt(r -> r.key.throwerId()).thenComparingInt(r -> r.key.catcherId());
         if (sort.equals("calls")) {
             return Comparator.comparingLong((Row r) -> -r.calls).thenComparingLong(r -> -r.totalTicks)
@@ -200,7 +200,7 @@ final class ThrowsCommand {
                 .thenComparing(byIds);
     }
 
-    private static Out.Table table(final String by) {
+    private static Out.Table table(String by) {
         if (by == null) {
             return new Out.Table(">calls", ">total_ms", ">slowest", "thrower", "catcher", "exception");
         }

@@ -5,10 +5,10 @@ public final class Json {
     private Json() {
     }
 
-    static void appendQuoted(final StringBuilder sb, final String s) {
+    static void appendQuoted(StringBuilder sb, String s) {
         sb.append('"');
         for (int i = 0; i < s.length(); i++) {
-            final char c = s.charAt(i);
+            char c = s.charAt(i);
             switch (c) {
                 case '"' -> sb.append("\\\"");
                 case '\\' -> sb.append("\\\\");
@@ -28,8 +28,8 @@ public final class Json {
         sb.append('"');
     }
 
-    public static String quote(final String s) {
-        final StringBuilder sb = new StringBuilder(s.length() + 16);
+    public static String quote(String s) {
+        StringBuilder sb = new StringBuilder(s.length() + 16);
         appendQuoted(sb, s);
         return sb.toString();
     }

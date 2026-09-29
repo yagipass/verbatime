@@ -34,7 +34,7 @@ final class RecordingStreams {
 
         private long lastAccessNanos = System.nanoTime();
 
-        private Stream(final long id, final Recording recording, final FileChannel channel, final long offset) {
+        private Stream(long id, Recording recording, FileChannel channel, long offset) {
             this.id = id;
             this.recording = recording;
             this.channel = channel;
@@ -48,32 +48,32 @@ final class RecordingStreams {
 
     private long nextId = 1;
 
-    RecordingStreams(final Consumer<Recording> onRetired) {
+    RecordingStreams(Consumer<Recording> onRetired) {
         this.onRetired = onRetired;
     }
 
-    long open(final Recording r, final long fromOffset) {
+    long open(Recording r, long fromOffset) {
         retireAll(RecordingStreams::isIdle, true);
-        final long committed = r.writer().committedBytes();
+        long committed = r.writer().committedBytes();
         if (fromOffset < 0 || fromOffset > committed) {
             throw new IllegalArgumentException("offset " + fromOffset + " is out of range, the committed size is " + committed);
         }
-        final FileChannel ch;
+        FileChannel ch;
         try {
             ch = FileChannel.open(r.writer().path(), StandardOpenOption.READ);
-        } catch (final IOException e) {
+        } catch (IOException e) {
             throw new UncheckedIOException("cannot open " + r.writer().path(), e);
         }
         synchronized (this) {
-            final Stream s = new Stream(nextId++, r, ch, fromOffset);
+            Stream s = new Stream(nextId++, r, ch, fromOffset);
             streams.put(s.id, s);
             return s.id;
         }
     }
 
-    byte[] read(final long streamId) {
+    byte[] read(long streamId) {
         retireAll(RecordingStreams::isIdle, true);
-        final Stream s;
+        Stream s;
         synchronized (this) {
             s = streams.get(streamId);
             if (s == null) {
@@ -81,12 +81,12 @@ final class RecordingStreams {
             }
             s.lastAccessNanos = System.nanoTime();
         }
-        final byte[] out;
+        byte[] out;
         try {
             synchronized (s) {
                 out = readLocked(s);
             }
-        } catch (final IOException e) {
+        } catch (IOException e) {
             retire(s, false);
             throw new UncheckedIOException("cannot read " + s.recording.writer().path(), e);
         }
@@ -96,29 +96,29 @@ final class RecordingStreams {
         return out;
     }
 
-    private static byte[] readLocked(final Stream s) throws IOException {
-        final boolean closed = s.recording.closed();
-        final long avail = s.recording.writer().committedBytes() - s.offset;
+    private static byte[] readLocked(Stream s) throws IOException {
+        boolean closed = s.recording.closed();
+        long avail = s.recording.writer().committedBytes() - s.offset;
         if (avail <= 0) {
             return closed ? null : new byte[0];
         }
-        final byte[] out = new byte[(int) Math.min(avail, READ_SIZE)];
-        final ByteBuffer buf = ByteBuffer.wrap(out);
+        byte[] out = new byte[(int) Math.min(avail, READ_SIZE)];
+        ByteBuffer buf = ByteBuffer.wrap(out);
         while (buf.hasRemaining()) {
             if (s.channel.read(buf, s.offset + buf.position()) < 0) {
                 break;
             }
         }
-        final int read = buf.position();
+        int read = buf.position();
         s.offset += read;
         return read == out.length ? out : Arrays.copyOf(out, read);
     }
 
-    void close(final long streamId) {
+    void close(long streamId) {
         retireAll(s -> s.id == streamId, true);
     }
 
-    void closeAllOf(final Recording r) {
+    void closeAllOf(Recording r) {
         retireAll(s -> s.recording == r, false);
     }
 
@@ -126,8 +126,8 @@ final class RecordingStreams {
         retireAll(s -> true, true);
     }
 
-    synchronized boolean hasStreamsOf(final Recording r) {
-        for (final Stream s : streams.values()) {
+    synchronized boolean hasStreamsOf(Recording r) {
+        for (Stream s : streams.values()) {
             if (s.recording == r) {
                 return true;
             }
@@ -135,11 +135,11 @@ final class RecordingStreams {
         return false;
     }
 
-    private static boolean isIdle(final Stream s) {
+    private static boolean isIdle(Stream s) {
         return System.nanoTime() - s.lastAccessNanos > IDLE_TIMEOUT_NANOS;
     }
 
-    private void retire(final Stream s, final boolean delivered) {
+    private void retire(Stream s, boolean delivered) {
         synchronized (this) {
             if (streams.get(s.id) != s) {
                 return;
@@ -153,11 +153,11 @@ final class RecordingStreams {
         onRetired.accept(s.recording);
     }
 
-    private void retireAll(final Predicate<Stream> which, final boolean notify) {
-        final List<Recording> retired = new ArrayList<>();
+    private void retireAll(Predicate<Stream> which, boolean notify) {
+        List<Recording> retired = new ArrayList<>();
         synchronized (this) {
-            for (final Iterator<Stream> it = streams.values().iterator(); it.hasNext();) {
-                final Stream s = it.next();
+            for (Iterator<Stream> it = streams.values().iterator(); it.hasNext();) {
+                Stream s = it.next();
                 if (which.test(s)) {
                     it.remove();
                     closeChannel(s);
@@ -166,16 +166,16 @@ final class RecordingStreams {
             }
         }
         if (notify) {
-            for (final Recording r : retired) {
+            for (Recording r : retired) {
                 onRetired.accept(r);
             }
         }
     }
 
-    private static void closeChannel(final Stream s) {
+    private static void closeChannel(Stream s) {
         try {
             s.channel.close();
-        } catch (final IOException e) {
+        } catch (IOException e) {
             Log.warn("closing stream #" + s.id + ": " + e);
         }
     }

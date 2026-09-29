@@ -10,7 +10,7 @@ public class StatsController {
 
     private final ScheduledOrders scheduled;
 
-    StatsController(final ScheduledOrders scheduled) {
+    StatsController(ScheduledOrders scheduled) {
         this.scheduled = scheduled;
     }
 

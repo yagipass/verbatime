@@ -11,24 +11,24 @@ final class Out {
 
     private final PrintStream stream;
 
-    Out(final PrintStream stream, final boolean json) {
+    Out(PrintStream stream, boolean json) {
         this.stream = stream;
         this.json = json;
     }
 
-    void text(final String line) {
+    void text(String line) {
         if (!json) {
             stream.println(line);
         }
     }
 
-    void json(final Json object) {
+    void json(Json object) {
         if (json) {
             stream.println(object);
         }
     }
 
-    void more(final long count, final String what, final String next) {
+    void more(long count, String what, String next) {
         if (count <= 0) {
             return;
         }
@@ -39,7 +39,7 @@ final class Out {
         }
     }
 
-    void status(final TraceFile file) {
+    void status(TraceFile file) {
         if (file.status == TraceFile.Status.COMPLETE) {
             return;
         }
@@ -62,7 +62,7 @@ final class Out {
 
         private final List<String[]> rows = new ArrayList<>();
 
-        Table(final String... spec) {
+        Table(String... spec) {
             headers = new String[spec.length];
             right = new boolean[spec.length];
             for (int i = 0; i < spec.length; i++) {
@@ -71,31 +71,31 @@ final class Out {
             }
         }
 
-        void add(final String... row) {
+        void add(String... row) {
             rows.add(row);
         }
 
-        void print(final Out out) {
+        void print(Out out) {
             if (out.json) {
                 return;
             }
-            final int[] widths = new int[headers.length];
+            int[] widths = new int[headers.length];
             for (int i = 0; i < headers.length; i++) {
                 widths[i] = headers[i].length();
             }
-            for (final String[] r : rows) {
+            for (String[] r : rows) {
                 for (int i = 0; i < r.length; i++) {
                     widths[i] = Math.max(widths[i], r[i].length());
                 }
             }
             out.text(line(headers, widths));
-            for (final String[] r : rows) {
+            for (String[] r : rows) {
                 out.text(line(r, widths));
             }
         }
 
-        private String line(final String[] cells, final int[] widths) {
-            final StringBuilder sb = new StringBuilder();
+        private String line(String[] cells, int[] widths) {
+            StringBuilder sb = new StringBuilder();
             for (int i = 0; i < cells.length; i++) {
                 if (i > 0) {
                     sb.append("  ");
@@ -104,7 +104,7 @@ final class Out {
                     sb.append(cells[i]);
                     break;
                 }
-                final int pad = widths[i] - cells[i].length();
+                int pad = widths[i] - cells[i].length();
                 if (right[i]) {
                     sb.append(" ".repeat(pad)).append(cells[i]);
                 } else {

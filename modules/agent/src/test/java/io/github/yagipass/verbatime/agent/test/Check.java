@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import com.google.errorprone.annotations.Var;
+
 public final class Check {
 
     private static int passed;
@@ -20,7 +22,7 @@ public final class Check {
         void run() throws Exception;
     }
 
-    public static void that(final boolean condition, final String message) {
+    public static void that(boolean condition, String message) {
         if (condition) {
             passed++;
         } else {
@@ -29,18 +31,18 @@ public final class Check {
         }
     }
 
-    public static void eq(final Object expected, final Object actual, final String message) {
+    public static void eq(Object expected, Object actual, String message) {
         that(Objects.equals(expected, actual), message + ": expected <" + expected + "> but was <" + actual + ">");
     }
 
-    public static void fail(final String message) {
+    public static void fail(String message) {
         that(false, message);
     }
 
-    public static <T extends Throwable> T thrown(final Class<T> type, final ThrowingRunnable body, final String message) {
+    public static <T extends Throwable> T thrown(Class<T> type, ThrowingRunnable body, String message) {
         try {
             body.run();
-        } catch (final Throwable t) {
+        } catch (Throwable t) {
             if (type.isInstance(t)) {
                 passed++;
                 return type.cast(t);
@@ -52,24 +54,24 @@ public final class Check {
         return null;
     }
 
-    public static int occurrences(final String haystack, final String needle) {
-        int n = 0;
+    public static int occurrences(String haystack, String needle) {
+        @Var int n = 0;
         for (int i = haystack.indexOf(needle); i >= 0; i = haystack.indexOf(needle, i + needle.length())) {
             n++;
         }
         return n;
     }
 
-    public static String captureStderr(final ThrowingRunnable body) throws Exception {
-        final PrintStream realErr = System.err;
-        final ByteArrayOutputStream captured = new ByteArrayOutputStream();
+    public static String captureStderr(ThrowingRunnable body) throws Exception {
+        PrintStream realErr = System.err;
+        ByteArrayOutputStream captured = new ByteArrayOutputStream();
         System.setErr(new PrintStream(captured, true, StandardCharsets.UTF_8));
         try {
             body.run();
         } finally {
             System.setErr(realErr);
         }
-        final String err = captured.toString(StandardCharsets.UTF_8);
+        String err = captured.toString(StandardCharsets.UTF_8);
         realErr.print(err);
         return err;
     }

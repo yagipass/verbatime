@@ -8,6 +8,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.format.Vbtm;
 
 final class PatchableFileWriter implements Closeable {
@@ -24,7 +26,7 @@ final class PatchableFileWriter implements Closeable {
 
     private final byte[] digits = new byte[24];
 
-    PatchableFileWriter(final Path file, final int bufferBytes) throws IOException {
+    PatchableFileWriter(Path file, int bufferBytes) throws IOException {
         channel = FileChannel.open(file, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
                 StandardOpenOption.WRITE);
         buf = new byte[Math.max(bufferBytes, 16)];
@@ -38,25 +40,25 @@ final class PatchableFileWriter implements Closeable {
         return lines;
     }
 
-    void put(final int b) throws IOException {
+    void put(int b) throws IOException {
         if (len == buf.length) {
             flushBuffer();
         }
         buf[len++] = (byte) b;
     }
 
-    void bytes(final byte[] b) throws IOException {
+    void bytes(byte[] b) throws IOException {
         bytes(b, 0, b.length);
     }
 
-    private void bytes(final byte[] b, final int off, final int n) throws IOException {
-        int p = off;
-        int left = n;
+    private void bytes(byte[] b, int off, int n) throws IOException {
+        @Var int p = off;
+        @Var int left = n;
         while (left > 0) {
             if (len == buf.length) {
                 flushBuffer();
             }
-            final int k = Math.min(left, buf.length - len);
+            int k = Math.min(left, buf.length - len);
             System.arraycopy(b, p, buf, len, k);
             len += k;
             p += k;
@@ -69,28 +71,28 @@ final class PatchableFileWriter implements Closeable {
         lines++;
     }
 
-    void num(final long v) throws IOException {
-        final int n = formatNum(v);
+    void num(long v) throws IOException {
+        int n = formatNum(v);
         bytes(digits, digits.length - n, n);
     }
 
-    void writeTicksAsMs(final long ticks) throws IOException {
-        final int n = formatMs(ticks);
+    void writeTicksAsMs(long ticks) throws IOException {
+        int n = formatMs(ticks);
         bytes(digits, digits.length - n, n);
     }
 
-    void placeholder(final int width) throws IOException {
+    void placeholder(int width) throws IOException {
         for (int i = 0; i < width; i++) {
             put('?');
         }
     }
 
-    void patchTicksAsMs(final long absOff, final long ticks, final int width) throws IOException {
-        final int n = formatMs(ticks);
+    void patchTicksAsMs(long absOff, long ticks, int width) throws IOException {
+        int n = formatMs(ticks);
         if (n > width) {
             throw new IllegalStateException("value " + textOf(n) + " does not fit in " + width + " characters");
         }
-        final byte[] field = new byte[width];
+        byte[] field = new byte[width];
         for (int i = 0; i < width - n; i++) {
             field[i] = ' ';
         }
@@ -98,8 +100,8 @@ final class PatchableFileWriter implements Closeable {
         patch(absOff, field);
     }
 
-    void patch(final long absOff, final byte[] src) throws IOException {
-        final long end = absOff + src.length;
+    void patch(long absOff, byte[] src) throws IOException {
+        long end = absOff + src.length;
         if (absOff < 0 || end > position()) {
             throw new IllegalStateException("patch [" + absOff + "," + end + ") outside the written " + position());
         }
@@ -107,9 +109,9 @@ final class PatchableFileWriter implements Closeable {
             System.arraycopy(src, 0, buf, (int) (absOff - flushed), src.length);
             return;
         }
-        final int direct = (int) Math.min(src.length, flushed - absOff);
-        final ByteBuffer bb = ByteBuffer.wrap(src, 0, direct);
-        long pos = absOff;
+        int direct = (int) Math.min(src.length, flushed - absOff);
+        ByteBuffer bb = ByteBuffer.wrap(src, 0, direct);
+        @Var long pos = absOff;
         while (bb.hasRemaining()) {
             pos += channel.write(bb, pos);
         }
@@ -131,7 +133,7 @@ final class PatchableFileWriter implements Closeable {
         if (len == 0) {
             return;
         }
-        final ByteBuffer bb = ByteBuffer.wrap(buf, 0, len);
+        ByteBuffer bb = ByteBuffer.wrap(buf, 0, len);
         while (bb.hasRemaining()) {
             channel.write(bb);
         }
@@ -139,8 +141,8 @@ final class PatchableFileWriter implements Closeable {
         len = 0;
     }
 
-    private int formatNum(long v) {
-        int p = digits.length;
+    private int formatNum(@Var long v) {
+        @Var int p = digits.length;
         if (v < 0) {
             v = 0;
         }
@@ -151,18 +153,18 @@ final class PatchableFileWriter implements Closeable {
         return digits.length - p;
     }
 
-    private int formatMs(long ticks) {
+    private int formatMs(@Var long ticks) {
         if (ticks < 0) {
             ticks = 0;
         }
-        int p = digits.length;
-        long frac = ticks % Vbtm.TICKS_PER_MS;
+        @Var int p = digits.length;
+        @Var long frac = ticks % Vbtm.TICKS_PER_MS;
         for (int i = 0; i < 4; i++) {
             digits[--p] = (byte) ('0' + (frac % 10));
             frac /= 10;
         }
         digits[--p] = '.';
-        long whole = ticks / Vbtm.TICKS_PER_MS;
+        @Var long whole = ticks / Vbtm.TICKS_PER_MS;
         do {
             digits[--p] = (byte) ('0' + (whole % 10));
             whole /= 10;
@@ -170,7 +172,7 @@ final class PatchableFileWriter implements Closeable {
         return digits.length - p;
     }
 
-    private String textOf(final int n) {
+    private String textOf(int n) {
         return new String(digits, digits.length - n, n, StandardCharsets.US_ASCII);
     }
 }

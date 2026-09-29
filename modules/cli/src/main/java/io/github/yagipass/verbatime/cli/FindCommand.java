@@ -65,8 +65,8 @@ final class FindCommand {
 
         private int openMatches;
 
-        Matches(final MethodPattern pattern, final SessionWalker walker, final long minTicks,
-                final boolean thrownOnly, final int limit, final Comparator<Match> order) {
+        Matches(MethodPattern pattern, SessionWalker walker, long minTicks,
+                boolean thrownOnly, int limit, Comparator<Match> order) {
             this.pattern = pattern;
             this.walker = walker;
             this.minTicks = minTicks;
@@ -76,19 +76,19 @@ final class FindCommand {
             this.kept = new PriorityQueue<>(order.reversed());
         }
 
-        void walk(final TraceFile.Session s) {
+        void walk(TraceFile.Session s) {
             session = s.number;
             walker.walk(s, this);
         }
 
         List<Match> rows() {
-            final List<Match> rows = new ArrayList<>(kept);
+            List<Match> rows = new ArrayList<>(kept);
             rows.sort(order);
             return rows;
         }
 
         @Override
-        public void enter(final long ordinal, final int depth, final int methodId, final long startTicks) {
+        public void enter(long ordinal, int depth, int methodId, long startTicks) {
             stack.push(depth, methodId);
             if (pattern.matches(methodId)) {
                 openMatches++;
@@ -96,8 +96,8 @@ final class FindCommand {
         }
 
         @Override
-        public void exit(final long ordinal, final int depth, final int methodId, final long startTicks,
-                final long durTicks, final long selfTicks, final int exceptionId, final boolean unclosed) {
+        public void exit(long ordinal, int depth, int methodId, long startTicks,
+                long durTicks, long selfTicks, int exceptionId, boolean unclosed) {
             if (!pattern.matches(methodId)) {
                 return;
             }
@@ -109,7 +109,7 @@ final class FindCommand {
             if (openMatches == 0) {
                 totalTicks += durTicks;
             }
-            final Match m = new Match(session, ordinal, startTicks - walker.startTicks, durTicks, selfTicks, depth,
+            Match m = new Match(session, ordinal, startTicks - walker.startTicks, durTicks, selfTicks, depth,
                     methodId, stack.callerOf(depth), exceptionId, unclosed);
             if (kept.size() < limit) {
                 kept.add(m);
@@ -120,30 +120,30 @@ final class FindCommand {
         }
     }
 
-    static int run(final List<String> argv, final PrintStream stdout) {
-        final Args args = Args.parse("find", argv, Set.of("session", "min", "sort", "limit"),
+    static int run(List<String> argv, PrintStream stdout) {
+        Args args = Args.parse("find", argv, Set.of("session", "min", "sort", "limit"),
                 Set.of("json", "all", "thrown"));
         args.rejectPositionalsBeyond(2);
-        final TraceFile file = TraceFile.open(args.positional(0, "the .vbtm file"));
-        final Out out = new Out(stdout, args.has("json"));
-        final Names names = new Names(file);
-        final MethodPattern pattern = MethodPattern.resolve(file, names, args.positional(1, "the method PATTERN"),
+        TraceFile file = TraceFile.open(args.positional(0, "the .vbtm file"));
+        Out out = new Out(stdout, args.has("json"));
+        Names names = new Names(file);
+        MethodPattern pattern = MethodPattern.resolve(file, names, args.positional(1, "the method PATTERN"),
                 args.has("all"));
-        final Scope scope = Scope.of(file, args.value("session"));
-        final long minTicks = args.ticks("min", 0);
-        final String sort = args.choice("sort", "dur", "dur", "start");
-        final int limit = args.positiveInt("limit", 50);
-        final boolean thrownOnly = args.has("thrown");
+        Scope scope = Scope.of(file, args.value("session"));
+        long minTicks = args.ticks("min", 0);
+        String sort = args.choice("sort", "dur", "dur", "start");
+        int limit = args.positiveInt("limit", 50);
+        boolean thrownOnly = args.has("thrown");
 
-        final Comparator<Match> order = sort.equals("dur")
+        Comparator<Match> order = sort.equals("dur")
                 ? Comparator.comparingLong((Match m) -> -m.durTicks()).thenComparingInt(Match::session)
                         .thenComparingLong(Match::ordinal)
                 : Comparator.comparingInt(Match::session).thenComparingLong(Match::ordinal);
-        final Matches matches = new Matches(pattern, new SessionWalker(file), minTicks, thrownOnly, limit, order);
-        for (final TraceFile.Session s : scope.sessions) {
+        Matches matches = new Matches(pattern, new SessionWalker(file), minTicks, thrownOnly, limit, order);
+        for (TraceFile.Session s : scope.sessions) {
             matches.walk(s);
         }
-        final List<Match> rows = matches.rows();
+        List<Match> rows = matches.rows();
 
         out.text("pattern: " + pattern.text + " -> " + pattern.fullNames(names) + "  scope: " + scope.label);
         out.text("matches: " + Formats.grouped(matches.count) + " calls"
@@ -155,14 +155,14 @@ final class FindCommand {
         out.text("");
         out.json(new Json("find").put("pattern", pattern.text).put("scope", scope.label).put("calls", matches.count)
                 .ms("total_ms", matches.totalTicks).put("sort", sort).put("thrown", thrownOnly));
-        final Out.Table table = new Out.Table(">id", ">start", ">dur", ">self", ">depth", "method", "caller", "flags");
-        final Legend legend = new Legend(names);
-        for (final Match m : rows) {
-            final String id = m.id().toString();
-            final String caller = m.callerId() < 0 ? null : names.displayName(m.callerId());
-            final String exception = m.exceptionId() == SessionWalker.NO_EXCEPTION ? null
+        Out.Table table = new Out.Table(">id", ">start", ">dur", ">self", ">depth", "method", "caller", "flags");
+        Legend legend = new Legend(names);
+        for (Match m : rows) {
+            String id = m.id().toString();
+            String caller = m.callerId() < 0 ? null : names.displayName(m.callerId());
+            String exception = m.exceptionId() == SessionWalker.NO_EXCEPTION ? null
                     : file.exceptionName(m.exceptionId());
-            final String flags = (exception == null ? "" : m.exceptionId() > 0 ? "!" + Names.simpleClass(exception)
+            String flags = (exception == null ? "" : m.exceptionId() > 0 ? "!" + Names.simpleClass(exception)
                     : "!")
                     + (m.unclosed() ? " ~" : "");
             table.add(id, Formats.ms(m.startTicks()), Formats.ms(m.durTicks()), Formats.ms(m.selfTicks()),

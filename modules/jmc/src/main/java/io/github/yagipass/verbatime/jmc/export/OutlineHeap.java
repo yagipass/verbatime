@@ -2,6 +2,8 @@ package io.github.yagipass.verbatime.jmc.export;
 
 import java.util.Arrays;
 
+import com.google.errorprone.annotations.Var;
+
 final class OutlineHeap {
 
     private final long[] dur;
@@ -28,7 +30,7 @@ final class OutlineHeap {
 
     private int n;
 
-    OutlineHeap(final int capacity) {
+    OutlineHeap(int capacity) {
         dur = new long[capacity];
         seq = new long[capacity];
         line = new long[capacity];
@@ -42,10 +44,10 @@ final class OutlineHeap {
         excNo = new int[capacity];
     }
 
-    void offer(final long durTicks, final long sequence, final long lineNo, final long startTicks,
-            final long selfTicks, final int frameDepth, final int method, final long directChildren,
-            final long subtreeLines, final byte flagBits, final int exceptionNo) {
-        final int i;
+    void offer(long durTicks, long sequence, long lineNo, long startTicks,
+            long selfTicks, int frameDepth, int method, long directChildren,
+            long subtreeLines, byte flagBits, int exceptionNo) {
+        int i;
         if (n < dur.length) {
             i = n++;
         } else if (durTicks > dur[0] || (durTicks == dur[0] && sequence > seq[0])) {
@@ -80,69 +82,69 @@ final class OutlineHeap {
     }
 
     int[] byLine() {
-        final Integer[] idx = new Integer[n];
+        Integer[] idx = new Integer[n];
         for (int i = 0; i < n; i++) {
             idx[i] = i;
         }
         Arrays.sort(idx, (a, b) -> Long.compare(line[a], line[b]));
-        final int[] out = new int[n];
+        int[] out = new int[n];
         for (int i = 0; i < n; i++) {
             out[i] = idx[i];
         }
         return out;
     }
 
-    long dur(final int i) {
+    long dur(int i) {
         return dur[i];
     }
 
-    long line(final int i) {
+    long line(int i) {
         return line[i];
     }
 
-    long start(final int i) {
+    long start(int i) {
         return start[i];
     }
 
-    long self(final int i) {
+    long self(int i) {
         return self[i];
     }
 
-    int depth(final int i) {
+    int depth(int i) {
         return depth[i];
     }
 
-    int methodId(final int i) {
+    int methodId(int i) {
         return methodId[i];
     }
 
-    long children(final int i) {
+    long children(int i) {
         return children[i];
     }
 
-    long subLines(final int i) {
+    long subLines(int i) {
         return subLines[i];
     }
 
-    boolean thrown(final int i) {
+    boolean thrown(int i) {
         return (flags[i] & 1) != 0;
     }
 
-    boolean unclosed(final int i) {
+    boolean unclosed(int i) {
         return (flags[i] & 2) != 0;
     }
 
-    int excNo(final int i) {
+    int excNo(int i) {
         return excNo[i];
     }
 
-    private boolean less(final int a, final int b) {
+    private boolean less(int a, int b) {
         return dur[a] < dur[b] || (dur[a] == dur[b] && seq[a] < seq[b]);
     }
 
-    private void siftUp(int i) {
+    private void siftUp(@Var int i) {
         while (i > 0) {
-            final int parent = (i - 1) >>> 1;
+            int parent = (i - 1) >>> 1;
             if (!less(i, parent)) {
                 return;
             }
@@ -151,13 +153,13 @@ final class OutlineHeap {
         }
     }
 
-    private void siftDown(int i) {
+    private void siftDown(@Var int i) {
         while (true) {
-            final int l = 2 * i + 1;
+            int l = 2 * i + 1;
             if (l >= n) {
                 return;
             }
-            int m = l;
+            @Var int m = l;
             if (l + 1 < n && less(l + 1, l)) {
                 m = l + 1;
             }
@@ -169,7 +171,7 @@ final class OutlineHeap {
         }
     }
 
-    private void swap(final int a, final int b) {
+    private void swap(int a, int b) {
         swap(dur, a, b);
         swap(seq, a, b);
         swap(line, a, b);
@@ -180,19 +182,19 @@ final class OutlineHeap {
         swap(depth, a, b);
         swap(methodId, a, b);
         swap(excNo, a, b);
-        final byte f = flags[a];
+        byte f = flags[a];
         flags[a] = flags[b];
         flags[b] = f;
     }
 
-    private static void swap(final long[] v, final int a, final int b) {
-        final long t = v[a];
+    private static void swap(long[] v, int a, int b) {
+        long t = v[a];
         v[a] = v[b];
         v[b] = t;
     }
 
-    private static void swap(final int[] v, final int a, final int b) {
-        final int t = v[a];
+    private static void swap(int[] v, int a, int b) {
+        int t = v[a];
         v[a] = v[b];
         v[b] = t;
     }

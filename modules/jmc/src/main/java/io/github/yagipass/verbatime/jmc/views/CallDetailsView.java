@@ -56,7 +56,7 @@ public final class CallDetailsView extends EditorBoundView {
     private AncestorTable ancestors;
 
     @Override
-    protected void createContent(final Composite parent) {
+    protected void createContent(Composite parent) {
         root = new Composite(parent, SWT.NONE);
         rootLayout = new StackLayout();
         root.setLayout(rootLayout);
@@ -65,7 +65,7 @@ public final class CallDetailsView extends EditorBoundView {
         rootLayout.topControl = emptyLabel;
     }
 
-    private void createFacts(final Composite parent) {
+    private void createFacts(Composite parent) {
         factsScroller = new ScrolledComposite(parent, SWT.V_SCROLL);
         factsScroller.setExpandHorizontal(true);
         factsScroller.setExpandVertical(true);
@@ -86,24 +86,24 @@ public final class CallDetailsView extends EditorBoundView {
         marksLabel = wrapLabel(facts);
         marksLabel.setForeground(facts.getDisplay().getSystemColor(SWT.COLOR_DARK_YELLOW));
 
-        final Composite actions = new Composite(facts, SWT.NONE);
+        Composite actions = new Composite(facts, SWT.NONE);
         actions.setLayout(new RowLayout());
-        final Button zoom = new Button(actions, SWT.PUSH);
+        Button zoom = new Button(actions, SWT.PUSH);
         zoom.setText("Zoom to this call");
         zoom.addListener(SWT.Selection, e -> {
             if (editor() != null) {
                 editor().zoomTo(editor().selection());
             }
         });
-        final Button highlight = new Button(actions, SWT.PUSH);
+        Button highlight = new Button(actions, SWT.PUSH);
         highlight.setText("Highlight this method");
         highlight.addListener(SWT.Selection, e -> {
-            final SelectedCall f = selection();
+            SelectedCall f = selection();
             if (f != null) {
                 editor().searchFor(f.methodId());
             }
         });
-        final Button export = new Button(actions, SWT.PUSH);
+        Button export = new Button(actions, SWT.PUSH);
         export.setText("Export session…");
         export.addListener(SWT.Selection, e -> {
             if (editor() != null) {
@@ -113,15 +113,15 @@ public final class CallDetailsView extends EditorBoundView {
 
         ancestorsHead = HeaderWithCopyButton.create(facts,
                 "Copy the ancestor chain as text, one call per line with full method names", () -> {
-                    final TraceSnapshot d = trace();
-                    final SelectedCall f = selection();
+                    TraceSnapshot d = trace();
+                    SelectedCall f = selection();
                     if (d != null && f != null) {
                         Clipboards.copyText(facts.getDisplay(), CopyTexts.ancestorText(d, f));
                     }
                 }).label();
 
         ancestors = new AncestorTable(facts);
-        final GridData ancestorsData = new GridData(SWT.FILL, SWT.TOP, true, false);
+        GridData ancestorsData = new GridData(SWT.FILL, SWT.TOP, true, false);
         ancestorsData.widthHint = WRAP_WIDTH_HINT;
         ancestors.setLayoutData(ancestorsData);
 
@@ -130,32 +130,32 @@ public final class CallDetailsView extends EditorBoundView {
         forwardWheel(atText);
     }
 
-    private void forwardWheel(final Control c) {
+    private void forwardWheel(Control c) {
         c.addListener(SWT.MouseWheel, e -> {
             if (facts.getSize().y <= factsScroller.getClientArea().height) {
                 return;
             }
-            final Point origin = factsScroller.getOrigin();
+            Point origin = factsScroller.getOrigin();
             factsScroller.setOrigin(origin.x, origin.y - e.count * WHEEL_STEP);
             e.doit = false;
         });
     }
 
-    private static Text readOnlyText(final Composite parent) {
-        final Text t = new Text(parent, SWT.MULTI | SWT.READ_ONLY | SWT.WRAP);
+    private static Text readOnlyText(Composite parent) {
+        Text t = new Text(parent, SWT.MULTI | SWT.READ_ONLY | SWT.WRAP);
         t.setBackground(parent.getBackground());
         t.setLayoutData(wrapData());
         return t;
     }
 
-    private static Label wrapLabel(final Composite parent) {
-        final Label l = new Label(parent, SWT.WRAP);
+    private static Label wrapLabel(Composite parent) {
+        Label l = new Label(parent, SWT.WRAP);
         l.setLayoutData(wrapData());
         return l;
     }
 
     private static GridData wrapData() {
-        final GridData gd = new GridData(SWT.FILL, SWT.TOP, true, false);
+        GridData gd = new GridData(SWT.FILL, SWT.TOP, true, false);
         gd.widthHint = WRAP_WIDTH_HINT;
         return gd;
     }
@@ -170,14 +170,14 @@ public final class CallDetailsView extends EditorBoundView {
         if (root == null || root.isDisposed()) {
             return;
         }
-        final TraceSnapshot d = trace();
-        final SelectedCall f = selection();
-        final String empty = emptyReason(d, f);
+        TraceSnapshot d = trace();
+        SelectedCall f = selection();
+        String empty = emptyReason(d, f);
         if (empty != null) {
             showEmpty(empty);
             return;
         }
-        final String name = d.methodName(f.methodId());
+        String name = d.methodName(f.methodId());
         sigText.setText(Formats.signature(name));
         fullText.setText(name);
         row1Label.setText("total " + Formats.fmtDur(f.durNs()) + ", self " + Formats.fmtDur(f.effectiveSelfNs())
@@ -185,7 +185,7 @@ public final class CallDetailsView extends EditorBoundView {
         atText.setText("at " + Formats.fmtWall(d.wallClock(f.startNs())));
         row2Label.setText("depth " + f.depth() + ", on " + d.threadName(f.tid()) + ", "
                 + CopyTexts.sessionText(d, f.tid(), f.startNs()));
-        final List<String> marks = new ArrayList<>();
+        List<String> marks = new ArrayList<>();
         if (f.thrown()) {
             marks.add("ended by throw: " + d.exceptionName(f.exceptionId()));
         }
@@ -195,19 +195,19 @@ public final class CallDetailsView extends EditorBoundView {
         marksLabel.setText(String.join("\n", marks));
         ((GridData) marksLabel.getLayoutData()).exclude = marks.isEmpty();
         marksLabel.setVisible(!marks.isEmpty());
-        final String gc = CopyTexts.gcText(d.gc.overlap(f.startNs(), f.durNs()), f.durNs());
+        String gc = CopyTexts.gcText(d.gc.overlap(f.startNs(), f.durNs()), f.durNs());
         gcLabel.setText(gc == null ? "" : gc);
         ((GridData) gcLabel.getLayoutData()).exclude = gc == null;
         gcLabel.setVisible(gc != null);
 
-        final long sessionDurNs = CopyTexts.sessionDurNs(d, f.tid(), f.startNs());
-        final List<SelectedCall.Ancestor> chain = f.pathFromRoot();
-        final int top = chain.get(0).depth();
+        long sessionDurNs = CopyTexts.sessionDurNs(d, f.tid(), f.startNs());
+        List<SelectedCall.Ancestor> chain = f.pathFromRoot();
+        int top = chain.get(0).depth();
         ancestorsHead.setText(top == 0 ? "Ancestors, root first"
                 : "Ancestors from depth " + top + ", the calls above are outside the loaded window");
-        final List<AncestorTable.Row> rows = new ArrayList<>(chain.size());
-        for (final SelectedCall.Ancestor a : chain) {
-            final String full = d.methodName(a.methodId());
+        List<AncestorTable.Row> rows = new ArrayList<>(chain.size());
+        for (SelectedCall.Ancestor a : chain) {
+            String full = d.methodName(a.methodId());
             rows.add(new AncestorTable.Row(a.depth(), Formats.shortName(full), full, Formats.fmtDur(a.durNs()),
                     CopyTexts.pctOfSession(a.durNs(), sessionDurNs), a.depth() == f.depth() && a.startNs() == f.startNs()));
         }
@@ -223,11 +223,11 @@ public final class CallDetailsView extends EditorBoundView {
         if (factsScroller == null || factsScroller.isDisposed()) {
             return;
         }
-        final int width = factsScroller.getClientArea().width;
+        int width = factsScroller.getClientArea().width;
         factsScroller.setMinSize(facts.computeSize(width > 0 ? width : SWT.DEFAULT, SWT.DEFAULT));
     }
 
-    private void showEmpty(final String text) {
+    private void showEmpty(String text) {
         ancestors.setRows(List.of());
         emptyLabel.setText(text);
         rootLayout.topControl = emptyLabel;

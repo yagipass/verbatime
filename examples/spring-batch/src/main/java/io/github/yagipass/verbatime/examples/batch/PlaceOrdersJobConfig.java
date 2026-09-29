@@ -32,22 +32,22 @@ public class PlaceOrdersJobConfig {
     }
 
     @Bean
-    ItemProcessor<OrderLine, Receipt> placeOrderProcessor(final OrderService orders) {
+    ItemProcessor<OrderLine, Receipt> placeOrderProcessor(OrderService orders) {
         return line -> orders.placeOrder(line.sku(), line.qty());
     }
 
     @Bean
-    JdbcBatchItemWriter<Receipt> receiptWriter(final DataSource dataSource) {
+    JdbcBatchItemWriter<Receipt> receiptWriter(DataSource dataSource) {
         return new JdbcBatchItemWriterBuilder<Receipt>().dataSource(dataSource).sql("insert into orders (sku, qty, cents, tx_id) values (:sku, :qty, :cents, :txId)").itemSqlParameterSourceProvider(receipt -> new MapSqlParameterSource().addValue("sku", receipt.sku()).addValue("qty", receipt.qty()).addValue("cents", receipt.cents()).addValue("txId", receipt.txId())).build();
     }
 
     @Bean
-    Step placeOrdersStep(final JobRepository jobRepository, final PlatformTransactionManager tx, final ItemReader<OrderLine> reader, final ItemProcessor<OrderLine, Receipt> processor, final JdbcBatchItemWriter<Receipt> writer) {
+    Step placeOrdersStep(JobRepository jobRepository, PlatformTransactionManager tx, ItemReader<OrderLine> reader, ItemProcessor<OrderLine, Receipt> processor, JdbcBatchItemWriter<Receipt> writer) {
         return new StepBuilder("placeOrders", jobRepository).<OrderLine, Receipt>chunk(2).transactionManager(tx).reader(reader).processor(processor).writer(writer).build();
     }
 
     @Bean
-    Job placeOrdersJob(final JobRepository jobRepository, final Step placeOrdersStep) {
+    Job placeOrdersJob(JobRepository jobRepository, Step placeOrdersStep) {
         return new JobBuilder("placeOrders", jobRepository).incrementer(new RunIdIncrementer()).start(placeOrdersStep).build();
     }
 }

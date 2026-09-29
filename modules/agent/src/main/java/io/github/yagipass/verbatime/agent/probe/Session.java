@@ -40,11 +40,11 @@ final class Session {
 
     private long nextFlushNanos;
 
-    Session(final TraceFileWriter writer, final int rootId, final int seq) {
+    Session(TraceFileWriter writer, int rootId, int seq) {
         this(writer, rootId, seq, CHUNK_EVENTS);
     }
 
-    Session(final TraceFileWriter writer, final int rootId, final int seq, final int chunkEvents) {
+    Session(TraceFileWriter writer, int rootId, int seq, int chunkEvents) {
         this.writer = writer;
         this.rootId = rootId;
         this.seq = seq;
@@ -54,24 +54,24 @@ final class Session {
         this.nextFlushNanos = System.nanoTime() + FLUSH_INTERVAL_NANOS;
     }
 
-    void enter(final int id) {
+    void enter(int id) {
         depth++;
         push(System.nanoTime(), (long) id << 2);
     }
 
-    void exit(final int id, final long flags) {
+    void exit(int id, long flags) {
         push(System.nanoTime(), ((long) id << 2) | flags);
         depth--;
     }
 
-    void exit(final int id, final long flags, final int exceptionId) {
+    void exit(int id, long flags, int exceptionId) {
         push(System.nanoTime(), ((long) exceptionId << 32) | ((long) id << 2) | flags);
         depth--;
     }
 
-    private void push(final long nanos, final long packed) {
-        final long[] b = buf;
-        final int p = pos;
+    private void push(long nanos, long packed) {
+        long[] b = buf;
+        int p = pos;
         b[p] = nanos;
         b[p + 1] = packed;
         pos = p + 2;

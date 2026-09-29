@@ -8,34 +8,34 @@ public final class TraceBuilder {
 
     private final ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-    public TraceBuilder(final long startEpochMs, final int utcOffsetSeconds) {
+    public TraceBuilder(long startEpochMs, int utcOffsetSeconds) {
         out.writeBytes(RecordEncoder.header(startEpochMs, utcOffsetSeconds));
     }
 
-    public TraceBuilder thread(final long tid, final String name) {
+    public TraceBuilder thread(long tid, String name) {
         out.writeBytes(RecordEncoder.thread(tid, name));
         return this;
     }
 
-    public TraceBuilder exception(final long id, final String className) {
+    public TraceBuilder exception(long id, String className) {
         out.writeBytes(RecordEncoder.exception(id, className));
         return this;
     }
 
-    public TraceBuilder gc(final long startTicks, final long durTicks, final int action, final String collector,
-            final String cause) {
+    public TraceBuilder gc(long startTicks, long durTicks, int action, String collector,
+            String cause) {
         out.writeBytes(RecordEncoder.gc(startTicks, durTicks, action, collector, cause));
         return this;
     }
 
-    public TraceBuilder clazz(final long baseId, final String className, final String... sigs) {
+    public TraceBuilder clazz(long baseId, String className, String... sigs) {
         out.writeBytes(RecordEncoder.clazz(baseId, className, List.of(sigs)));
         return this;
     }
 
-    public TraceBuilder chunk(final long tid, final long baseTicks, final byte[] payload, final boolean sessionEnd) {
-        final byte[] head = new byte[RecordEncoder.MAX_CHUNK_HEADER_BYTES];
-        final int n = RecordEncoder.chunkHeader(head, 0, tid, baseTicks, payload.length, sessionEnd);
+    public TraceBuilder chunk(long tid, long baseTicks, byte[] payload, boolean sessionEnd) {
+        byte[] head = new byte[RecordEncoder.MAX_CHUNK_HEADER_BYTES];
+        int n = RecordEncoder.chunkHeader(head, 0, tid, baseTicks, payload.length, sessionEnd);
         out.write(head, 0, n);
         out.writeBytes(payload);
         return this;
@@ -46,8 +46,8 @@ public final class TraceBuilder {
         return this;
     }
 
-    public TraceBuilder rawBytes(final int... bytes) {
-        for (final int b : bytes) {
+    public TraceBuilder rawBytes(int... bytes) {
+        for (int b : bytes) {
             out.write(b);
         }
         return this;
@@ -67,30 +67,30 @@ public final class TraceBuilder {
 
         private boolean first = true;
 
-        public Payload(final long baseTicks) {
+        public Payload(long baseTicks) {
             lastTicks = baseTicks;
         }
 
-        public Payload enter(final long ticks, final int methodId) {
+        public Payload enter(long ticks, int methodId) {
             if (methodId < 0) {
                 throw new IllegalArgumentException("method id must be >= 0");
             }
-            final long delta = advance(ticks);
+            long delta = advance(ticks);
             len = EventEncoder.enter(ensureRoom(), len, delta, methodId);
             return this;
         }
 
-        public Payload exit(final long ticks) {
-            final long delta = advance(ticks);
+        public Payload exit(long ticks) {
+            long delta = advance(ticks);
             len = EventEncoder.exit(ensureRoom(), len, delta);
             return this;
         }
 
-        public Payload exitThrow(final long ticks, final int exceptionId) {
+        public Payload exitThrow(long ticks, int exceptionId) {
             if (exceptionId < 0) {
                 throw new IllegalArgumentException("exception id must be >= 0");
             }
-            final long delta = advance(ticks);
+            long delta = advance(ticks);
             len = EventEncoder.exitThrow(ensureRoom(), len, delta, exceptionId);
             return this;
         }
@@ -99,11 +99,11 @@ public final class TraceBuilder {
             return Arrays.copyOf(buf, len);
         }
 
-        private long advance(final long ticks) {
+        private long advance(long ticks) {
             if (ticks < 0 || ticks > Vbtm.MAX_TICKS) {
                 throw new IllegalArgumentException("ticks must be within 0..MAX_TICKS");
             }
-            final long delta = first ? 0 : ticks - lastTicks;
+            long delta = first ? 0 : ticks - lastTicks;
             if (delta < 0) {
                 throw new IllegalArgumentException("ticks must be non-decreasing");
             }

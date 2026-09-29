@@ -23,7 +23,7 @@ final class OrderServiceTest {
 
     @Test
     void placesOrder() {
-        final Receipt receipt = orders.placeOrder("widget", 3);
+        Receipt receipt = orders.placeOrder("widget", 3);
         assertEquals("widget", receipt.sku());
         assertEquals(3, receipt.qty());
         assertTrue(receipt.cents() > 0);

@@ -13,15 +13,15 @@ import org.junit.jupiter.api.Test;
 
 final class MappedTraceTest {
 
-    private static Path fileWith(final byte[] bytes) throws IOException {
-        final Path f = TestTraces.tempFile();
+    private static Path fileWith(byte[] bytes) throws IOException {
+        Path f = TestTraces.tempFile();
         Files.write(f, bytes);
         return f;
     }
 
     @Test
     void theLastReleaseUnmapsAndALaterRetainIsRefused() throws IOException {
-        final MappedTrace b = MappedTrace.open(fileWith(new byte[] { 7, 8, 9 }));
+        MappedTrace b = MappedTrace.open(fileWith(new byte[] { 7, 8, 9 }));
         assertFalse(b.isClosed());
         b.release();
         assertTrue(b.isClosed(), "the opener held the only reference");
@@ -31,7 +31,7 @@ final class MappedTraceTest {
 
     @Test
     void anOutstandingRetainDefersTheUnmapPastTheOwnersRelease() throws IOException {
-        final MappedTrace b = MappedTrace.open(fileWith(new byte[] { 42, 1, 2 }));
+        MappedTrace b = MappedTrace.open(fileWith(new byte[] { 42, 1, 2 }));
         b.retain();
         b.release();
         assertFalse(b.isClosed(), "a snapshot the viewer draws from outlives the indexer that made it");
@@ -42,9 +42,9 @@ final class MappedTraceTest {
 
     @Test
     void releasingMoreThanRetainedFailsLoudly() throws IOException {
-        final MappedTrace b = MappedTrace.open(fileWith(new byte[] { 1 }));
+        MappedTrace b = MappedTrace.open(fileWith(new byte[] { 1 }));
         b.release();
-        final IllegalStateException e = assertThrows(IllegalStateException.class, b::release);
+        IllegalStateException e = assertThrows(IllegalStateException.class, b::release);
         assertTrue(e.getMessage().contains("more times than retained"), e.getMessage());
     }
 
@@ -56,8 +56,8 @@ final class MappedTraceTest {
 
     @Test
     void theFileCanBeDeletedOnceTheLastReferenceIsGone() throws IOException {
-        final Path f = fileWith(RandomTraces.random(5));
-        final TraceSnapshot data = TraceIndexer.index(f);
+        Path f = fileWith(RandomTraces.random(5));
+        TraceSnapshot data = TraceIndexer.index(f);
         assertFalse(data.buffer.isClosed());
         data.release();
         assertTrue(data.buffer.isClosed(), "index() closed its indexer, so the snapshot held the last reference");

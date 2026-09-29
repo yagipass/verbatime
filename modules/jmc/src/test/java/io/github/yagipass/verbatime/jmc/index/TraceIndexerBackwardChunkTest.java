@@ -7,6 +7,8 @@ import java.io.IOException;
 
 import org.junit.jupiter.api.Test;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.format.TraceBuilder;
 import io.github.yagipass.verbatime.format.Vbtm;
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot.ThreadIndex;
@@ -15,20 +17,20 @@ import io.github.yagipass.verbatime.jmc.query.SubtreeAggregate;
 final class TraceIndexerBackwardChunkTest {
 
     private static TraceSnapshot frameClosedInABackwardChunk() throws IOException {
-        final TraceBuilder w = TestTraces.writer();
+        TraceBuilder w = TestTraces.writer();
         w.thread(1, "main");
         w.clazz(0, "pkg.A", "a()V");
         w.clazz(1, "pkg.B", "b()V");
-        final TraceBuilder.Payload first = new TraceBuilder.Payload(100);
+        TraceBuilder.Payload first = new TraceBuilder.Payload(100);
         first.enter(100, 0).enter(110, 1).exit(120);
         w.chunk(1, 100, first.bytes(), false);
-        final TraceBuilder.Payload second = new TraceBuilder.Payload(90);
+        TraceBuilder.Payload second = new TraceBuilder.Payload(90);
         second.exit(90).enter(100, 1).exit(105);
         w.chunk(1, 90, second.bytes(), true);
         return TestTraces.index(w);
     }
 
-    private static void assertMonotonicChunkIndex(final ThreadIndex m) {
+    private static void assertMonotonicChunkIndex(ThreadIndex m) {
         for (int i = 0; i < m.chunks.count; i++) {
             assertTrue(m.chunks.baseTicks[i] <= m.chunks.endTicks[i], "chunk " + i + " base <= last");
             if (i > 0) {
@@ -40,14 +42,14 @@ final class TraceIndexerBackwardChunkTest {
 
     @Test
     void backwardChunkIsShiftedToTheThreadsLastTickInsteadOfYieldingNegativeDurations() throws IOException {
-        final TraceSnapshot d = frameClosedInABackwardChunk();
-        final ThreadIndex m = d.thread(1);
+        TraceSnapshot d = frameClosedInABackwardChunk();
+        ThreadIndex m = d.thread(1);
         assertEquals(2, m.chunks.count, "both chunks are indexed");
         assertEquals(120, m.chunks.baseTicks[1], "the backward chunk is moved up to the last tick the thread had seen");
         assertMonotonicChunkIndex(m);
 
-        int outer = -1;
-        int trailing = -1;
+        @Var int outer = -1;
+        @Var int trailing = -1;
         for (int i = 0; i < m.overview.count; i++) {
             assertTrue(m.overview.durNs[i] >= 0, "frame " + i + " duration must not be negative");
             assertTrue(m.overview.selfNs[i] >= 0, "frame " + i + " self time must not be negative");
@@ -73,26 +75,26 @@ final class TraceIndexerBackwardChunkTest {
 
     @Test
     void rangeQueriesStillFindTheFrameThatSpansTheBackwardChunk() throws IOException {
-        final TraceSnapshot d = frameClosedInABackwardChunk();
+        TraceSnapshot d = frameClosedInABackwardChunk();
         assertEquals(0, ChunkWalker.firstChunkEndingAtOrAfter(d.thread(1), 100 * Vbtm.NANOS_PER_TICK),
                 "a window starting in chunk 1 must begin there, not skip to the chunk whose base was behind");
-        final SubtreeAggregate agg = SubtreeAggregate.compute(d, 1, 100 * Vbtm.NANOS_PER_TICK, 20 * Vbtm.NANOS_PER_TICK, 0, 0);
+        SubtreeAggregate agg = SubtreeAggregate.compute(d, 1, 100 * Vbtm.NANOS_PER_TICK, 20 * Vbtm.NANOS_PER_TICK, 0, 0);
         assertTrue(agg.found(), "the spanning frame is reachable by a range query after the repair");
     }
 
     @Test
     void sessionStartingBeforeThePreviousSessionsLastTickIsShiftedToo() throws IOException {
-        final TraceBuilder w = TestTraces.writer();
+        TraceBuilder w = TestTraces.writer();
         w.thread(1, "main");
         w.clazz(0, "pkg.A", "a()V");
-        final TraceBuilder.Payload first = new TraceBuilder.Payload(100);
+        TraceBuilder.Payload first = new TraceBuilder.Payload(100);
         first.enter(100, 0).exit(120);
         w.chunk(1, 100, first.bytes(), true);
-        final TraceBuilder.Payload second = new TraceBuilder.Payload(50);
+        TraceBuilder.Payload second = new TraceBuilder.Payload(50);
         second.enter(50, 0).exit(60);
         w.chunk(1, 50, second.bytes(), true);
-        final TraceSnapshot d = TestTraces.index(w);
-        final ThreadIndex m = d.thread(1);
+        TraceSnapshot d = TestTraces.index(w);
+        ThreadIndex m = d.thread(1);
         assertEquals(2, d.sessions.size(), "two sessions on the thread");
         assertEquals(120 * Vbtm.NANOS_PER_TICK, d.sessions.get(1).startNs,
                 "the chunk index is one per-thread array across sessions, so a session cannot start before the previous one's last tick");

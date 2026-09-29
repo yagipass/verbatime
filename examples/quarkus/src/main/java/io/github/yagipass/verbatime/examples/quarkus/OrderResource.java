@@ -25,7 +25,7 @@ public class OrderResource {
     @GET
     @Path("/orders")
     @Produces(MediaType.APPLICATION_JSON)
-    public Receipt place(@RestQuery @DefaultValue("widget") final String sku, @RestQuery @DefaultValue("1") final int qty) {
+    public Receipt place(@RestQuery @DefaultValue("widget") String sku, @RestQuery @DefaultValue("1") int qty) {
         return orders.placeOrder(sku, qty);
     }
 
@@ -37,7 +37,7 @@ public class OrderResource {
     }
 
     @ServerExceptionMapper
-    public RestResponse<String> outOfStock(final OutOfStockException e) {
+    public RestResponse<String> outOfStock(OutOfStockException e) {
         return RestResponse.status(Response.Status.CONFLICT, e.getMessage());
     }
 }

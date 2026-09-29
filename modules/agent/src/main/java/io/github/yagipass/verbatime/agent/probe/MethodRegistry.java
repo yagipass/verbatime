@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TreeSet;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.format.Vbtm;
 
 public final class MethodRegistry {
@@ -32,22 +34,22 @@ public final class MethodRegistry {
     private MethodRegistry() {
     }
 
-    public static int reserveIds(final String className, final List<String> methodSigs) {
+    public static int reserveIds(String className, List<String> methodSigs) {
         synchronized (LOCK) {
             if (methodSigs.size() > Vbtm.METHOD_ID_LIMIT - size) {
                 return LIMIT_REACHED;
             }
-            final int base = size;
-            final int needed = base + methodSigs.size();
+            int base = size;
+            int needed = base + methodSigs.size();
             if (needed > classNames.length) {
-                int n = classNames.length;
+                @Var int n = classNames.length;
                 while (n < needed) {
                     n *= 2;
                 }
                 classNames = Arrays.copyOf(classNames, n);
                 sigs = Arrays.copyOf(sigs, n);
             }
-            for (final String sig : methodSigs) {
+            for (String sig : methodSigs) {
                 classNames[size] = className;
                 sigs[size] = sig;
                 size++;
@@ -56,8 +58,8 @@ public final class MethodRegistry {
         }
     }
 
-    public static void commitClass(final int baseId, final String className, final List<String> methodSigs) {
-        final List<String> copy = List.copyOf(methodSigs);
+    public static void commitClass(int baseId, String className, List<String> methodSigs) {
+        List<String> copy = List.copyOf(methodSigs);
         synchronized (SINK_LOCK) {
             committed.add(new CommittedClass(baseId, className, copy));
             if (sink != null) {
@@ -66,10 +68,10 @@ public final class MethodRegistry {
         }
     }
 
-    public static void attach(final TraceFileWriter w) {
+    public static void attach(TraceFileWriter w) {
         synchronized (SINK_LOCK) {
             sink = w;
-            for (final CommittedClass c : committed) {
+            for (CommittedClass c : committed) {
                 w.writeClass(c.baseId(), c.className(), c.sigs());
             }
         }
@@ -93,18 +95,18 @@ public final class MethodRegistry {
         }
     }
 
-    public static String methodName(final int id) {
+    public static String methodName(int id) {
         synchronized (LOCK) {
             return methodNameOf(sigs[id]);
         }
     }
 
-    public static String methodNameOf(final String sig) {
-        final int paren = sig.indexOf('(');
+    public static String methodNameOf(String sig) {
+        int paren = sig.indexOf('(');
         return paren < 0 ? sig : sig.substring(0, paren);
     }
 
-    public static String displayName(final int id) {
+    public static String displayName(int id) {
         synchronized (LOCK) {
             if (id < 0 || id >= size) {
                 return "<unknown#" + id + ">";
@@ -113,24 +115,24 @@ public final class MethodRegistry {
         }
     }
 
-    public static String[] search(final String query, final int max) {
-        final String q = query.toLowerCase(Locale.ROOT);
-        final TreeSet<String> hits = new TreeSet<>();
-        for (final CommittedClass c : committed()) {
-            for (final String sig : c.sigs()) {
-                final String method = methodNameOf(sig);
+    public static String[] search(String query, int max) {
+        String q = query.toLowerCase(Locale.ROOT);
+        TreeSet<String> hits = new TreeSet<>();
+        for (CommittedClass c : committed()) {
+            for (String sig : c.sigs()) {
+                String method = methodNameOf(sig);
                 if (method.isEmpty() || method.charAt(0) == '<') {
                     continue;
                 }
-                final String candidate = c.className() + "::" + method;
+                String candidate = c.className() + "::" + method;
                 if (candidate.toLowerCase(Locale.ROOT).contains(q)) {
                     hits.add(candidate);
                 }
             }
         }
-        final String[] out = new String[Math.min(max, hits.size())];
-        int n = 0;
-        for (final String s : hits) {
+        String[] out = new String[Math.min(max, hits.size())];
+        @Var int n = 0;
+        for (String s : hits) {
             if (n == out.length) {
                 break;
             }

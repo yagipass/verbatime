@@ -12,6 +12,8 @@ import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.agent.probe.Log;
 
 final class StartupGateTransform {
@@ -28,12 +30,12 @@ final class StartupGateTransform {
 
     private static final CodeTransform PREPEND_AWAIT = new CodeTransform() {
         @Override
-        public void atStart(final CodeBuilder cob) {
+        public void atStart(CodeBuilder cob) {
             cob.invokestatic(GATE, "await", VOID_NOARG);
         }
 
         @Override
-        public void accept(final CodeBuilder cob, final CodeElement ce) {
+        public void accept(CodeBuilder cob, CodeElement ce) {
             cob.with(ce);
         }
     };
@@ -41,9 +43,9 @@ final class StartupGateTransform {
     private StartupGateTransform() {
     }
 
-    static String launcherMainSig(final ClassModel cm) {
-        String noArg = null;
-        for (final MethodModel mm : cm.methods()) {
+    static String launcherMainSig(ClassModel cm) {
+        @Var String noArg = null;
+        for (MethodModel mm : cm.methods()) {
             if (!mm.methodName().equalsString(MAIN_NAME) || mm.code().isEmpty() || (mm.flags().flagsMask() & ClassFile.ACC_PRIVATE) != 0) {
                 continue;
             }
@@ -57,11 +59,11 @@ final class StartupGateTransform {
         return noArg;
     }
 
-    static ClassTransform prependAwait(final String sig) {
+    static ClassTransform prependAwait(String sig) {
         return ClassTransform.transformingMethods(mm -> sig.equals(mm.methodName().stringValue() + mm.methodType().stringValue()), MethodTransform.transformingCode(PREPEND_AWAIT));
     }
 
-    static void logArmed(final String binaryName, final String sig) {
+    static void logArmed(String binaryName, String sig) {
         if (sig != null) {
             Log.info("startup gate armed on " + binaryName + "::" + (sig.endsWith(MAIN_NOARG_DESC) ? "main()" : "main(String[])"));
         } else {

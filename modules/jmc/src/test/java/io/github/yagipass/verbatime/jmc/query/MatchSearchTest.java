@@ -21,30 +21,30 @@ final class MatchSearchTest {
     @Test
     void matchNavigationMatchesBruteForce() throws IOException {
         for (long seed = 1; seed <= 6; seed++) {
-            final byte[] bytes = RandomTraces.random(seed);
-            final ReferenceDecoder.Result ref = ReferenceDecoder.decode(bytes);
-            final Random rng = new Random(seed * 41);
-            for (final int budget : new int[] { 1 << 30, 4000, 48 }) {
-                final TraceSnapshot data = TestTraces.index(bytes, budget);
+            byte[] bytes = RandomTraces.random(seed);
+            ReferenceDecoder.Result ref = ReferenceDecoder.decode(bytes);
+            Random rng = new Random(seed * 41);
+            for (int budget : new int[] { 1 << 30, 4000, 48 }) {
+                TraceSnapshot data = TestTraces.index(bytes, budget);
                 for (int trial = 0; trial < 12; trial++) {
-                    final BitSet set = new BitSet();
+                    BitSet set = new BitSet();
                     if (trial % 3 == 0) {
-                        final Call f = ref.calls.get(rng.nextInt(ref.calls.size()));
+                        Call f = ref.calls.get(rng.nextInt(ref.calls.size()));
                         set.set(f.methodId());
                     } else {
-                        for (final Call f : ref.calls) {
+                        for (Call f : ref.calls) {
                             if (rng.nextInt(8) == 0) {
                                 set.set(f.methodId());
                             }
                         }
                     }
-                    final long span = Math.max(data.maxNs - data.minNs, 1);
-                    final long pos = data.minNs + (long) (rng.nextDouble() * span);
-                    final String ctx = "seed " + seed + " budget " + budget + " pos " + pos;
+                    long span = Math.max(data.maxNs - data.minNs, 1);
+                    long pos = data.minNs + (long) (rng.nextDouble() * span);
+                    String ctx = "seed " + seed + " budget " + budget + " pos " + pos;
 
-                    final long wantNext = ref.calls.stream().filter(f -> set.get(f.methodId()) && f.startNs() > pos)
+                    long wantNext = ref.calls.stream().filter(f -> set.get(f.methodId()) && f.startNs() > pos)
                             .mapToLong(Call::startNs).min().orElse(Long.MIN_VALUE);
-                    final MatchSearch.Match next = MatchSearch.nextMatch(data, set, pos);
+                    MatchSearch.Match next = MatchSearch.nextMatch(data, set, pos);
                     if (wantNext == Long.MIN_VALUE) {
                         assertNull(next, ctx + " next");
                     } else {
@@ -53,9 +53,9 @@ final class MatchSearchTest {
                         assertTrue(frameExists(ref, next), ctx + " next frame " + next.startNs);
                     }
 
-                    final long wantPrev = ref.calls.stream().filter(f -> set.get(f.methodId()) && f.startNs() < pos)
+                    long wantPrev = ref.calls.stream().filter(f -> set.get(f.methodId()) && f.startNs() < pos)
                             .mapToLong(Call::startNs).max().orElse(Long.MIN_VALUE);
-                    final MatchSearch.Match prev = MatchSearch.prevMatch(data, set, pos);
+                    MatchSearch.Match prev = MatchSearch.prevMatch(data, set, pos);
                     if (wantPrev == Long.MIN_VALUE) {
                         assertNull(prev, ctx + " prev");
                     } else {
@@ -68,8 +68,8 @@ final class MatchSearchTest {
         }
     }
 
-    private static boolean frameExists(final ReferenceDecoder.Result ref, final MatchSearch.Match m) {
-        for (final Call f : ref.calls) {
+    private static boolean frameExists(ReferenceDecoder.Result ref, MatchSearch.Match m) {
+        for (Call f : ref.calls) {
             if (f.tid() == m.tid && f.startNs() == m.startNs && f.durNs() == m.durNs && f.depth() == m.depth
                     && f.methodId() == m.methodId) {
                 return true;

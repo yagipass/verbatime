@@ -15,6 +15,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.format.Vbtm;
 
 final class TraceFile {
@@ -36,7 +38,7 @@ final class TraceFile {
 
         boolean ended;
 
-        Session(final int number, final long tid) {
+        Session(int number, long tid) {
             this.number = number;
             this.tid = tid;
         }
@@ -83,34 +85,34 @@ final class TraceFile {
 
     private long pos;
 
-    private TraceFile(final Path path, final MappedTrace data) {
+    private TraceFile(Path path, MappedTrace data) {
         this.path = path;
         this.data = data;
     }
 
-    static TraceFile open(final String arg) {
+    static TraceFile open(String arg) {
         try {
             return open(Path.of(arg));
-        } catch (final InvalidPathException e) {
+        } catch (InvalidPathException e) {
             throw new CliException(CliException.UNREADABLE, "not a valid path: " + arg, null);
         }
     }
 
-    static TraceFile open(final Path path) {
+    static TraceFile open(Path path) {
         if (!Files.isRegularFile(path)) {
             throw new CliException(CliException.UNREADABLE, "no such file: " + path,
                     "pass the path of a .vbtm recording");
         }
-        final MappedTrace data;
+        MappedTrace data;
         try {
             data = MappedTrace.open(path);
-        } catch (final NoSuchFileException e) {
+        } catch (NoSuchFileException e) {
             throw new CliException(CliException.UNREADABLE, "no such file: " + path,
                     "pass the path of a .vbtm recording");
-        } catch (final IOException e) {
+        } catch (IOException e) {
             throw new CliException(CliException.UNREADABLE, "cannot read " + path + ": " + e.getMessage(), null);
         }
-        final TraceFile f = new TraceFile(path, data);
+        TraceFile f = new TraceFile(path, data);
         f.scan();
         return f;
     }
@@ -119,17 +121,17 @@ final class TraceFile {
         return Names.sanitize(path.getFileName().toString());
     }
 
-    Session session(final String ref) {
-        final String s = ref.startsWith("#") ? ref.substring(1) : ref;
+    Session session(String ref) {
+        String s = ref.startsWith("#") ? ref.substring(1) : ref;
         try {
             return session(Integer.parseInt(s));
-        } catch (final NumberFormatException e) {
+        } catch (NumberFormatException e) {
             throw CliException.usage("'" + ref + "' is not a session id",
                     "session ids are the numbers in the id column of vbtm sessions");
         }
     }
 
-    Session session(final int number) {
+    Session session(int number) {
         if (number < 1 || number > sessions.size()) {
             throw CliException.usage("no session " + number + ", the recording has " + sessions.size(),
                     "vbtm sessions " + Args.shellQuote(path.toString()));
@@ -137,29 +139,29 @@ final class TraceFile {
         return sessions.get(number - 1);
     }
 
-    String methodClass(final int id) {
+    String methodClass(int id) {
         return id >= 0 && id < classNames.length ? classNames[id] : null;
     }
 
-    String methodSig(final int id) {
+    String methodSig(int id) {
         return id >= 0 && id < sigs.length ? sigs[id] : null;
     }
 
-    String exceptionName(final int id) {
+    String exceptionName(int id) {
         return id > 0 && id < exceptions.length && exceptions[id] != null ? exceptions[id] : "unknown";
     }
 
-    String threadName(final long tid) {
-        final String n = threads.get(tid);
+    String threadName(long tid) {
+        String n = threads.get(tid);
         return n != null ? n : "tid " + tid;
     }
 
-    OffsetDateTime wallClock(final long ticks) {
+    OffsetDateTime wallClock(long ticks) {
         return Instant.ofEpochMilli(startEpochMs).plusNanos(ticks * Vbtm.NANOS_PER_TICK)
                 .atOffset(ZoneOffset.ofTotalSeconds(utcOffsetSeconds));
     }
 
-    void markCorrupt(final long offset, final String reason) {
+    void markCorrupt(long offset, String reason) {
         if (status != Status.CORRUPT || offset < corruptOffset) {
             status = Status.CORRUPT;
             corruptOffset = offset;
@@ -180,7 +182,7 @@ final class TraceFile {
     }
 
     private void scan() {
-        final long size = data.size();
+        long size = data.size();
         if (size < Vbtm.MAGIC_BYTES || !hasMagic()) {
             throw new CliException(CliException.UNREADABLE,
                     path + " is not a .vbtm recording, its first bytes are not the vbtm magic", null);
@@ -189,7 +191,7 @@ final class TraceFile {
             status = Status.TRUNCATED;
             return;
         }
-        final int version = data.byteAt(Vbtm.VERSION_OFFSET);
+        int version = data.byteAt(Vbtm.VERSION_OFFSET);
         if (version != Vbtm.VERSION) {
             throw new CliException(CliException.UNREADABLE,
                     path + " is format version " + version + ", this reader reads version " + Vbtm.VERSION, null);
@@ -216,26 +218,26 @@ final class TraceFile {
         }
         try {
             readRecords(size);
-        } catch (final Truncated t) {
+        } catch (Truncated t) {
             status = Status.TRUNCATED;
-        } catch (final BadRecord e) {
+        } catch (BadRecord e) {
             markCorrupt(e.offset, e.getMessage());
         }
     }
 
-    private void readRecords(final long size) {
-        final Map<Long, Session> open = new HashMap<>();
-        boolean endSeen = false;
+    private void readRecords(long size) {
+        Map<Long, Session> open = new HashMap<>();
+        @Var boolean endSeen = false;
         while (pos < size) {
-            final long recordStart = pos;
+            long recordStart = pos;
             if (endSeen) {
                 markCorrupt(recordStart, (size - recordStart) + " bytes after the END record");
                 return;
             }
-            final int type = data.byteAt(pos++);
+            int type = data.byteAt(pos++);
             switch (type) {
                 case Vbtm.RECORD_THREAD -> {
-                    final long tid = varint();
+                    long tid = varint();
                     threads.put(tid, string(recordStart, varint()));
                 }
                 case Vbtm.RECORD_CHUNK, Vbtm.RECORD_CHUNK_END -> {
@@ -244,39 +246,39 @@ final class TraceFile {
                     }
                 }
                 case Vbtm.RECORD_CLASS -> {
-                    final long baseId = varint();
-                    final long count = varint();
+                    long baseId = varint();
+                    long count = varint();
                     if (baseId < 0 || count < 0 || baseId > Vbtm.METHOD_ID_LIMIT
                             || count > Vbtm.METHOD_ID_LIMIT - baseId) {
                         markCorrupt(recordStart, "method ids exceed the 2^22 format limit");
                         return;
                     }
-                    final String cls = string(recordStart, varint());
+                    String cls = string(recordStart, varint());
                     if (count > size - pos) {
                         throw new Truncated();
                     }
-                    final String[] s = new String[(int) count];
+                    String[] s = new String[(int) count];
                     for (int k = 0; k < s.length; k++) {
                         s[k] = string(recordStart, varint());
                     }
                     declare((int) baseId, cls, s);
                 }
                 case Vbtm.RECORD_EXCEPTION -> {
-                    final long id = varint();
+                    long id = varint();
                     if (id <= 0 || id >= Vbtm.EXCEPTION_ID_LIMIT) {
                         markCorrupt(recordStart, "exception id " + id + " outside 1.." + (Vbtm.EXCEPTION_ID_LIMIT - 1));
                         return;
                     }
-                    final String name = string(recordStart, varint());
+                    String name = string(recordStart, varint());
                     if (id >= exceptions.length) {
                         exceptions = Arrays.copyOf(exceptions, (int) Math.max(id + 1, exceptions.length * 2L));
                     }
                     exceptions[(int) id] = name;
                 }
                 case Vbtm.RECORD_GC -> {
-                    final long start = varint();
-                    final long dur = varint();
-                    final long action = varint();
+                    long start = varint();
+                    long dur = varint();
+                    long action = varint();
                     if (start < 0 || start > Vbtm.MAX_TICKS || dur < 0 || dur > Vbtm.MAX_TICKS - start) {
                         markCorrupt(recordStart, "GC pause ticks out of range");
                         return;
@@ -285,8 +287,8 @@ final class TraceFile {
                         markCorrupt(recordStart, "unknown GC action " + action);
                         return;
                     }
-                    final String collector = gcLabel(recordStart);
-                    final String cause = gcLabel(recordStart);
+                    String collector = gcLabel(recordStart);
+                    String cause = gcLabel(recordStart);
                     gcPauses.add(new GcPause(start, dur, (int) action, collector, cause));
                 }
                 case Vbtm.RECORD_END -> endSeen = true;
@@ -301,11 +303,11 @@ final class TraceFile {
         }
     }
 
-    private boolean readChunk(final long recordStart, final boolean endsSession, final Map<Long, Session> open,
-            final long size) {
-        final long tid = varint();
-        final long baseTicks = varint();
-        final long len = varint();
+    private boolean readChunk(long recordStart, boolean endsSession, Map<Long, Session> open,
+            long size) {
+        long tid = varint();
+        long baseTicks = varint();
+        long len = varint();
         if (baseTicks < 0 || baseTicks > Vbtm.MAX_TICKS) {
             markCorrupt(recordStart, "chunk base ticks out of range");
             return false;
@@ -314,13 +316,13 @@ final class TraceFile {
             markCorrupt(recordStart, "implausible chunk payload length " + len);
             return false;
         }
-        Session s = open.get(tid);
+        @Var Session s = open.get(tid);
         if (s == null) {
             s = new Session(sessions.size() + 1, tid);
             sessions.add(s);
             open.put(tid, s);
         }
-        final long end = pos + len;
+        long end = pos + len;
         if (end > size) {
             s.chunks.add(new Chunk(pos, (int) (size - pos), baseTicks));
             status = Status.TRUNCATED;
@@ -336,7 +338,7 @@ final class TraceFile {
     }
 
     private boolean hasMagic() {
-        final byte[] m = Vbtm.magic();
+        byte[] m = Vbtm.magic();
         for (int i = 0; i < m.length; i++) {
             if (data.byteAt(i) != (m[i] & 0xFF)) {
                 return false;
@@ -345,10 +347,10 @@ final class TraceFile {
         return true;
     }
 
-    private void declare(final int baseId, final String cls, final String[] names) {
-        final int end = baseId + names.length;
+    private void declare(int baseId, String cls, String[] names) {
+        int end = baseId + names.length;
         if (end > classNames.length) {
-            final int n = Math.max(end, classNames.length * 2);
+            int n = Math.max(end, classNames.length * 2);
             classNames = Arrays.copyOf(classNames, n);
             sigs = Arrays.copyOf(sigs, n);
         }
@@ -359,16 +361,16 @@ final class TraceFile {
         methodCount = Math.max(methodCount, end);
     }
 
-    private long fixed(final int bytes) {
-        long v = 0;
+    private long fixed(int bytes) {
+        @Var long v = 0;
         for (int i = 0; i < bytes; i++) {
             v = (v << 8) | data.byteAt(pos++);
         }
         return bytes == 4 ? (int) v : v;
     }
 
-    private String gcLabel(final long recordStart) {
-        final long len = varint();
+    private String gcLabel(long recordStart) {
+        long len = varint();
         if (len > Vbtm.MAX_GC_LABEL_BYTES) {
             throw new BadRecord(recordStart, "GC label of " + len + " bytes");
         }
@@ -376,13 +378,13 @@ final class TraceFile {
     }
 
     private long varint() {
-        long r = 0;
-        int shift = 0;
+        @Var long r = 0;
+        @Var int shift = 0;
         while (true) {
             if (pos >= data.size()) {
                 throw new Truncated();
             }
-            final int b = data.byteAt(pos++);
+            int b = data.byteAt(pos++);
             r |= (long) (b & 0x7F) << shift;
             if ((b & 0x80) == 0) {
                 return r;
@@ -394,14 +396,14 @@ final class TraceFile {
         }
     }
 
-    private String string(final long recordStart, final long len) {
+    private String string(long recordStart, long len) {
         if (len < 0 || len > Integer.MAX_VALUE) {
             throw new BadRecord(recordStart, "implausible string length " + len);
         }
         if (len > data.size() - pos) {
             throw new Truncated();
         }
-        final byte[] b = new byte[(int) len];
+        byte[] b = new byte[(int) len];
         data.copy(pos, b, b.length);
         pos += len;
         return Names.sanitize(new String(b, StandardCharsets.UTF_8));
@@ -422,7 +424,7 @@ final class TraceFile {
 
         final long offset;
 
-        BadRecord(final long offset, final String message) {
+        BadRecord(long offset, String message) {
             super(message, null, false, false);
             this.offset = offset;
         }

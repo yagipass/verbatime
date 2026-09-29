@@ -16,19 +16,19 @@ public class PersistentOrderService {
 
     private final OrderRepository repository;
 
-    PersistentOrderService(final OrderService orders, final OrderRepository repository) {
+    PersistentOrderService(OrderService orders, OrderRepository repository) {
         this.orders = orders;
         this.repository = repository;
     }
 
     @Transactional
-    public OrderEntity place(final String sku, final int qty) {
-        final Receipt receipt = orders.placeOrder(sku, qty);
+    public OrderEntity place(String sku, int qty) {
+        Receipt receipt = orders.placeOrder(sku, qty);
         return repository.save(new OrderEntity(receipt.sku(), receipt.qty(), receipt.cents(), receipt.txId()));
     }
 
     @Transactional(readOnly = true)
-    public Optional<OrderEntity> find(final long id) {
+    public Optional<OrderEntity> find(long id) {
         return repository.findById(id);
     }
 

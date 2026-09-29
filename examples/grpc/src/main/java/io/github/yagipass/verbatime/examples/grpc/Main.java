@@ -13,18 +13,18 @@ public final class Main {
     private Main() {
     }
 
-    public static void main(final String[] args) throws IOException, InterruptedException {
-        final int port = 8080;
-        final OrderService orders = new OrderService();
+    public static void main(String[] args) throws IOException, InterruptedException {
+        int port = 8080;
+        OrderService orders = new OrderService();
         warmUp(orders);
-        final HealthStatusManager health = new HealthStatusManager();
-        final Server server = ServerBuilder.forPort(port).addService(new OrdersService(orders)).addService(ProtoReflectionServiceV1.newInstance()).addService(health.getHealthService()).build();
+        HealthStatusManager health = new HealthStatusManager();
+        Server server = ServerBuilder.forPort(port).addService(new OrdersService(orders)).addService(ProtoReflectionServiceV1.newInstance()).addService(health.getHealthService()).build();
         server.start();
         System.out.println("grpc listening on port " + port);
         server.awaitTermination();
     }
 
-    private static void warmUp(final OrderService orders) {
+    private static void warmUp(OrderService orders) {
         orders.placeOrder("warmup", 1);
     }
 }

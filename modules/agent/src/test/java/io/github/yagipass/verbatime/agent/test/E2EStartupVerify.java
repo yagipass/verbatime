@@ -2,21 +2,23 @@ package io.github.yagipass.verbatime.agent.test;
 
 import java.nio.file.Path;
 
+import com.google.errorprone.annotations.Var;
+
 public final class E2EStartupVerify {
 
     private E2EStartupVerify() {
     }
 
-    public static void main(final String[] args) throws Exception {
-        final DecodedTrace d = DecodedTrace.decode(Path.of(args[0]));
-        int failures = 0;
+    public static void main(String[] args) throws Exception {
+        DecodedTrace d = DecodedTrace.decode(Path.of(args[0]));
+        @Var int failures = 0;
         failures += check(d.cleanEnd, "end-of-recording footer present, so the shutdown hook closed the recording");
         failures += check(d.sessions.size() == 2, "2 sessions, one per root call, got " + d.sessions.size());
         failures += check(d.methodNames.containsValue("io.github.yagipass.verbatime.fixtures.Fixture.root()Ljava/lang/String;"), "CLASS records name the first root");
         failures += check(d.methodNames.containsValue("io.github.yagipass.verbatime.fixtures.Fixture.rootThrows()V"), "CLASS records name the second root");
 
-        final DecodedTrace.DecodedSession first = d.sessions.get(1);
-        final DecodedTrace.DecodedSession second = d.sessions.get(2);
+        DecodedTrace.DecodedSession first = d.sessions.get(1);
+        DecodedTrace.DecodedSession second = d.sessions.get(2);
         if (first == null || second == null) {
             failed(failures + 1);
             return;
@@ -33,12 +35,12 @@ public final class E2EStartupVerify {
         System.err.println("[e2e-startup] verify OK");
     }
 
-    private static void failed(final int failures) {
+    private static void failed(int failures) {
         System.err.println("[e2e-startup] " + failures + (failures == 1 ? " check" : " checks") + " FAILED");
         System.exit(1);
     }
 
-    private static int check(final boolean cond, final String msg) {
+    private static int check(boolean cond, String msg) {
         if (!cond) {
             System.err.println("[e2e-startup]   FAIL " + msg);
             return 1;

@@ -5,6 +5,8 @@ import java.lang.management.ManagementFactory;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import com.google.errorprone.annotations.Var;
+
 final class GateHarness {
 
     private static final long RELEASE_DELAY_MS = 500;
@@ -13,14 +15,14 @@ final class GateHarness {
     }
 
     static void startReleaser() {
-        final Thread releaser = new Thread(() -> {
+        Thread releaser = new Thread(() -> {
             try {
                 Thread.sleep(RELEASE_DELAY_MS);
-                final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-                final ObjectName control = new ObjectName("verbatime:type=Control");
+                MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+                ObjectName control = new ObjectName("verbatime:type=Control");
                 server.invoke(control, "replaceRoots", new Object[] { new String[] { "io.github.yagipass.verbatime.fixtures.Fixture::root" } }, new String[] { "[Ljava.lang.String;" });
                 server.invoke(control, "startRecording", new Object[] { "gate-e2e" }, new String[] { "java.lang.String" });
-            } catch (final Throwable t) {
+            } catch (Throwable t) {
                 t.printStackTrace();
                 Runtime.getRuntime().halt(1);
             }
@@ -29,19 +31,19 @@ final class GateHarness {
         releaser.start();
     }
 
-    static void verify(final long initNanos) throws Exception {
-        final long heldMs = (System.nanoTime() - initNanos) / 1_000_000;
+    static void verify(long initNanos) throws Exception {
+        long heldMs = (System.nanoTime() - initNanos) / 1_000_000;
         if (heldMs < RELEASE_DELAY_MS - 100) {
             System.err.println("[e2e-gate] FAIL: main() entered after only " + heldMs + " ms, so the gate did not hold");
             System.exit(1);
         }
 
-        final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        final ObjectName control = new ObjectName("verbatime:type=Control");
-        final String[] status = (String[]) server.invoke(control, "status", new Object[0], new String[0]);
-        boolean recording = false;
-        boolean released = false;
-        for (final String line : status) {
+        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+        ObjectName control = new ObjectName("verbatime:type=Control");
+        String[] status = (String[]) server.invoke(control, "status", new Object[0], new String[0]);
+        @Var boolean recording = false;
+        @Var boolean released = false;
+        for (String line : status) {
             recording |= line.equals("state=recording");
             released |= line.equals("waitstart.state=released");
         }

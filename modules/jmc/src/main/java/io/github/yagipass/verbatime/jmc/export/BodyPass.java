@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.BitSet;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.format.EventCursor;
 import io.github.yagipass.verbatime.format.Vbtm;
 import io.github.yagipass.verbatime.jmc.index.ChunkCursor;
@@ -48,8 +50,8 @@ final class BodyPass {
 
     private long listed;
 
-    BodyPass(final TraceSnapshot data, final Session session, final long floorTicks,
-            final TraceIndexer.ProgressListener progress, final BodyLines body, final OutlineHeap top) {
+    BodyPass(TraceSnapshot data, Session session, long floorTicks,
+            TraceIndexer.ProgressListener progress, BodyLines body, OutlineHeap top) {
         this.data = data;
         this.session = session;
         this.floorTicks = floorTicks;
@@ -57,7 +59,7 @@ final class BodyPass {
         this.body = body;
         this.top = top;
         this.excIndexOf = new int[Math.max(data.exceptionNames.length + 1, 16)];
-        final int methods = Math.max(data.methodNames.length + 1, 16);
+        int methods = Math.max(data.methodNames.length + 1, 16);
         calls = new long[methods];
         totalTicks = new long[methods];
         selfTicks = new long[methods];
@@ -95,26 +97,26 @@ final class BodyPass {
         return exceptionCount;
     }
 
-    int exceptionIdAt(final int i) {
+    int exceptionIdAt(int i) {
         return excOrder[i];
     }
 
     void run() throws IOException {
-        final ThreadIndex m = data.thread(session.tid);
+        ThreadIndex m = data.thread(session.tid);
         if (m == null) {
             progress.report(0, 0);
             return;
         }
-        final int c0 = session.firstChunk;
-        final int c1 = session.lastChunk;
-        long total = 0;
+        int c0 = session.firstChunk;
+        int c1 = session.lastChunk;
+        @Var long total = 0;
         for (int c = c0; c <= c1; c++) {
             total += m.chunks.payloadLen(c);
         }
-        long done = 0;
-        final ChunkCursor chunks = new ChunkCursor(data.buffer, m, c0, c1);
+        @Var long done = 0;
+        ChunkCursor chunks = new ChunkCursor(data.buffer, m, c0, c1);
         try {
-            final EventCursor cur = new EventCursor();
+            EventCursor cur = new EventCursor();
             while (chunks.next()) {
                 if (progress.report(done, total)) {
                     throw new TraceIndexer.CancelledException();
@@ -132,17 +134,17 @@ final class BodyPass {
         if (progress.report(total, total)) {
             throw new TraceIndexer.CancelledException();
         }
-        final long endTicks = session.endNs / Vbtm.NANOS_PER_TICK;
+        long endTicks = session.endNs / Vbtm.NANOS_PER_TICK;
         while (stack.size() > 0) {
             exit(endTicks, -1, true);
         }
     }
 
-    private void decodeChunk(final EventCursor cur) throws IOException {
+    private void decodeChunk(EventCursor cur) throws IOException {
         while (true) {
-            final EventCursor.Event e = cur.next();
+            EventCursor.Event e = cur.next();
             if (e == EventCursor.Event.ENTER) {
-                final int methodId = cur.methodId();
+                int methodId = cur.methodId();
                 stack.push(methodId, cur.ticks());
                 used.set(methodId);
             } else if (e == EventCursor.Event.EXIT) {
@@ -155,14 +157,14 @@ final class BodyPass {
         }
     }
 
-    private void exit(final long endTicks, final int exc, final boolean unclosed) throws IOException {
-        final int k = stack.pop();
-        final int methodId = stack.methodId[k];
-        final long dur = Math.max(endTicks - stack.startTicks[k], 0);
-        final long self = Math.max(dur - stack.childTicks[k], 0);
-        final boolean isListed = unclosed || k == 0 || dur >= floorTicks;
-        final boolean thrown = exc >= 0;
-        final int excNo = exc > 0 ? exceptionNo(exc) : 0;
+    private void exit(long endTicks, int exc, boolean unclosed) throws IOException {
+        int k = stack.pop();
+        int methodId = stack.methodId[k];
+        long dur = Math.max(endTicks - stack.startTicks[k], 0);
+        long self = Math.max(dur - stack.childTicks[k], 0);
+        boolean isListed = unclosed || k == 0 || dur >= floorTicks;
+        boolean thrown = exc >= 0;
+        int excNo = exc > 0 ? exceptionNo(exc) : 0;
         totalCalls++;
         if (!unclosed) {
             ensureMethod(methodId);
@@ -171,11 +173,11 @@ final class BodyPass {
             selfTicks[methodId] += self;
         }
         if (isListed) {
-            final boolean wasEmitted = k < placeholderDepth;
+            boolean wasEmitted = k < placeholderDepth;
             if (!wasEmitted) {
                 writePlaceholdersBelow(k);
             }
-            final long lineNo;
+            long lineNo;
             if (wasEmitted) {
                 lineNo = stack.lineNo[k];
                 body.patchPlaceholder(stack, k, dur, self, thrown, excNo, unclosed);
@@ -187,12 +189,12 @@ final class BodyPass {
                 body.writeBelowFloorLine(stack, k);
             }
             listed++;
-            final long subLines = body.lines() - lineNo + 1;
+            long subLines = body.lines() - lineNo + 1;
             top.offer(dur, totalCalls, lineNo, stack.startTicks[k], self, k, methodId, stack.directChildren[k], subLines,
                     (byte) ((thrown ? 1 : 0) | (unclosed ? 2 : 0)), excNo);
         }
         if (k > 0) {
-            final int p = k - 1;
+            int p = k - 1;
             stack.childTicks[p] += dur;
             stack.directChildren[p]++;
             stack.descendants[p] += stack.descendants[k] + 1;
@@ -205,7 +207,7 @@ final class BodyPass {
                 stack.belowFloorAt(p).increment(methodId);
             }
         }
-        final BelowFloorCounts own = stack.belowFloorOrNull(k);
+        BelowFloorCounts own = stack.belowFloorOrNull(k);
         if (own != null) {
             own.clear();
         }
@@ -214,7 +216,7 @@ final class BodyPass {
         }
     }
 
-    private void writePlaceholdersBelow(final int k) throws IOException {
+    private void writePlaceholdersBelow(int k) throws IOException {
         for (int i = placeholderDepth; i < k; i++) {
             body.writePlaceholder(stack, i);
         }
@@ -223,11 +225,11 @@ final class BodyPass {
         }
     }
 
-    private int exceptionNo(final int exc) {
+    private int exceptionNo(int exc) {
         if (exc >= excIndexOf.length) {
             excIndexOf = Arrays.copyOf(excIndexOf, Math.max(exc + 1, excIndexOf.length * 2));
         }
-        int n = excIndexOf[exc];
+        @Var int n = excIndexOf[exc];
         if (n == 0) {
             if (exceptionCount == excOrder.length) {
                 excOrder = Arrays.copyOf(excOrder, exceptionCount * 2);
@@ -239,9 +241,9 @@ final class BodyPass {
         return n;
     }
 
-    private void ensureMethod(final int methodId) {
+    private void ensureMethod(int methodId) {
         if (methodId >= calls.length) {
-            final int n = Math.max(methodId + 1, calls.length * 2);
+            int n = Math.max(methodId + 1, calls.length * 2);
             calls = Arrays.copyOf(calls, n);
             totalTicks = Arrays.copyOf(totalTicks, n);
             selfTicks = Arrays.copyOf(selfTicks, n);

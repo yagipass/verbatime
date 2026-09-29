@@ -1,5 +1,7 @@
 package io.github.yagipass.verbatime.jmc.index;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.format.EventCursor;
 import io.github.yagipass.verbatime.format.FrameStack;
 import io.github.yagipass.verbatime.format.Vbtm;
@@ -12,7 +14,7 @@ public final class ChunkWalker {
 
     public interface Visitor {
 
-        default boolean enter(final long startNs, final int methodId, final int sessionDepth, final int sp) {
+        default boolean enter(long startNs, int methodId, int sessionDepth, int sp) {
             return true;
         }
 
@@ -22,28 +24,28 @@ public final class ChunkWalker {
         }
     }
 
-    public static void walkRange(final TraceSnapshot data, final ThreadIndex m, final long loNs, final long hiNs,
-            final Visitor ev) {
-        final int c0 = firstChunkEndingAtOrAfter(m, loNs);
-        final int c1 = lastChunkStartingAtOrBefore(m, c0, hiNs);
+    public static void walkRange(TraceSnapshot data, ThreadIndex m, long loNs, long hiNs,
+            Visitor ev) {
+        int c0 = firstChunkEndingAtOrAfter(m, loNs);
+        int c1 = lastChunkStartingAtOrBefore(m, c0, hiNs);
         if (c0 <= c1) {
             walk(data, m, c0, c1, ev);
         }
     }
 
-    private static void walk(final TraceSnapshot data, final ThreadIndex m, final int c0, final int c1, final Visitor ev) {
-        final ChunkCursor chunks = new ChunkCursor(data.buffer, m, c0, c1);
+    private static void walk(TraceSnapshot data, ThreadIndex m, int c0, int c1, Visitor ev) {
+        ChunkCursor chunks = new ChunkCursor(data.buffer, m, c0, c1);
         try {
-            final EventCursor cur = new EventCursor();
-            final FrameStack stack = new FrameStack();
-            int baseDepth = 0;
+            EventCursor cur = new EventCursor();
+            FrameStack stack = new FrameStack();
+            @Var int baseDepth = 0;
             while (chunks.next()) {
                 baseDepth = Math.max(chunks.openDepthAtStart() - stack.depth(), 0);
                 if (chunks.payloadLen() > 0) {
                     chunks.open(cur);
-                    boolean more = true;
+                    @Var boolean more = true;
                     while (more) {
-                        final EventCursor.Event e = cur.next();
+                        EventCursor.Event e = cur.next();
                         if (e == EventCursor.Event.ENTER) {
                             stack.push(cur.ticks(), cur.methodId());
                             more = ev.enter(cur.ticks() * Vbtm.NANOS_PER_TICK, cur.methodId(),
@@ -74,11 +76,11 @@ public final class ChunkWalker {
         }
     }
 
-    static int firstChunkEndingAtOrAfter(final ThreadIndex m, final long loNs) {
-        int lo = 0;
-        int hi = m.chunks.count;
+    static int firstChunkEndingAtOrAfter(ThreadIndex m, long loNs) {
+        @Var int lo = 0;
+        @Var int hi = m.chunks.count;
         while (lo < hi) {
-            final int middle = (lo + hi) >>> 1;
+            int middle = (lo + hi) >>> 1;
             if (m.chunks.endTicks[middle] * Vbtm.NANOS_PER_TICK < loNs) {
                 lo = middle + 1;
             } else {
@@ -88,12 +90,12 @@ public final class ChunkWalker {
         return lo;
     }
 
-    private static int lastChunkStartingAtOrBefore(final ThreadIndex m, final int from, final long hiNs) {
-        int best = -1;
-        int lo = from;
-        int hi = m.chunks.count;
+    private static int lastChunkStartingAtOrBefore(ThreadIndex m, int from, long hiNs) {
+        @Var int best = -1;
+        @Var int lo = from;
+        @Var int hi = m.chunks.count;
         while (lo < hi) {
-            final int middle = (lo + hi) >>> 1;
+            int middle = (lo + hi) >>> 1;
             if (m.chunks.baseTicks[middle] * Vbtm.NANOS_PER_TICK <= hiNs) {
                 best = middle;
                 lo = middle + 1;
@@ -104,8 +106,8 @@ public final class ChunkWalker {
         return best;
     }
 
-    public static long saturatingAdd(final long a, final long b) {
-        final long s = a + b;
+    public static long saturatingAdd(long a, long b) {
+        long s = a + b;
         return s < a ? Long.MAX_VALUE : s;
     }
 }

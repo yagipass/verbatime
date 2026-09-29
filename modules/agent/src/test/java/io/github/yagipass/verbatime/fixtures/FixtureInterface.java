@@ -2,7 +2,7 @@ package io.github.yagipass.verbatime.fixtures;
 
 public interface FixtureInterface {
 
-    default String greet(final String who) {
+    default String greet(String who) {
         return "hi " + who + helper();
     }
 
@@ -10,7 +10,7 @@ public interface FixtureInterface {
         return "!";
     }
 
-    static int istatic(final int x) {
+    static int istatic(int x) {
         return x * 10;
     }
 

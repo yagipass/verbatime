@@ -54,7 +54,7 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
 
     private Recording lastRecording;
 
-    public VerbatimeControl(final Config config, final Transformer transformer, final Roots roots, final Recorder recorder) {
+    public VerbatimeControl(Config config, Transformer transformer, Roots roots, Recorder recorder) {
         this.config = config;
         this.transformer = transformer;
         this.roots = roots;
@@ -64,7 +64,7 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
     }
 
     @Override
-    public synchronized long startRecording(final String name) {
+    public synchronized long startRecording(String name) {
         if (recorder.isRecording()) {
             throw new IllegalStateException("already recording #" + recorder.current().id());
         }
@@ -72,8 +72,8 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
             throw new IllegalStateException("no roots are set. Apply roots before starting a recording");
         }
         discardLast();
-        final String cleaned = name == null ? "" : name.replaceAll("[\\r\\n]", " ").trim();
-        final boolean spooled = outPath == null;
+        String cleaned = name == null ? "" : name.replaceAll("[\\r\\n]", " ").trim();
+        boolean spooled = outPath == null;
         return recorder.start(id -> spooled ? spoolFileFor(id) : outPath, cleaned, spooled).id();
     }
 
@@ -86,7 +86,7 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
     }
 
     public synchronized void shutdown() {
-        final Recording stopped = recorder.stopIfRecording("closed at shutdown");
+        Recording stopped = recorder.stopIfRecording("closed at shutdown");
         if (stopped != null) {
             lastRecording = stopped;
         }
@@ -95,15 +95,15 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
         if (spoolDirIsTemp && spoolDir != null) {
             try {
                 Files.deleteIfExists(spoolDir);
-            } catch (final IOException e) {
+            } catch (IOException e) {
                 Log.warn("could not remove the spool directory " + spoolDir + ": " + e);
             }
         }
     }
 
     @Override
-    public String[] searchMethods(final String query, final int max) {
-        final String q = query == null ? "" : query.trim();
+    public String[] searchMethods(String query, int max) {
+        String q = query == null ? "" : query.trim();
         if (q.isEmpty() || max <= 0) {
             return new String[0];
         }
@@ -111,18 +111,18 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
     }
 
     @Override
-    public synchronized void replaceRoots(final String[] specs) {
+    public synchronized void replaceRoots(String[] specs) {
         if (recorder.isRecording()) {
             throw new IllegalStateException("cannot change roots while recording #" + recorder.current().id() + " is running");
         }
-        final List<RootSpec> parsed = new ArrayList<>();
+        List<RootSpec> parsed = new ArrayList<>();
         if (specs != null) {
-            for (final String s : specs) {
-                final String t = s == null ? "" : s.trim();
+            for (String s : specs) {
+                String t = s == null ? "" : s.trim();
                 if (t.isEmpty()) {
                     continue;
                 }
-                final RootSpec spec = RootSpec.parse(t);
+                RootSpec spec = RootSpec.parse(t);
                 config.requireInstrumentable(spec);
                 parsed.add(spec);
             }
@@ -130,7 +130,7 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
         roots.replaceRoots(parsed);
     }
 
-    private Path spoolFileFor(final long id) {
+    private Path spoolFileFor(long id) {
         return spoolDir().resolve("rec-" + id + "-" + FILE_STAMP.format(Instant.now()) + ".vbtm");
     }
 
@@ -144,7 +144,7 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
                     spoolDir = Files.createTempDirectory("vbtm-" + ProcessHandle.current().pid() + "-");
                     spoolDirIsTemp = true;
                 }
-            } catch (final IOException e) {
+            } catch (IOException e) {
                 throw new UncheckedIOException("cannot create the spool directory", e);
             }
         }
@@ -152,7 +152,7 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
     }
 
     private void discardLast() {
-        final Recording r = lastRecording;
+        Recording r = lastRecording;
         if (r == null) {
             return;
         }
@@ -163,7 +163,7 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
         }
     }
 
-    private synchronized void discardIfDelivered(final Recording r) {
+    private synchronized void discardIfDelivered(Recording r) {
         if (!r.spooled() || !r.closed() || !r.delivered() || streams.hasStreamsOf(r)) {
             return;
         }
@@ -175,12 +175,12 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
 
     @Override
     public synchronized String[] status() {
-        final List<String> l = new ArrayList<>();
-        final Recording currentRecording = recorder.current();
+        List<String> l = new ArrayList<>();
+        Recording currentRecording = recorder.current();
         l.add("v=" + PROTOCOL_VERSION);
         l.add("pid=" + ProcessHandle.current().pid());
         l.add("state=" + (currentRecording != null ? "recording" : "idle"));
-        final String gateState = StartupGate.stateName();
+        String gateState = StartupGate.stateName();
         if (gateState != null) {
             l.add("waitstart.state=" + gateState);
         }
@@ -190,10 +190,10 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
         if (spoolDir != null) {
             l.add("spoolDir=" + spoolDir);
         }
-        final List<RootSpec> specs = roots.specs();
+        List<RootSpec> specs = roots.specs();
         l.add("roots=" + specs.size());
         for (int i = 0; i < specs.size(); i++) {
-            final RootSpec s = specs.get(i);
+            RootSpec s = specs.get(i);
             l.add("root." + i + "=" + (roots.isResolved(s) ? "ok" : "pending") + " " + s);
         }
         l.add("include=" + config.includeText());
@@ -226,12 +226,12 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
     }
 
     @Override
-    public synchronized long openStream(final long recordingId, final long fromOffset) {
+    public synchronized long openStream(long recordingId, long fromOffset) {
         return streams.open(recordingById(recordingId), fromOffset);
     }
 
-    private Recording recordingById(final long recordingId) {
-        final Recording current = recorder.current();
+    private Recording recordingById(long recordingId) {
+        Recording current = recorder.current();
         if (current != null && current.id() == recordingId) {
             return current;
         }
@@ -242,20 +242,20 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
     }
 
     @Override
-    public byte[] readStream(final long streamId) {
+    public byte[] readStream(long streamId) {
         return streams.read(streamId);
     }
 
     @Override
-    public void closeStream(final long streamId) {
+    public void closeStream(long streamId) {
         streams.close(streamId);
     }
 
-    private static void deleteSpoolFile(final Recording r) {
+    private static void deleteSpoolFile(Recording r) {
         try {
             Files.deleteIfExists(r.writer().path());
             Log.info("recording #" + r.id() + (r.delivered() ? " delivered, spool file removed" : ": spool file removed"));
-        } catch (final IOException e) {
+        } catch (IOException e) {
             Log.warn("could not remove the spool file " + r.writer().path() + ": " + e);
         }
     }

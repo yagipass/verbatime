@@ -9,6 +9,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.format.CorruptTraceException;
 import io.github.yagipass.verbatime.format.EventCursor;
 import io.github.yagipass.verbatime.format.TraceReader;
@@ -35,7 +37,7 @@ public final class DecodedTrace {
 
         public final List<Event> events = new ArrayList<>();
 
-        DecodedSession(final int seq) {
+        DecodedSession(int seq) {
             this.seq = seq;
         }
     }
@@ -58,14 +60,14 @@ public final class DecodedTrace {
 
     public int utcOffsetSeconds;
 
-    public String exceptionName(final int exceptionId) {
+    public String exceptionName(int exceptionId) {
         if (exceptionId < 0) {
             return null;
         }
         if (exceptionId == 0) {
             return "<unknown>";
         }
-        final String n = exceptionNames.get(exceptionId);
+        String n = exceptionNames.get(exceptionId);
         return n == null ? "<unknown#" + exceptionId + ">" : n;
     }
 
@@ -81,50 +83,50 @@ public final class DecodedTrace {
         }
     }
 
-    public static DecodedTrace decode(final Path bin) throws IOException {
+    public static DecodedTrace decode(Path bin) throws IOException {
         return decode(Files.readAllBytes(bin));
     }
 
-    public static DecodedTrace decode(final byte[] data) {
-        final DecodedTrace d = new DecodedTrace();
-        final Map<Long, DecodedSession> open = new HashMap<>();
-        final EventCursor cur = new EventCursor();
-        final TraceReader.Outcome outcome;
+    public static DecodedTrace decode(byte[] data) {
+        DecodedTrace d = new DecodedTrace();
+        Map<Long, DecodedSession> open = new HashMap<>();
+        EventCursor cur = new EventCursor();
+        TraceReader.Outcome outcome;
         try {
             outcome = TraceReader.read(data, new TraceReader.Visitor() {
                 @Override
-                public void anchor(final long startEpochMs, final int utcOffsetSeconds) {
+                public void anchor(long startEpochMs, int utcOffsetSeconds) {
                     d.startEpochMs = startEpochMs;
                     d.utcOffsetSeconds = utcOffsetSeconds;
                 }
 
                 @Override
-                public void thread(final long tid, final String name) {
+                public void thread(long tid, String name) {
                     d.threadNames.put(tid, name);
                 }
 
                 @Override
-                public void clazz(final long baseId, final String className, final String[] sigs) {
+                public void clazz(long baseId, String className, String[] sigs) {
                     for (int k = 0; k < sigs.length; k++) {
                         d.methodNames.put((int) baseId + k, className + "." + sigs[k]);
                     }
                 }
 
                 @Override
-                public void exception(final long id, final String className) {
+                public void exception(long id, String className) {
                     d.exceptionNames.put((int) id, className);
                 }
 
                 @Override
-                public void gc(final long startTicks, final long durTicks, final int action, final String collector,
-                        final String cause) {
+                public void gc(long startTicks, long durTicks, int action, String collector,
+                        String cause) {
                     d.gcPauses.add(new GcPause(startTicks, durTicks, action, collector, cause));
                 }
 
                 @Override
-                public void chunk(final long tid, final long baseTicks, final byte[] bytes, final int off,
-                        final int len, final boolean sessionEnd, final boolean truncated) {
-                    DecodedSession s = open.get(tid);
+                public void chunk(long tid, long baseTicks, byte[] bytes, int off,
+                        int len, boolean sessionEnd, boolean truncated) {
+                    @Var DecodedSession s = open.get(tid);
                     if (s == null) {
                         s = new DecodedSession(d.sessions.size() + 1);
                         open.put(tid, s);
@@ -135,14 +137,14 @@ public final class DecodedTrace {
                     }
                     cur.reset(bytes, off, len, baseTicks);
                     while (true) {
-                        final EventCursor.Event e = cur.next();
+                        EventCursor.Event e = cur.next();
                         if (e == EventCursor.Event.ENTER) {
                             if (s.rootId < 0) {
                                 s.rootId = cur.methodId();
                             }
                             s.events.add(new Event(cur.ticks(), TAG_ENTER, cur.methodId(), -1));
                         } else if (e == EventCursor.Event.EXIT) {
-                            final int exc = cur.exceptionId();
+                            int exc = cur.exceptionId();
                             if (exc > 0 && !d.exceptionNames.containsKey(exc)) {
                                 d.danglingExceptionRefs++;
                             }
@@ -161,17 +163,17 @@ public final class DecodedTrace {
                     }
                 }
             });
-        } catch (final CorruptTraceException e) {
+        } catch (CorruptTraceException e) {
             throw new IllegalStateException(e.getMessage() + " at " + e.offset(), e);
         }
         d.cleanEnd = outcome == TraceReader.Outcome.CLEAN;
         return d;
     }
 
-    public static List<Node> toPreorder(final DecodedSession s) {
-        final List<Node> out = new ArrayList<>();
-        final List<Integer> stack = new ArrayList<>();
-        for (final Event e : s.events) {
+    public static List<Node> toPreorder(DecodedSession s) {
+        List<Node> out = new ArrayList<>();
+        List<Integer> stack = new ArrayList<>();
+        for (Event e : s.events) {
             if (e.tag() == TAG_ENTER) {
                 out.add(new Node(e.methodId(), stack.size(), -1, true));
                 stack.add(out.size() - 1);
@@ -179,8 +181,8 @@ public final class DecodedTrace {
                 if (stack.isEmpty()) {
                     throw new IllegalStateException("exit with no open frame in session #" + s.seq);
                 }
-                final int i = stack.removeLast();
-                final Node n = out.get(i);
+                int i = stack.removeLast();
+                Node n = out.get(i);
                 out.set(i, new Node(n.methodId(), n.depth(), e.exceptionId(), false));
             }
         }

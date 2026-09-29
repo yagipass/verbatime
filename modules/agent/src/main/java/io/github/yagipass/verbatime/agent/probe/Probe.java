@@ -5,6 +5,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.errorprone.annotations.Var;
+
 public final class Probe {
 
     private static final ThreadLocal<Session> CURRENT = new ThreadLocal<>();
@@ -28,7 +30,7 @@ public final class Probe {
     private Probe() {
     }
 
-    static void attach(final TraceFileWriter w) {
+    static void attach(TraceFileWriter w) {
         sink = w;
     }
 
@@ -41,27 +43,27 @@ public final class Probe {
         enabled = true;
     }
 
-    public static void addRootId(final int id) {
+    public static void addRootId(int id) {
         synchronized (ROOTS_LOCK) {
-            long[] bits = rootBits;
-            final int word = id >>> 6;
+            @Var long[] bits = rootBits;
+            int word = id >>> 6;
             bits = word < bits.length ? bits.clone() : Arrays.copyOf(bits, word + 1);
             bits[word] |= 1L << id;
             rootBits = bits;
         }
     }
 
-    public static void replaceRootBits(final long[] bits) {
+    public static void replaceRootBits(long[] bits) {
         synchronized (ROOTS_LOCK) {
             rootBits = bits;
         }
     }
 
-    public static void enter(final int id) {
+    public static void enter(int id) {
         if (!enabled) {
             return;
         }
-        Session session = null;
+        @Var Session session = null;
         try {
             session = CURRENT.get();
             if (session != null) {
@@ -71,18 +73,18 @@ public final class Probe {
                 }
                 dropClosed(session);
             }
-            final long[] bits = rootBits;
-            final int word = id >>> 6;
+            long[] bits = rootBits;
+            int word = id >>> 6;
             if (word >= bits.length || (bits[word] & (1L << id)) == 0) {
                 return;
             }
-            final TraceFileWriter w = sink;
+            TraceFileWriter w = sink;
             if (w == null || w.isStopped()) {
                 return;
             }
             try {
                 session = new Session(w, id, STARTED.incrementAndGet());
-            } catch (final OutOfMemoryError e) {
+            } catch (OutOfMemoryError e) {
                 Log.warn("could not allocate the event chunk for root " + MethodRegistry.displayName(id) + " on thread " + Thread.currentThread().getName() + ", so this execution is not traced");
                 return;
             }
@@ -94,7 +96,7 @@ public final class Probe {
                 return;
             }
             session.enter(id);
-        } catch (final Throwable e) {
+        } catch (Throwable e) {
             if (session != null && !session.closed) {
                 session.failure = e;
                 session.closed = true;
@@ -102,11 +104,11 @@ public final class Probe {
         }
     }
 
-    public static void exit(final int id) {
+    public static void exit(int id) {
         if (!enabled) {
             return;
         }
-        Session session = null;
+        @Var Session session = null;
         try {
             session = CURRENT.get();
             if (session == null) {
@@ -122,7 +124,7 @@ public final class Probe {
             if (session.depth < 0) {
                 finish(session);
             }
-        } catch (final Throwable e) {
+        } catch (Throwable e) {
             if (session != null && !session.closed) {
                 session.failure = e;
                 session.closed = true;
@@ -130,11 +132,11 @@ public final class Probe {
         }
     }
 
-    public static void exitThrow(final Throwable t, final int id) {
+    public static void exitThrow(Throwable t, int id) {
         if (!enabled) {
             return;
         }
-        Session session = null;
+        @Var Session session = null;
         try {
             session = CURRENT.get();
             if (session == null) {
@@ -146,17 +148,17 @@ public final class Probe {
                 }
                 return;
             }
-            int exc;
+            @Var int exc;
             try {
                 exc = ExceptionRegistry.id(t.getClass());
-            } catch (final Throwable e) {
+            } catch (Throwable e) {
                 exc = ExceptionRegistry.UNKNOWN;
             }
             session.exit(id, Session.EXIT | Session.THROW, exc);
             if (session.depth < 0) {
                 finish(session);
             }
-        } catch (final Throwable e) {
+        } catch (Throwable e) {
             if (session != null && !session.closed) {
                 session.failure = e;
                 session.closed = true;
@@ -164,14 +166,14 @@ public final class Probe {
         }
     }
 
-    private static void finish(final Session session) {
+    private static void finish(Session session) {
         session.finish();
         session.closed = true;
         unbind(session);
     }
 
-    private static void dropClosed(final Session session) {
-        final Throwable failure = session.failure;
+    private static void dropClosed(Session session) {
+        Throwable failure = session.failure;
         if (failure == null) {
             unbind(session);
             return;
@@ -185,7 +187,7 @@ public final class Probe {
         }
     }
 
-    private static void unbind(final Session session) {
+    private static void unbind(Session session) {
         CURRENT.remove();
         if (LIVE_SESSIONS.remove(session)) {
             LIVE_COUNT.decrementAndGet();
@@ -195,8 +197,8 @@ public final class Probe {
     @SuppressWarnings("ModifyCollectionInEnhancedForLoop")
     static int disableAndFlush() {
         enabled = false;
-        int flushed = 0;
-        for (final Session session : LIVE_SESSIONS) {
+        @Var int flushed = 0;
+        for (Session session : LIVE_SESSIONS) {
             if (LIVE_SESSIONS.remove(session)) {
                 LIVE_COUNT.decrementAndGet();
                 session.flushTruncated();

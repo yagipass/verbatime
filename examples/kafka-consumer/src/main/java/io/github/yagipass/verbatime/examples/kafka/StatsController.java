@@ -10,7 +10,7 @@ public class StatsController {
 
     private final OrderConsumer consumer;
 
-    StatsController(final OrderConsumer consumer) {
+    StatsController(OrderConsumer consumer) {
         this.consumer = consumer;
     }
 

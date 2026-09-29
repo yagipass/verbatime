@@ -9,6 +9,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Locale;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.format.Vbtm;
 import io.github.yagipass.verbatime.jmc.index.TraceIndexer;
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
@@ -44,8 +46,8 @@ public final class SessionExporter {
 
     private final int bufferBytes;
 
-    private SessionExporter(final TraceSnapshot data, final Session session, final long floorNs, final Path dest,
-            final TraceIndexer.ProgressListener progress, final int outlineNodes, final int bufferBytes) {
+    private SessionExporter(TraceSnapshot data, Session session, long floorNs, Path dest,
+            TraceIndexer.ProgressListener progress, int outlineNodes, int bufferBytes) {
         this.data = data;
         this.session = session;
         this.floorNs = Math.max(floorNs, 0);
@@ -56,61 +58,61 @@ public final class SessionExporter {
         this.bufferBytes = bufferBytes;
     }
 
-    public static Result export(final TraceSnapshot data, final Session session, final long floorNs, final Path dest,
-            final TraceIndexer.ProgressListener progress) throws IOException {
+    public static Result export(TraceSnapshot data, Session session, long floorNs, Path dest,
+            TraceIndexer.ProgressListener progress) throws IOException {
         return export(data, session, floorNs, dest, progress, OUTLINE_LIMIT, WRITE_BUFFER_BYTES);
     }
 
-    static Result export(final TraceSnapshot data, final Session session, final long floorNs, final Path dest,
-            final TraceIndexer.ProgressListener progress, final int outlineNodes, final int bufferBytes) throws IOException {
+    static Result export(TraceSnapshot data, Session session, long floorNs, Path dest,
+            TraceIndexer.ProgressListener progress, int outlineNodes, int bufferBytes) throws IOException {
         return new SessionExporter(data, session, floorNs, dest, progress, outlineNodes, bufferBytes).run();
     }
 
-    public static String floorLabel(final long floorNs) {
+    public static String floorLabel(long floorNs) {
         if (floorNs <= 0) {
             return "none";
         }
         return floorNs % 1000 == 0 ? floorNs / 1000 + " µs" : floorNs + " ns";
     }
 
-    static String floorLabelCompact(final long floorNs) {
+    static String floorLabelCompact(long floorNs) {
         return floorNs % 1000 == 0 ? floorNs / 1000 + "µs" : floorNs + "ns";
     }
 
-    static String msText(final long ticks) {
-        final long t = Math.max(ticks, 0);
+    static String msText(long ticks) {
+        long t = Math.max(ticks, 0);
         return t / Vbtm.TICKS_PER_MS + "." + String.format(Locale.ROOT, "%04d", t % Vbtm.TICKS_PER_MS);
     }
 
     private Result run() throws IOException {
-        final ExportNames names = new ExportNames(data);
+        ExportNames names = new ExportNames(data);
         if (session.rootMethodId >= 0) {
             names.displayName(session.rootMethodId);
         }
-        final long sessionStartTicks = session.startNs / Vbtm.NANOS_PER_TICK;
-        final long sessionDurTicks = session.durNs() / Vbtm.NANOS_PER_TICK;
-        final int width = digits(sessionDurTicks / Vbtm.TICKS_PER_MS) + 5;
-        final int excWidth = digits(Math.max(data.totalExceptions, 1));
-        final long floorTicks = (floorNs + Vbtm.NANOS_PER_TICK - 1) / Vbtm.NANOS_PER_TICK;
-        final byte[] floorLabelBytes = floorLabelCompact(floorNs).getBytes(StandardCharsets.UTF_8);
-        final OutlineHeap top = new OutlineHeap(outlineNodes);
+        long sessionStartTicks = session.startNs / Vbtm.NANOS_PER_TICK;
+        long sessionDurTicks = session.durNs() / Vbtm.NANOS_PER_TICK;
+        int width = digits(sessionDurTicks / Vbtm.TICKS_PER_MS) + 5;
+        int excWidth = digits(Math.max(data.totalExceptions, 1));
+        long floorTicks = (floorNs + Vbtm.NANOS_PER_TICK - 1) / Vbtm.NANOS_PER_TICK;
+        byte[] floorLabelBytes = floorLabelCompact(floorNs).getBytes(StandardCharsets.UTF_8);
+        OutlineHeap top = new OutlineHeap(outlineNodes);
 
-        PatchableFileWriter writer = null;
-        boolean destOpened = false;
-        boolean done = false;
+        @Var PatchableFileWriter writer = null;
+        @Var boolean destOpened = false;
+        @Var boolean done = false;
         try {
             writer = new PatchableFileWriter(part, bufferBytes);
-            final BodyLines body = new BodyLines(writer, names, sessionStartTicks, width, excWidth, floorLabelBytes);
-            final BodyPass pass = new BodyPass(data, session, floorTicks, progress, body, top);
+            BodyLines body = new BodyLines(writer, names, sessionStartTicks, width, excWidth, floorLabelBytes);
+            BodyPass pass = new BodyPass(data, session, floorTicks, progress, body, top);
             pass.run();
-            final long bodyLines = writer.lines();
+            long bodyLines = writer.lines();
             writer.close();
             writer = null;
             destOpened = true;
-            final ExportHead report = new ExportHead(data, session, floorNs, names, pass, top, width,
+            ExportHead report = new ExportHead(data, session, floorNs, names, pass, top, width,
                     sessionStartTicks, sessionDurTicks);
-            final byte[] head = report.build(bodyLines);
-            final long bytes = concatenate(head);
+            byte[] head = report.build(bodyLines);
+            long bytes = concatenate(head);
             done = true;
             return new Result(dest, bytes, report.bodyEnd(), bodyLines, pass.totalCalls(), pass.listedCalls(),
                     pass.totalCalls() - pass.listedCalls(), pass.maxDepth(), top.thresholdTicks() * Vbtm.NANOS_PER_TICK);
@@ -125,17 +127,17 @@ public final class SessionExporter {
         }
     }
 
-    private long concatenate(final byte[] head) throws IOException {
+    private long concatenate(byte[] head) throws IOException {
         try (FileChannel out = FileChannel.open(dest, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
                 StandardOpenOption.WRITE); FileChannel in = FileChannel.open(part, StandardOpenOption.READ)) {
-            final ByteBuffer hb = ByteBuffer.wrap(head);
+            ByteBuffer hb = ByteBuffer.wrap(head);
             while (hb.hasRemaining()) {
                 out.write(hb);
             }
-            final long size = in.size();
-            long pos = 0;
+            long size = in.size();
+            @Var long pos = 0;
             while (pos < size) {
-                final long n = in.transferTo(pos, size - pos, out);
+                long n = in.transferTo(pos, size - pos, out);
                 if (n <= 0) {
                     copyRest(in, out, pos, size);
                     break;
@@ -146,12 +148,12 @@ public final class SessionExporter {
         }
     }
 
-    private static void copyRest(final FileChannel in, final FileChannel out, long pos, final long size)
+    private static void copyRest(FileChannel in, FileChannel out, @Var long pos, long size)
             throws IOException {
-        final ByteBuffer bb = ByteBuffer.allocate(1 << 20);
+        ByteBuffer bb = ByteBuffer.allocate(1 << 20);
         while (pos < size) {
             bb.clear();
-            final int n = in.read(bb, pos);
+            int n = in.read(bb, pos);
             if (n <= 0) {
                 throw new IOException("short read at " + pos + " of " + size);
             }
@@ -163,23 +165,23 @@ public final class SessionExporter {
         }
     }
 
-    private static int digits(final long v) {
+    private static int digits(long v) {
         return Long.toString(Math.max(v, 0)).length();
     }
 
     @SuppressWarnings("EmptyCatch")
-    private static void deleteQuietly(final Path p) {
+    private static void deleteQuietly(Path p) {
         try {
             Files.deleteIfExists(p);
-        } catch (final IOException e) {
+        } catch (IOException e) {
         }
     }
 
     @SuppressWarnings("EmptyCatch")
-    private static void closeQuietly(final PatchableFileWriter w) {
+    private static void closeQuietly(PatchableFileWriter w) {
         try {
             w.close();
-        } catch (final IOException e) {
+        } catch (IOException e) {
         }
     }
 }

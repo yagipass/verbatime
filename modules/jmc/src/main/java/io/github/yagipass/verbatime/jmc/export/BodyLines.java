@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import com.google.errorprone.annotations.Var;
+
 final class BodyLines {
 
     private static final byte[] SELF = " self ".getBytes(StandardCharsets.UTF_8);
@@ -50,8 +52,8 @@ final class BodyLines {
 
     private final long[] sortScratch = new long[64];
 
-    BodyLines(final PatchableFileWriter writer, final ExportNames names, final long sessionStartTicks, final int width,
-            final int excWidth, final byte[] floorLabelBytes) {
+    BodyLines(PatchableFileWriter writer, ExportNames names, long sessionStartTicks, int width,
+            int excWidth, byte[] floorLabelBytes) {
         this.writer = writer;
         this.names = names;
         this.sessionStartTicks = sessionStartTicks;
@@ -71,7 +73,7 @@ final class BodyLines {
         return writer.lines() + 1;
     }
 
-    void writePlaceholder(final OpenCalls st, final int k) throws IOException {
+    void writePlaceholder(OpenCalls st, int k) throws IOException {
         st.lineNo[k] = writer.lines() + 1;
         writer.writeTicksAsMs(st.startTicks[k] - sessionStartTicks);
         writer.put(' ');
@@ -88,8 +90,8 @@ final class BodyLines {
         writer.newline();
     }
 
-    void patchPlaceholder(final OpenCalls st, final int k, final long dur, final long self, final boolean thrown,
-            final int excNo, final boolean unclosed) throws IOException {
+    void patchPlaceholder(OpenCalls st, int k, long dur, long self, boolean thrown,
+            int excNo, boolean unclosed) throws IOException {
         writer.patchTicksAsMs(st.durPatchOffset[k], dur, width);
         writer.patchTicksAsMs(st.selfPatchOffset[k], self, width);
         if (thrown) {
@@ -99,8 +101,8 @@ final class BodyLines {
         }
     }
 
-    void writeLine(final OpenCalls st, final int k, final long dur, final long self, final boolean thrown,
-            final int excNo, final boolean unclosed) throws IOException {
+    void writeLine(OpenCalls st, int k, long dur, long self, boolean thrown,
+            int excNo, boolean unclosed) throws IOException {
         writer.writeTicksAsMs(st.startTicks[k] - sessionStartTicks);
         writer.put(' ');
         writer.writeTicksAsMs(dur);
@@ -125,7 +127,7 @@ final class BodyLines {
         writer.newline();
     }
 
-    void writeBelowFloorLine(final OpenCalls st, final int k) throws IOException {
+    void writeBelowFloorLine(OpenCalls st, int k) throws IOException {
         writer.writeTicksAsMs(st.startTicks[k] - sessionStartTicks);
         writer.put(' ');
         writer.writeTicksAsMs(st.belowFloorTicks[k]);
@@ -145,15 +147,15 @@ final class BodyLines {
             writer.bytes(THROWN_CLOSE);
         }
         writer.bytes(COLON);
-        final BelowFloorCounts t = st.belowFloorAt(k);
-        final int n = t.size();
-        final long[] keys = sortScratch.length >= n ? sortScratch : new long[n];
+        BelowFloorCounts t = st.belowFloorAt(k);
+        int n = t.size();
+        long[] keys = sortScratch.length >= n ? sortScratch : new long[n];
         for (int i = 0; i < n; i++) {
             keys[i] = ((long) (Integer.MAX_VALUE - t.count(i)) << 32) | i;
         }
         Arrays.sort(keys, 0, n);
         for (int i = 0; i < n; i++) {
-            final int e = (int) keys[i];
+            int e = (int) keys[i];
             if (i > 0) {
                 writer.bytes(COMMA);
             }
@@ -166,12 +168,12 @@ final class BodyLines {
         writer.newline();
     }
 
-    private void patchFlag(final long off, final int excNo) throws IOException {
+    private void patchFlag(long off, int excNo) throws IOException {
         Arrays.fill(flagScratch, (byte) ' ');
         flagScratch[1] = '!';
         if (excNo > 0 && digits(excNo) <= excWidth) {
             flagScratch[2] = 'e';
-            int v = excNo;
+            @Var int v = excNo;
             for (int i = FLAG_EXC_PREFIX + digits(excNo) - 1; v > 0; i--) {
                 flagScratch[i] = (byte) ('0' + v % 10);
                 v /= 10;
@@ -180,7 +182,7 @@ final class BodyLines {
         writer.patch(off, flagScratch);
     }
 
-    private static int digits(final long v) {
+    private static int digits(long v) {
         return Long.toString(Math.max(v, 0)).length();
     }
 }

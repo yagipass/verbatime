@@ -14,7 +14,7 @@ abstract class EditorBoundView extends ViewPart implements RecordingEditor.Liste
     private RecordingEditor editor;
 
     @Override
-    public final void createPartControl(final Composite parent) {
+    public final void createPartControl(Composite parent) {
         createContent(parent);
         tracker = new ActiveEditorTracker(getSite().getPage(), this::bind);
         tracker.install();
@@ -38,7 +38,7 @@ abstract class EditorBoundView extends ViewPart implements RecordingEditor.Liste
         return editor != null ? editor.selection() : null;
     }
 
-    final String emptyReason(final TraceSnapshot d, final SelectedCall f) {
+    final String emptyReason(TraceSnapshot d, SelectedCall f) {
         if (editor == null) {
             return "No Verbatime recording editor is active";
         }
@@ -51,7 +51,7 @@ abstract class EditorBoundView extends ViewPart implements RecordingEditor.Liste
         return null;
     }
 
-    private void bind(final RecordingEditor e) {
+    private void bind(RecordingEditor e) {
         if (editor != null) {
             editor.removeListener(this);
         }

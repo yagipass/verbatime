@@ -14,13 +14,13 @@ final class CliException extends RuntimeException {
 
     private final String hint;
 
-    CliException(final int exitCode, final String message, final String hint) {
+    CliException(int exitCode, String message, String hint) {
         super(message);
         this.exitCode = exitCode;
         this.hint = hint;
     }
 
-    static CliException usage(final String message, final String hint) {
+    static CliException usage(String message, String hint) {
         return new CliException(USAGE, message, hint);
     }
 

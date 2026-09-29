@@ -13,7 +13,7 @@ public final class HealthServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     @Override
-    protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         OrderServlet.text(resp, HttpServletResponse.SC_OK, "ok");
     }
 }

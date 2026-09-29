@@ -19,14 +19,14 @@ public final class ExceptionRegistry {
 
     private static final ClassValue<Integer> IDS = new ClassValue<>() {
         @Override
-        protected Integer computeValue(final Class<?> type) {
-            final String name = type.getName();
+        protected Integer computeValue(Class<?> type) {
+            String name = type.getName();
             synchronized (LOCK) {
-                final Integer existing = byName.get(name);
+                Integer existing = byName.get(name);
                 if (existing != null) {
                     return existing;
                 }
-                final int id = names.size() + 1;
+                int id = names.size() + 1;
                 byName.put(name, id);
                 names.add(name);
                 if (sink != null) {
@@ -40,11 +40,11 @@ public final class ExceptionRegistry {
     private ExceptionRegistry() {
     }
 
-    public static int id(final Class<?> type) {
+    public static int id(Class<?> type) {
         return IDS.get(type);
     }
 
-    static void attach(final TraceFileWriter w) {
+    static void attach(TraceFileWriter w) {
         synchronized (LOCK) {
             sink = w;
             for (int i = 0; i < names.size(); i++) {
@@ -59,7 +59,7 @@ public final class ExceptionRegistry {
         }
     }
 
-    public static String name(final int id) {
+    public static String name(int id) {
         synchronized (LOCK) {
             if (id < 1 || id > names.size()) {
                 return "<unknown#" + id + ">";

@@ -39,7 +39,7 @@ final class SessionExportTextsTest {
     }
 
     private static TraceSnapshot trace() throws IOException {
-        final TraceBuilder w = TestTraces.writer();
+        TraceBuilder w = TestTraces.writer();
         w.thread(7, "a");
         w.thread(8, "b");
         w.clazz(1, "pkg.R", "r()V", "k()V");
@@ -50,26 +50,26 @@ final class SessionExportTextsTest {
         return TestTraces.index(w);
     }
 
-    private static SelectedCall frame(final long tid, final long startNs) {
+    private static SelectedCall frame(long tid, long startNs) {
         return new SelectedCall(tid, startNs, 1, 1, 0, 1, -1, false, List.of(), null, null);
     }
 
     @Test
     void preselectionFollowsTheSelectedFrameThenTheLongestSession() throws IOException {
-        final TraceSnapshot d = trace();
+        TraceSnapshot d = trace();
         assertEquals(1, SessionExportTexts.defaultSession(d, frame(7, 11_000)).seq, "the clicked frame's session, even if short");
         assertEquals(1, SessionExportTexts.defaultSession(d, frame(7, 30_000)).seq, "the session end is inclusive");
         assertEquals(3, SessionExportTexts.defaultSession(d, frame(8, 20_000)).seq);
         assertEquals(2, SessionExportTexts.defaultSession(d, null).seq, "no selection: the longest session, like the chart's first focus");
         assertEquals(2, SessionExportTexts.defaultSession(d, frame(9, 11_000)).seq, "a frame the index cannot place falls back too");
-        final TraceBuilder w = TestTraces.writer();
+        TraceBuilder w = TestTraces.writer();
         w.end();
         assertNull(SessionExportTexts.defaultSession(TestTraces.index(w), null), "no sessions at all");
     }
 
     @Test
     void tiesGoToTheLowestSeqSoTheChoiceIsStable() throws IOException {
-        final TraceBuilder w = TestTraces.writer();
+        TraceBuilder w = TestTraces.writer();
         w.clazz(1, "pkg.R", "r()V");
         w.chunk(7, 100, new TraceBuilder.Payload(100).enter(100, 1).exit(200).bytes(), true);
         w.chunk(7, 300, new TraceBuilder.Payload(300).enter(300, 1).exit(400).bytes(), true);
@@ -79,13 +79,13 @@ final class SessionExportTextsTest {
 
     @Test
     void flagsExplainWhyARowIsGreyOrPartial() throws IOException {
-        final TraceBuilder w = TestTraces.writer();
+        TraceBuilder w = TestTraces.writer();
         w.clazz(1, "pkg.R", "r()V");
         w.chunk(7, 100, new TraceBuilder.Payload(100).enter(100, 1).exit(200).bytes(), true);
         w.chunk(8, 100, new TraceBuilder.Payload(100).enter(100, 1).bytes(), false);
         w.chunk(9, 150, new byte[0], true);
         w.end();
-        final TraceSnapshot d = TestTraces.index(w);
+        TraceSnapshot d = TestTraces.index(w);
         assertEquals("", SessionExportTexts.flags(d.sessions.get(0)));
         assertTrue(SessionExportTexts.isExportable(d.sessions.get(0)));
         assertEquals("unclosed", SessionExportTexts.flags(d.sessions.get(1)), "flushed while still running");
@@ -96,8 +96,8 @@ final class SessionExportTextsTest {
 
     @Test
     void summaryStatesWhatWasWrittenAndWhere() throws IOException {
-        final TraceSnapshot.Session s = trace().sessions.get(0);
-        final SessionExporter.Result r = new SessionExporter.Result(Path.of("/tmp/x.txt"), 12_031_175, 128_836, 124_739,
+        TraceSnapshot.Session s = trace().sessions.get(0);
+        SessionExporter.Result r = new SessionExporter.Result(Path.of("/tmp/x.txt"), 12_031_175, 128_836, 124_739,
                 5_298_537, 75_430, 5_223_107, 128, 14_963_000);
         assertEquals("Exported session #1 with a floor of 10 µs to\n/tmp/x.txt\n\n124,739 body lines, 11.5 MB\n"
                 + "75,430 calls listed, 5,223,107 calls below the floor kept as counts",

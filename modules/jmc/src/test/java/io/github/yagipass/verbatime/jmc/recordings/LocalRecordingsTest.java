@@ -25,12 +25,12 @@ final class LocalRecordingsTest {
     @Test
     void historyRowsSayWhichConnectionARecordingWasPulledFrom() throws IOException {
 
-        final Path loose = touch(base.resolve("loose.vbtm"), 1_000, 3);
-        final Path pulled = touch(base.resolve("localhost_9010").resolve("rec-1-2.vbtm"), 2_000, 5);
+        Path loose = touch(base.resolve("loose.vbtm"), 1_000, 3);
+        Path pulled = touch(base.resolve("localhost_9010").resolve("rec-1-2.vbtm"), 2_000, 5);
         touch(base.resolve("localhost_9010").resolve("deeper").resolve("nested.vbtm"), 3_000, 1);
         touch(base.resolve("notes.txt"), 4_000, 1);
 
-        final List<Entry> l = LocalRecordings.scan(base);
+        List<Entry> l = LocalRecordings.scan(base);
         assertEquals(List.of(pulled, loose), l.stream().map(Entry::file).toList(),
                 "newest first, and only .vbtm at depth 0 and 1 are history");
         assertEquals("localhost_9010", l.get(0).connectionDir());
@@ -54,10 +54,10 @@ final class LocalRecordingsTest {
 
     @Test
     void deletingARowRemovesThatRecordingFromTheHistoryAndNothingElse() throws IOException {
-        final Path keep = touch(base.resolve("localhost_9010").resolve("rec-1-1.vbtm"), 1_000, 1);
-        final Path gone = touch(base.resolve("localhost_9010").resolve("rec-1-2.vbtm"), 2_000, 1);
+        Path keep = touch(base.resolve("localhost_9010").resolve("rec-1-1.vbtm"), 1_000, 1);
+        Path gone = touch(base.resolve("localhost_9010").resolve("rec-1-2.vbtm"), 2_000, 1);
 
-        final List<Entry> before = LocalRecordings.scan(base);
+        List<Entry> before = LocalRecordings.scan(base);
         LocalRecordings.delete(base, before.get(0));
 
         assertFalse(Files.exists(gone));
@@ -67,11 +67,11 @@ final class LocalRecordingsTest {
 
     @Test
     void deleteRefusesAnythingTheHistoryWouldNotList() throws IOException {
-        final Path outside = touch(base.getParent().resolve("elsewhere.vbtm"), 1_000, 1);
-        final Path notes = touch(base.resolve("notes.txt"), 1_000, 1);
-        final Path nested = touch(base.resolve("h").resolve("deeper").resolve("nested.vbtm"), 1_000, 1);
+        Path outside = touch(base.getParent().resolve("elsewhere.vbtm"), 1_000, 1);
+        Path notes = touch(base.resolve("notes.txt"), 1_000, 1);
+        Path nested = touch(base.resolve("h").resolve("deeper").resolve("nested.vbtm"), 1_000, 1);
 
-        for (final Path p : List.of(outside, notes, nested)) {
+        for (Path p : List.of(outside, notes, nested)) {
             assertThrows(IOException.class, () -> LocalRecordings.delete(base, new Entry(p, "", 1, 1_000)), p.toString());
             assertTrue(Files.exists(p), p + " must survive");
         }
@@ -89,7 +89,7 @@ final class LocalRecordingsTest {
 
     @Test
     void resumeOffsetCreatesTheDirectoryAndReportsTheExistingSize() throws IOException {
-        final Path fresh = base.resolve("localhost_9010").resolve("rec-1-1.vbtm");
+        Path fresh = base.resolve("localhost_9010").resolve("rec-1-1.vbtm");
         assertEquals(0, LocalRecordings.prepareResume(fresh), "nothing on disk yet: the transfer starts at byte 0");
         assertTrue(Files.isDirectory(fresh.getParent()), "the connection directory is ready for the first chunk");
 
@@ -99,14 +99,14 @@ final class LocalRecordingsTest {
 
     @Test
     void aRecordingStillBeingPulledIsNeverDeleted() throws IOException {
-        final Path pulling = touch(base.resolve("localhost_9010").resolve("rec-1-1.vbtm"), 1_000, 1);
-        final Path done = touch(base.resolve("localhost_9010").resolve("rec-1-2.vbtm"), 2_000, 1);
-        final List<Entry> both = LocalRecordings.scan(base);
+        Path pulling = touch(base.resolve("localhost_9010").resolve("rec-1-1.vbtm"), 1_000, 1);
+        Path done = touch(base.resolve("localhost_9010").resolve("rec-1-2.vbtm"), 2_000, 1);
+        List<Entry> both = LocalRecordings.scan(base);
 
-        final List<Entry> targets = LocalRecordings.deletable(both, p -> p.equals(pulling));
+        List<Entry> targets = LocalRecordings.deletable(both, p -> p.equals(pulling));
         assertEquals(List.of(done), targets.stream().map(Entry::file).toList());
 
-        final LocalRecordings.DeleteResult r = LocalRecordings.deleteAll(base, targets);
+        LocalRecordings.DeleteResult r = LocalRecordings.deleteAll(base, targets);
         assertEquals(0, r.failed());
         assertNull(r.firstError());
         assertTrue(Files.exists(pulling), "the file the agent is still writing to survives");
@@ -115,16 +115,16 @@ final class LocalRecordingsTest {
 
     @Test
     void deleteAllKeepsGoingAfterAFailureAndReportsTheFirstOne() throws IOException {
-        final Path outside = touch(base.getParent().resolve("elsewhere.vbtm"), 1_000, 1);
-        final Path inside = touch(base.resolve("h").resolve("ok.vbtm"), 1_000, 1);
-        final LocalRecordings.DeleteResult r = LocalRecordings.deleteAll(base,
+        Path outside = touch(base.getParent().resolve("elsewhere.vbtm"), 1_000, 1);
+        Path inside = touch(base.resolve("h").resolve("ok.vbtm"), 1_000, 1);
+        LocalRecordings.DeleteResult r = LocalRecordings.deleteAll(base,
                 List.of(new Entry(outside, "", 1, 1_000), new Entry(inside, "h", 1, 1_000)));
         assertEquals(1, r.failed());
         assertTrue(r.firstError().startsWith("elsewhere.vbtm: "), r.firstError());
         assertFalse(Files.exists(inside), "one refusal does not stop the others");
     }
 
-    private static Path touch(final Path p, final long mtimeMs, final int bytes) throws IOException {
+    private static Path touch(Path p, long mtimeMs, int bytes) throws IOException {
         Files.createDirectories(p.getParent());
         Files.write(p, new byte[bytes]);
         Files.setLastModifiedTime(p, FileTime.fromMillis(mtimeMs));

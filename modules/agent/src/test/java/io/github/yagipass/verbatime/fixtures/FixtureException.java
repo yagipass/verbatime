@@ -4,7 +4,7 @@ public final class FixtureException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 
-    public FixtureException(final String msg) {
+    public FixtureException(String msg) {
         super(msg);
     }
 }

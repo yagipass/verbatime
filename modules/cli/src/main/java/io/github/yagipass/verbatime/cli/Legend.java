@@ -9,23 +9,23 @@ final class Legend {
 
     private final Set<Integer> ids = new LinkedHashSet<>();
 
-    Legend(final Names names) {
+    Legend(Names names) {
         this.names = names;
     }
 
-    void add(final int methodId) {
+    void add(int methodId) {
         if (names.collides(methodId)) {
             ids.add(methodId);
         }
     }
 
-    void print(final Out out) {
+    void print(Out out) {
         if (ids.isEmpty()) {
             return;
         }
         out.text("");
         out.text("names printed alike:");
-        for (final int id : ids) {
+        for (int id : ids) {
             out.text("  " + names.displayName(id) + " = " + names.fullName(id));
             out.json(new Json("name").put("method", names.displayName(id)).put("full", names.fullName(id)));
         }

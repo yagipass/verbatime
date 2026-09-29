@@ -19,15 +19,15 @@ public final class RecordingEditorInput implements IPathEditorInput {
 
     private final Path file;
 
-    public RecordingEditorInput(final Path file) {
+    public RecordingEditorInput(Path file) {
         this.file = file.toAbsolutePath();
     }
 
-    public static RecordingEditor openOrReport(final IWorkbenchPage page, final Path file, final Consumer<String> report) {
+    public static RecordingEditor openOrReport(IWorkbenchPage page, Path file, Consumer<String> report) {
         try {
-            final IEditorPart part = page.openEditor(new RecordingEditorInput(file), EDITOR_ID);
-            return part instanceof final RecordingEditor e ? e : null;
-        } catch (final PartInitException e) {
+            IEditorPart part = page.openEditor(new RecordingEditorInput(file), EDITOR_ID);
+            return part instanceof RecordingEditor e ? e : null;
+        } catch (PartInitException e) {
             report.accept("Cannot open " + file.getFileName() + ": " + e.getMessage());
             return null;
         }
@@ -64,13 +64,13 @@ public final class RecordingEditorInput implements IPathEditorInput {
     }
 
     @Override
-    public <T> T getAdapter(final Class<T> adapter) {
+    public <T> T getAdapter(Class<T> adapter) {
         return adapter.isInstance(this) ? adapter.cast(this) : null;
     }
 
     @Override
-    public boolean equals(final Object o) {
-        return o instanceof final RecordingEditorInput other && file.equals(other.file);
+    public boolean equals(Object o) {
+        return o instanceof RecordingEditorInput other && file.equals(other.file);
     }
 
     @Override

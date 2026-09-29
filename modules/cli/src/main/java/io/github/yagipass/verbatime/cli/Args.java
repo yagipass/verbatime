@@ -9,6 +9,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.errorprone.annotations.Var;
+
 final class Args {
 
     final String command;
@@ -17,28 +19,28 @@ final class Args {
 
     private final Map<String, String> options = new LinkedHashMap<>();
 
-    private Args(final String command) {
+    private Args(String command) {
         this.command = command;
     }
 
-    static Args parse(final String command, final List<String> argv, final Set<String> valued,
-            final Set<String> flags) {
-        final Args a = new Args(command);
+    static Args parse(String command, List<String> argv, Set<String> valued,
+            Set<String> flags) {
+        Args a = new Args(command);
         for (int i = 0; i < argv.size(); i++) {
-            final String t = argv.get(i);
+            String t = argv.get(i);
             if (!t.startsWith("--") || t.length() == 2) {
                 a.positionals.add(t);
                 continue;
             }
-            final int eq = t.indexOf('=');
-            final String name = eq < 0 ? t.substring(2) : t.substring(2, eq);
+            int eq = t.indexOf('=');
+            String name = eq < 0 ? t.substring(2) : t.substring(2, eq);
             if (flags.contains(name)) {
                 if (eq >= 0) {
                     throw a.usage("--" + name + " takes no value");
                 }
                 a.options.put(name, "");
             } else if (valued.contains(name)) {
-                final String v;
+                String v;
                 if (eq >= 0) {
                     v = t.substring(eq + 1);
                 } else if (i + 1 < argv.size()) {
@@ -54,17 +56,17 @@ final class Args {
         return a;
     }
 
-    boolean has(final String name) {
+    boolean has(String name) {
         return options.containsKey(name);
     }
 
-    String value(final String name) {
+    String value(String name) {
         return options.get(name);
     }
 
-    String choice(final String name, final String def, final String... allowed) {
-        final String v = options.getOrDefault(name, def);
-        for (final String a : allowed) {
+    String choice(String name, String def, String... allowed) {
+        String v = options.getOrDefault(name, def);
+        for (String a : allowed) {
             if (a.equals(v)) {
                 return v;
             }
@@ -73,58 +75,58 @@ final class Args {
                 null);
     }
 
-    int positiveInt(final String name, final int def) {
+    int positiveInt(String name, int def) {
         return integer(name, def, 1, "a positive integer");
     }
 
-    int nonNegativeInt(final String name, final int def) {
+    int nonNegativeInt(String name, int def) {
         return integer(name, def, 0, "0 or a positive integer");
     }
 
-    private int integer(final String name, final int def, final int min, final String what) {
-        final String v = options.get(name);
+    private int integer(String name, int def, int min, String what) {
+        String v = options.get(name);
         if (v == null) {
             return def;
         }
         try {
-            final int n = Integer.parseInt(v);
+            int n = Integer.parseInt(v);
             if (n >= min) {
                 return n;
             }
-        } catch (final NumberFormatException notANumber) {
+        } catch (NumberFormatException notANumber) {
             throw CliException.usage("--" + name + " must be " + what + ", not '" + v + "'", null);
         }
         throw CliException.usage("--" + name + " must be " + what + ", not '" + v + "'", null);
     }
 
-    long ticks(final String name, final long def) {
-        final String v = options.get(name);
+    long ticks(String name, long def) {
+        String v = options.get(name);
         return v == null ? def : parseTicks("--" + name, v);
     }
 
-    String positional(final int i, final String what) {
+    String positional(int i, String what) {
         if (i >= positionals.size()) {
             throw usage("missing " + what);
         }
         return positionals.get(i);
     }
 
-    String positionalOrNull(final int i) {
+    String positionalOrNull(int i) {
         return i < positionals.size() ? positionals.get(i) : null;
     }
 
-    void rejectPositionalsBeyond(final int max) {
+    void rejectPositionalsBeyond(int max) {
         if (positionals.size() > max) {
             throw usage("unexpected argument '" + positionals.get(max) + "'");
         }
     }
 
-    String commandWith(final String name, final long value) {
+    String commandWith(String name, long value) {
         return commandWith(name, String.valueOf(value));
     }
 
-    String commandWith(final String... pairs) {
-        final Map<String, String> o = new LinkedHashMap<>(options);
+    String commandWith(String... pairs) {
+        Map<String, String> o = new LinkedHashMap<>(options);
         for (int i = 0; i < pairs.length; i += 2) {
             if (pairs[i + 1] == null) {
                 o.remove(pairs[i]);
@@ -132,11 +134,11 @@ final class Args {
                 o.put(pairs[i], pairs[i + 1]);
             }
         }
-        final StringBuilder sb = new StringBuilder("vbtm ").append(command);
-        for (final String p : positionals) {
+        StringBuilder sb = new StringBuilder("vbtm ").append(command);
+        for (String p : positionals) {
             sb.append(' ').append(shellQuote(p));
         }
-        for (final Map.Entry<String, String> e : o.entrySet()) {
+        for (Map.Entry<String, String> e : o.entrySet()) {
             sb.append(" --").append(e.getKey());
             if (!e.getValue().isEmpty()) {
                 sb.append(' ').append(shellQuote(e.getValue()));
@@ -145,19 +147,19 @@ final class Args {
         return sb.toString();
     }
 
-    private CliException usage(final String message) {
+    private CliException usage(String message) {
         return CliException.usage(message, "vbtm " + command + " --help");
     }
 
-    static long parseTicks(final String what, final String v) {
-        final String s = v.trim().toLowerCase(Locale.ROOT);
-        int i = 0;
+    static long parseTicks(String what, String v) {
+        String s = v.trim().toLowerCase(Locale.ROOT);
+        @Var int i = 0;
         while (i < s.length() && (Character.isDigit(s.charAt(i)) || s.charAt(i) == '.')) {
             i++;
         }
-        final String num = s.substring(0, i);
-        final String unit = s.substring(i);
-        final long nsPerUnit = switch (unit) {
+        String num = s.substring(0, i);
+        String unit = s.substring(i);
+        long nsPerUnit = switch (unit) {
             case "ns" -> 1L;
             case "us", "µs" -> 1_000L;
             case "", "ms" -> 1_000_000L;
@@ -168,20 +170,20 @@ final class Args {
             throw notADuration(what, v);
         }
         try {
-            final BigDecimal ns = new BigDecimal(num).multiply(BigDecimal.valueOf(nsPerUnit));
+            BigDecimal ns = new BigDecimal(num).multiply(BigDecimal.valueOf(nsPerUnit));
             return ns.divide(BigDecimal.valueOf(100), 0, RoundingMode.CEILING).longValueExact();
-        } catch (final NumberFormatException | ArithmeticException e) {
+        } catch (NumberFormatException | ArithmeticException e) {
             throw notADuration(what, v);
         }
     }
 
-    private static CliException notADuration(final String what, final String v) {
+    private static CliException notADuration(String what, String v) {
         return CliException.usage(what + " must be a duration such as 500us, 1ms or 2s, not '" + v + "'", null);
     }
 
-    static String shellQuote(final String s) {
+    static String shellQuote(String s) {
         for (int i = 0; i < s.length(); i++) {
-            final char c = s.charAt(i);
+            char c = s.charAt(i);
             if (!(Character.isLetterOrDigit(c) || "-_./:=@,+%#".indexOf(c) >= 0)) {
                 return "'" + s.replace("'", "'\\''") + "'";
             }

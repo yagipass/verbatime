@@ -11,21 +11,21 @@ final class BrowserPage implements ViewerBridge.Page {
 
     private final Browser browser;
 
-    private BrowserPage(final Browser browser) {
+    private BrowserPage(Browser browser) {
         this.browser = browser;
     }
 
-    static BrowserPage create(final Composite parent) {
-        final Browser b = new Browser(parent, SWT.NONE);
+    static BrowserPage create(Composite parent) {
+        Browser b = new Browser(parent, SWT.NONE);
         b.addMenuDetectListener(e -> e.doit = false);
         return new BrowserPage(b);
     }
 
     @Override
-    public void define(final String name, final Consumer<Object[]> body) {
+    public void define(String name, Consumer<Object[]> body) {
         new BrowserFunction(browser, name) {
             @Override
-            public Object function(final Object[] args) {
+            public Object function(Object[] args) {
                 body.accept(args);
                 return null;
             }
@@ -33,12 +33,12 @@ final class BrowserPage implements ViewerBridge.Page {
     }
 
     @Override
-    public void load(final String html) {
+    public void load(String html) {
         browser.setText(html, true);
     }
 
     @Override
-    public void execute(final String js) {
+    public void execute(String js) {
         if (!browser.isDisposed()) {
             browser.execute(js);
         }

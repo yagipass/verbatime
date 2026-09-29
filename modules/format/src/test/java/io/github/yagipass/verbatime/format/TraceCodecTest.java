@@ -16,9 +16,9 @@ final class TraceCodecTest {
 
     @Test
     void theEncodersProduceTheGoldenBytesByteForByte() {
-        final byte[] payload = new TraceBuilder.Payload(100).enter(100, 0).enter(105, 1).exit(108).exitThrow(110, 1).bytes();
+        byte[] payload = new TraceBuilder.Payload(100).enter(100, 0).enter(105, 1).exit(108).exitThrow(110, 1).bytes();
         assertArrayEquals(bytes(PAYLOAD), payload, "EventEncoder encodes the four events as the hand-written payload");
-        final byte[] trace = new TraceBuilder(EPOCH_MS, UTC_OFFSET).thread(7, "main").clazz(0, "a.B", "m()V", "n(I)V")
+        byte[] trace = new TraceBuilder(EPOCH_MS, UTC_OFFSET).thread(7, "main").clazz(0, "a.B", "m()V", "n(I)V")
                 .exception(1, "x.E").gc(300, 20, Vbtm.GC_ACTION_MINOR, "G1", "Alloc").chunk(7, 100, payload, false)
                 .chunk(7, 200, new byte[0], true).end().bytes();
         assertArrayEquals(golden(), trace, "RecordEncoder encodes every record type as the hand-written trace");
@@ -26,8 +26,8 @@ final class TraceCodecTest {
 
     @Test
     void theGoldenPayloadDecodesToItsFourEventsWithAbsoluteTicks() {
-        final EventCursor c = new EventCursor();
-        final byte[] p = bytes(PAYLOAD);
+        EventCursor c = new EventCursor();
+        byte[] p = bytes(PAYLOAD);
         c.reset(p, 0, p.length, 100);
         assertEquals(Event.ENTER, c.next());
         assertEquals(100, c.ticks());

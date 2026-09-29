@@ -4,6 +4,8 @@ import java.util.function.Predicate;
 
 import org.eclipse.swt.SWT;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.jmc.Formats;
 import io.github.yagipass.verbatime.jmc.SelectedCall;
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
@@ -27,12 +29,12 @@ public final class TopDownView extends AggregateTreeView<TopDownModel, Row> {
     }
 
     @Override
-    protected int methodId(final Row row) {
+    protected int methodId(Row row) {
         return row.methodId();
     }
 
     @Override
-    protected String name(final Row row) {
+    protected String name(Row row) {
         return row.name();
     }
 
@@ -42,12 +44,12 @@ public final class TopDownView extends AggregateTreeView<TopDownModel, Row> {
     }
 
     @Override
-    protected TopDownModel build(final TraceSnapshot d, final SubtreeAggregate agg) {
+    protected TopDownModel build(TraceSnapshot d, SubtreeAggregate agg) {
         return TopDownModel.of(d, agg);
     }
 
     @Override
-    protected void setInput(final TopDownModel m) {
+    protected void setInput(TopDownModel m) {
         viewer().setInput(m);
         if (m != null) {
             viewer().setChildCount(m, 1);
@@ -56,8 +58,8 @@ public final class TopDownView extends AggregateTreeView<TopDownModel, Row> {
     }
 
     @Override
-    protected String describe(final TraceSnapshot d, final SelectedCall f, final TopDownModel m) {
-        String desc = Formats.shortName(d.methodName(f.methodId())) + ", total " + Formats.fmtDur(m.root().totalNs());
+    protected String describe(TraceSnapshot d, SelectedCall f, TopDownModel m) {
+        @Var String desc = Formats.shortName(d.methodName(f.methodId())) + ", total " + Formats.fmtDur(m.root().totalNs());
         if (m.truncated()) {
             desc += ", truncated at " + Formats.fmtInt(SubtreeAggregate.MAX_NODES) + " paths";
         }
@@ -65,7 +67,7 @@ public final class TopDownView extends AggregateTreeView<TopDownModel, Row> {
     }
 
     @Override
-    protected String copyText(final TopDownModel m, final Predicate<Row> expanded) {
+    protected String copyText(TopDownModel m, Predicate<Row> expanded) {
         return CopyTexts.topDownText(m, expanded);
     }
 }

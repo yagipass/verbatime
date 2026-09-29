@@ -9,16 +9,16 @@ import org.eclipse.swt.widgets.Label;
 
 record HeaderWithCopyButton(Label label, Button copy) {
 
-    static HeaderWithCopyButton create(final Composite parent, final String copyTip, final Runnable onCopy) {
-        final Composite head = new Composite(parent, SWT.NONE);
+    static HeaderWithCopyButton create(Composite parent, String copyTip, Runnable onCopy) {
+        Composite head = new Composite(parent, SWT.NONE);
         head.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-        final GridLayout layout = new GridLayout(2, false);
+        GridLayout layout = new GridLayout(2, false);
         layout.marginWidth = 0;
         layout.marginHeight = 0;
         head.setLayout(layout);
-        final Label label = new Label(head, SWT.WRAP);
+        Label label = new Label(head, SWT.WRAP);
         label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        final Button copy = new Button(head, SWT.PUSH);
+        Button copy = new Button(head, SWT.PUSH);
         copy.setText("Copy");
         copy.setToolTipText(copyTip);
         copy.addListener(SWT.Selection, e -> onCopy.run());

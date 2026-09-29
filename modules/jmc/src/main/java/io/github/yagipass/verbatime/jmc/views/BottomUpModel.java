@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
 import io.github.yagipass.verbatime.jmc.query.SubtreeAggregate;
 
@@ -38,8 +40,8 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
 
         private Row[] children;
 
-        private Row(final BottomUpModel model, final int methodId, final String name, final long calls, final long totalNs,
-                final long selfNs, final Row parent, final int[] sumNodes, final int[] pathHeads) {
+        private Row(BottomUpModel model, int methodId, String name, long calls, long totalNs,
+                long selfNs, Row parent, int[] sumNodes, int[] pathHeads) {
             this.model = model;
             this.methodId = methodId;
             this.name = name;
@@ -76,7 +78,7 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
         }
 
         boolean hasChildren() {
-            for (final int node : pathHeads) {
+            for (int node : pathHeads) {
                 if (node != 0) {
                     return true;
                 }
@@ -88,7 +90,7 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
             return children().length;
         }
 
-        Row child(final int i) {
+        Row child(int i) {
             return children()[i];
         }
 
@@ -102,7 +104,7 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
         private void resortCachedDescendants() {
             if (children != null) {
                 model.sortRows(children);
-                for (final Row c : children) {
+                for (Row c : children) {
                     c.resortCachedDescendants();
                 }
             }
@@ -123,8 +125,8 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
 
     private boolean descending;
 
-    private BottomUpModel(final List<Row> rows, final SubtreeAggregate agg, final TraceSnapshot data, final long rootTotalNs,
-            final boolean truncated, final SortKey sortKey, final boolean descending) {
+    private BottomUpModel(List<Row> rows, SubtreeAggregate agg, TraceSnapshot data, long rootTotalNs,
+            boolean truncated, SortKey sortKey, boolean descending) {
         this.rows = rows;
         this.agg = agg;
         this.data = data;
@@ -134,20 +136,20 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
         this.descending = descending;
     }
 
-    static BottomUpModel of(final TraceSnapshot d, final SubtreeAggregate a) {
+    static BottomUpModel of(TraceSnapshot d, SubtreeAggregate a) {
         return of(d, a, SortKey.SELF, true);
     }
 
-    static BottomUpModel of(final TraceSnapshot d, final SubtreeAggregate a, final SortKey sortKey,
-            final boolean descending) {
-        final List<Row> rows = new ArrayList<>();
-        final BottomUpModel m = new BottomUpModel(rows, a, d, a.totalNs(0), a.truncated(), sortKey, descending);
+    static BottomUpModel of(TraceSnapshot d, SubtreeAggregate a, SortKey sortKey,
+            boolean descending) {
+        List<Row> rows = new ArrayList<>();
+        BottomUpModel m = new BottomUpModel(rows, a, d, a.totalNs(0), a.truncated(), sortKey, descending);
         for (int methodId = 0; methodId < a.methodIdLimit(); methodId++) {
-            final int count = a.methodNodeCount(methodId);
+            int count = a.methodNodeCount(methodId);
             if (count == 0) {
                 continue;
             }
-            final int[] nodes = new int[count];
+            int[] nodes = new int[count];
             for (int i = 0; i < count; i++) {
                 nodes[i] = a.methodNode(methodId, i);
             }
@@ -158,27 +160,27 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
         return m;
     }
 
-    private Row[] callersOf(final Row r) {
-        final Map<Integer, List<Integer>> byCaller = new HashMap<>();
+    private Row[] callersOf(Row r) {
+        Map<Integer, List<Integer>> byCaller = new HashMap<>();
         for (int i = 0; i < r.pathHeads.length; i++) {
-            final int node = r.pathHeads[i];
+            int node = r.pathHeads[i];
             if (node == 0) {
                 continue;
             }
-            final int callerNode = agg.parent(node);
-            final int callerMethod = agg.method(callerNode);
+            int callerNode = agg.parent(node);
+            int callerMethod = agg.method(callerNode);
             byCaller.computeIfAbsent(callerMethod, k -> new ArrayList<>()).add(i);
         }
-        final List<Row> out = new ArrayList<>(byCaller.size());
-        for (final Map.Entry<Integer, List<Integer>> e : byCaller.entrySet()) {
-            final List<Integer> idx = e.getValue();
-            final int[] childX = new int[idx.size()];
-            final int[] childTop = new int[idx.size()];
-            long calls = 0;
-            long total = 0;
-            long self = 0;
+        List<Row> out = new ArrayList<>(byCaller.size());
+        for (Map.Entry<Integer, List<Integer>> e : byCaller.entrySet()) {
+            List<Integer> idx = e.getValue();
+            int[] childX = new int[idx.size()];
+            int[] childTop = new int[idx.size()];
+            @Var long calls = 0;
+            @Var long total = 0;
+            @Var long self = 0;
             for (int k = 0; k < idx.size(); k++) {
-                final int i = idx.get(k);
+                int i = idx.get(k);
                 childX[k] = r.sumNodes[i];
                 childTop[k] = agg.parent(r.pathHeads[i]);
                 calls += agg.calls(childX[k]);
@@ -187,12 +189,12 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
             }
             out.add(new Row(this, e.getKey(), data.methodName(e.getKey()), calls, total, self, r, childX, childTop));
         }
-        final Row[] arr = out.toArray(new Row[0]);
+        Row[] arr = out.toArray(new Row[0]);
         sortRows(arr);
         return arr;
     }
 
-    double pct(final long ns) {
+    double pct(long ns) {
         return rootTotalNs > 0 ? ns * 100.0 / rootTotalNs : 0;
     }
 
@@ -221,7 +223,7 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
         return rows.size();
     }
 
-    Row row(final int i) {
+    Row row(int i) {
         return rows.get(i);
     }
 
@@ -233,7 +235,7 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
         return descending;
     }
 
-    void toggleSort(final SortKey c) {
+    void toggleSort(SortKey c) {
         if (c == sortKey) {
             descending = !descending;
         } else {
@@ -244,17 +246,17 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
     }
 
     private void sort() {
-        final Row[] top = rows.toArray(new Row[0]);
+        Row[] top = rows.toArray(new Row[0]);
         sortRows(top);
         rows.clear();
-        for (final Row r : top) {
+        for (Row r : top) {
             rows.add(r);
             r.resortCachedDescendants();
         }
     }
 
-    private void sortRows(final Row[] arr) {
-        Comparator<Row> cmp = switch (sortKey) {
+    private void sortRows(Row[] arr) {
+        @Var Comparator<Row> cmp = switch (sortKey) {
             case SELF -> Comparator.comparingLong(Row::selfNs);
             case TOTAL -> Comparator.comparingLong(Row::totalNs);
             case CALLS -> Comparator.comparingLong(Row::calls);
@@ -263,7 +265,7 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
         if (descending) {
             cmp = cmp.reversed();
         }
-        final Comparator<Row> stable = cmp.thenComparingInt(Row::methodId);
+        Comparator<Row> stable = cmp.thenComparingInt(Row::methodId);
         Arrays.sort(arr, stable);
     }
 
@@ -273,27 +275,27 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
     }
 
     @Override
-    public Row root(final int i) {
+    public Row root(int i) {
         return row(i);
     }
 
     @Override
-    public boolean hasChildren(final Row r) {
+    public boolean hasChildren(Row r) {
         return r.hasChildren();
     }
 
     @Override
-    public int childCount(final Row r) {
+    public int childCount(Row r) {
         return r.childCount();
     }
 
     @Override
-    public Row child(final Row r, final int i) {
+    public Row child(Row r, int i) {
         return r.child(i);
     }
 
     @Override
-    public Row parent(final Row r) {
+    public Row parent(Row r) {
         return r.parent();
     }
 }

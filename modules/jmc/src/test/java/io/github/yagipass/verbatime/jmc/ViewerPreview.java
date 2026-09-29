@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.format.TraceBuilder;
 import io.github.yagipass.verbatime.format.Vbtm;
 import io.github.yagipass.verbatime.jmc.index.RandomTraces;
@@ -34,18 +36,18 @@ public final class ViewerPreview {
                     "deserialize(Ljava/lang/String;)Ljava/lang/Object;" },
             { "com.example.batch.ReportJob", "run()V", "aggregate(Ljava/util/List;)V", "flush()V" }, };
 
-    public static void main(final String[] args) throws Exception {
-        final Path out = Path.of(args.length > 0 ? args[0] : "preview.html");
-        final byte[] bytes = buildTrace();
-        final TraceSnapshot data = TestTraces.index(bytes, 1 << 20);
-        final ViewerJson.SentNames sent = new ViewerJson.SentNames();
-        final String init = ViewerJson.metaJson(data, sent, new ViewerJson.SentSessions());
+    public static void main(String[] args) throws Exception {
+        Path out = Path.of(args.length > 0 ? args[0] : "preview.html");
+        byte[] bytes = buildTrace();
+        TraceSnapshot data = TestTraces.index(bytes, 1 << 20);
+        ViewerJson.SentNames sent = new ViewerJson.SentNames();
+        String init = ViewerJson.metaJson(data, sent, new ViewerJson.SentSessions());
 
-        final WindowExtractor.Window win = WindowExtractor.extract(data, data.minNs - 1, data.maxNs + 1, 2_000_000,
+        WindowExtractor.Window win = WindowExtractor.extract(data, data.minNs - 1, data.maxNs + 1, 2_000_000,
                 60_000);
-        final String winJson = ViewerJson.windowJson(data, win, 0, sent);
+        String winJson = ViewerJson.windowJson(data, win, 0, sent);
 
-        final String html = ViewerHtml.render(ViewerHtml.template(), init, "window.__WIN = " + winJson + ";\n" + SHIM);
+        String html = ViewerHtml.render(ViewerHtml.template(), init, "window.__WIN = " + winJson + ";\n" + SHIM);
         Files.writeString(out, html, StandardCharsets.UTF_8);
         System.out.println("wrote " + out.toAbsolutePath() + ": " + data.totalCalls + " calls, " + data.threads.size()
                 + " threads, " + data.sessions.size() + " sessions, D=" + data.overviewThresholdNs + "ns");
@@ -98,18 +100,18 @@ public final class ViewerPreview {
     private record Ev(long ticks, boolean enter, int methodId, int exc) {
     }
 
-    private static int maybeThrow(final Random rng, final int oneIn) {
+    private static int maybeThrow(Random rng, int oneIn) {
         return rng.nextInt(oneIn) == 0 ? 1 + rng.nextInt(EXCEPTIONS.length) : -1;
     }
 
     private static byte[] buildTrace() {
-        final TraceBuilder w = TestTraces.writer();
+        TraceBuilder w = TestTraces.writer();
         w.thread(11, "http-worker-1");
         w.thread(12, "http-worker-2");
         w.thread(21, "batch-scheduler");
-        int base = 0;
-        for (final String[] c : CLASSES) {
-            final String[] sigs = new String[c.length - 1];
+        @Var int base = 0;
+        for (String[] c : CLASSES) {
+            String[] sigs = new String[c.length - 1];
             System.arraycopy(c, 1, sigs, 0, sigs.length);
             w.clazz(base, c[0], sigs);
             base += 10;
@@ -117,7 +119,7 @@ public final class ViewerPreview {
         for (int x = 0; x < EXCEPTIONS.length; x++) {
             w.exception(x + 1, EXCEPTIONS[x]);
         }
-        final Random rng = new Random(42);
+        Random rng = new Random(42);
         emitSessions(w, rng, 11, 10_000, 4, true);
         emitSessions(w, rng, 12, 160_000, 3, true);
         emitSessions(w, rng, 21, 60_000, 1, false);
@@ -128,27 +130,27 @@ public final class ViewerPreview {
         return w.bytes();
     }
 
-    private static void emitSessions(final TraceBuilder w, final Random rng, final long tid, final long startTicks,
-            final int sessions, final boolean closeLast) {
-        long t = startTicks;
+    private static void emitSessions(TraceBuilder w, Random rng, long tid, long startTicks,
+            int sessions, boolean closeLast) {
+        @Var long t = startTicks;
         for (int s = 0; s < sessions; s++) {
-            final List<Ev> evs = new ArrayList<>();
-            final boolean batch = tid == 21;
-            final int root = batch ? 70 : 0;
-            final long[] tick = { t };
+            List<Ev> evs = new ArrayList<>();
+            boolean batch = tid == 21;
+            int root = batch ? 70 : 0;
+            long[] tick = { t };
             evs.add(new Ev(tick[0], true, root, -1));
-            final int requests = batch ? 4 : 8 + rng.nextInt(8);
+            int requests = batch ? 4 : 8 + rng.nextInt(8);
             for (int r = 0; r < requests; r++) {
                 tick[0] += 20 + rng.nextInt(200);
                 subtree(evs, rng, tick, batch ? 71 : 10, 1, batch ? 8 : 10);
             }
             tick[0] += 30 + rng.nextInt(100);
-            final boolean lastOpen = !closeLast && s == sessions - 1;
+            boolean lastOpen = !closeLast && s == sessions - 1;
             if (!lastOpen) {
                 evs.add(new Ev(tick[0], false, 0, maybeThrow(rng, 50)));
             }
-            final List<long[]> events = new ArrayList<>(evs.size());
-            for (final Ev e : evs) {
+            List<long[]> events = new ArrayList<>(evs.size());
+            for (Ev e : evs) {
                 events.add(new long[] { e.ticks, e.enter ? 1 : 0, e.enter ? e.methodId : e.exc });
             }
             RandomTraces.chunkEvents(events, () -> 200 + rng.nextInt(400),
@@ -157,16 +159,16 @@ public final class ViewerPreview {
         }
     }
 
-    private static void subtree(final List<Ev> evs, final Random rng, final long[] tick, final int methodId, final int depth,
-            final int maxDepth) {
+    private static void subtree(List<Ev> evs, Random rng, long[] tick, int methodId, int depth,
+            int maxDepth) {
         evs.add(new Ev(tick[0], true, methodId, -1));
-        final int kids = depth >= maxDepth ? 0 : depth < 3 ? 2 + rng.nextInt(4) : rng.nextInt(4);
+        int kids = depth >= maxDepth ? 0 : depth < 3 ? 2 + rng.nextInt(4) : rng.nextInt(4);
         if (kids == 0 || depth >= maxDepth) {
             tick[0] += 3 + rng.nextInt(depth < 4 ? 800 : 120);
         } else {
             for (int k = 0; k < kids; k++) {
                 tick[0] += 1 + rng.nextInt(40);
-                final int child = switch (rng.nextInt(8)) {
+                int child = switch (rng.nextInt(8)) {
                     case 0 -> 11;
                     case 1 -> 12;
                     case 2 -> 20;

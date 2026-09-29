@@ -16,6 +16,15 @@
     <maven.compiler.release>17</maven.compiler.release>
   </properties>
 
+  <dependencies>
+    <dependency>
+      <groupId>com.google.errorprone</groupId>
+      <artifactId>error_prone_annotations</artifactId>
+      <version>2.50.0</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
   <build>
     <pluginManagement>
       <plugins>

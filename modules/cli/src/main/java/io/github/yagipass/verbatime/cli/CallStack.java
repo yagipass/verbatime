@@ -6,22 +6,22 @@ final class CallStack {
 
     private int[] methodIds = new int[64];
 
-    void push(final int depth, final int methodId) {
+    void push(int depth, int methodId) {
         if (depth == methodIds.length) {
             methodIds = Arrays.copyOf(methodIds, depth * 2);
         }
         methodIds[depth] = methodId;
     }
 
-    int methodId(final int depth) {
+    int methodId(int depth) {
         return methodIds[depth];
     }
 
-    int callerOf(final int depth) {
+    int callerOf(int depth) {
         return depth > 0 ? methodIds[depth - 1] : -1;
     }
 
-    int[] methodIds(final int count) {
+    int[] methodIds(int count) {
         return Arrays.copyOf(methodIds, count);
     }
 }

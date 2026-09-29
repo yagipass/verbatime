@@ -14,17 +14,17 @@ public class OrderController {
 
     private final OrderService orders;
 
-    OrderController(final OrderService orders) {
+    OrderController(OrderService orders) {
         this.orders = orders;
     }
 
     @GetMapping("/orders")
-    public Mono<Receipt> place(@RequestParam(defaultValue = "widget") final String sku, @RequestParam(defaultValue = "1") final int qty) {
+    public Mono<Receipt> place(@RequestParam(defaultValue = "widget") String sku, @RequestParam(defaultValue = "1") int qty) {
         return Mono.fromSupplier(() -> orders.placeOrder(sku, qty));
     }
 
     @GetMapping("/orders/async")
-    public Mono<Receipt> placeAsync(@RequestParam(defaultValue = "widget") final String sku, @RequestParam(defaultValue = "1") final int qty) {
+    public Mono<Receipt> placeAsync(@RequestParam(defaultValue = "widget") String sku, @RequestParam(defaultValue = "1") int qty) {
         return Mono.fromCallable(() -> orders.placeOrder(sku, qty)).subscribeOn(Schedulers.boundedElastic());
     }
 }

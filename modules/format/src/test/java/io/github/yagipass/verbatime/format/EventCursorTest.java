@@ -11,6 +11,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.format.EventCursor.Event;
 import io.github.yagipass.verbatime.format.EventCursor.Fault;
 
@@ -22,21 +24,21 @@ final class EventCursorTest {
         return new TraceBuilder.Payload(BASE).enter(BASE, 5).enter(BASE + 300, 7).exitThrow(BASE + 1_000, 3).bytes();
     }
 
-    private static void varint(final ByteArrayOutputStream o, final long v) {
-        final byte[] b = new byte[Varint.MAX_BYTES];
+    private static void varint(ByteArrayOutputStream o, long v) {
+        byte[] b = new byte[Varint.MAX_BYTES];
         o.write(b, 0, Varint.put(b, 0, v));
     }
 
-    private static EventCursor over(final byte[] b) {
-        final EventCursor c = new EventCursor();
+    private static EventCursor over(byte[] b) {
+        EventCursor c = new EventCursor();
         c.reset(b, 0, b.length, BASE);
         return c;
     }
 
-    private static List<Event> drain(final EventCursor c) {
-        final List<Event> seen = new ArrayList<>();
+    private static List<Event> drain(EventCursor c) {
+        List<Event> seen = new ArrayList<>();
         while (true) {
-            final Event e = c.next();
+            Event e = c.next();
             seen.add(e);
             if (e != Event.ENTER && e != Event.EXIT) {
                 return seen;
@@ -46,9 +48,9 @@ final class EventCursorTest {
 
     @Test
     void aCleanPayloadYieldsEveryEventWithAbsoluteTicksAndThenEnd() {
-        final byte[] b = new TraceBuilder.Payload(BASE).enter(BASE, 5).enter(BASE + 30, 7).exitThrow(BASE + 50, 3)
+        byte[] b = new TraceBuilder.Payload(BASE).enter(BASE, 5).enter(BASE + 30, 7).exitThrow(BASE + 50, 3)
                 .exit(BASE + 100).bytes();
-        final EventCursor c = over(b);
+        EventCursor c = over(b);
 
         assertEquals(Event.ENTER, c.next());
         assertEquals(BASE, c.ticks());
@@ -75,8 +77,8 @@ final class EventCursorTest {
 
     @Test
     void theFirstEventNeverAddsItsDeltaBecauseTheChunkHeaderCarriesTheBase() {
-        final byte[] b = { (byte) (5 << 1), 1 };
-        final EventCursor c = over(b);
+        byte[] b = { (byte) (5 << 1), 1 };
+        EventCursor c = over(b);
         assertEquals(Event.ENTER, c.next());
         assertEquals(BASE, c.ticks());
         assertEquals(1, c.methodId());
@@ -84,16 +86,16 @@ final class EventCursorTest {
 
     @Test
     void everyTruncatedPrefixStopsAtTheStartOfTheCutEventAndCountsOnlyWholeOnes() {
-        final byte[] whole = threeEvents();
-        final int[] eventEnd = { 2, 5, 8 };
+        byte[] whole = threeEvents();
+        int[] eventEnd = { 2, 5, 8 };
         assertEquals(8, whole.length, "the fixture has known event boundaries: 2 + 3 + 3 bytes");
         for (int k = 0; k <= whole.length; k++) {
-            final EventCursor c = new EventCursor();
+            EventCursor c = new EventCursor();
             c.reset(whole, 0, k, BASE);
-            final List<Event> seen = drain(c);
-            final Event terminal = seen.get(seen.size() - 1);
-            int complete = 0;
-            int cutStart = k;
+            List<Event> seen = drain(c);
+            Event terminal = seen.get(seen.size() - 1);
+            @Var int complete = 0;
+            @Var int cutStart = k;
             for (int i = 0; i < eventEnd.length; i++) {
                 if (eventEnd[i] <= k) {
                     complete++;
@@ -102,8 +104,8 @@ final class EventCursorTest {
                     break;
                 }
             }
-            final String at = "prefix of " + k + " bytes";
-            final boolean onBoundary = cutStart == k;
+            String at = "prefix of " + k + " bytes";
+            boolean onBoundary = cutStart == k;
             assertEquals(onBoundary ? Event.END : Event.INCOMPLETE, terminal,
                     at + ": a cut on an event boundary is indistinguishable from a clean end");
             assertEquals(complete, c.decodedEvents(), at);
@@ -114,8 +116,8 @@ final class EventCursorTest {
 
     @Test
     void anEnterCutAfterItsHeaderHasAlreadyAdvancedTheTicksLikeTheReferenceDecoder() {
-        final byte[] whole = threeEvents();
-        final EventCursor c = new EventCursor();
+        byte[] whole = threeEvents();
+        EventCursor c = new EventCursor();
         c.reset(whole, 0, 4, BASE);
         assertEquals(Event.ENTER, c.next());
         assertEquals(Event.INCOMPLETE, c.next());
@@ -126,8 +128,8 @@ final class EventCursorTest {
 
     @Test
     void anExitCutBeforeItsExceptionIdHasNotAdvancedTheTicks() {
-        final byte[] whole = threeEvents();
-        final EventCursor c = new EventCursor();
+        byte[] whole = threeEvents();
+        EventCursor c = new EventCursor();
         c.reset(whole, 0, 7, BASE);
         assertEquals(Event.ENTER, c.next());
         assertEquals(Event.ENTER, c.next());
@@ -139,27 +141,27 @@ final class EventCursorTest {
 
     @Test
     void tenContinuationBytesAreCorruptWhileNineAtTheEndAreMerelyIncomplete() {
-        final byte[] tooLong = new byte[10];
+        byte[] tooLong = new byte[10];
         Arrays.fill(tooLong, (byte) 0x80);
-        final EventCursor c = over(tooLong);
+        EventCursor c = over(tooLong);
         assertEquals(Event.CORRUPT, c.next());
         assertSame(Fault.VARINT_TOO_LONG, c.fault());
         assertEquals(0, c.stopIndex());
 
-        final byte[] cut = new byte[9];
+        byte[] cut = new byte[9];
         Arrays.fill(cut, (byte) 0x80);
-        final EventCursor d = over(cut);
+        EventCursor d = over(cut);
         assertEquals(Event.INCOMPLETE, d.next());
     }
 
     @Test
     void aMethodIdAtTheFormatLimitIsCorruptAndStopsAtThatEventNotAtTheChunkStart() {
-        final ByteArrayOutputStream o = new ByteArrayOutputStream();
+        ByteArrayOutputStream o = new ByteArrayOutputStream();
         o.writeBytes(new TraceBuilder.Payload(BASE).enter(BASE, 1).bytes());
-        final int second = o.size();
+        int second = o.size();
         o.write(0);
         varint(o, Vbtm.METHOD_ID_LIMIT);
-        final EventCursor c = over(o.toByteArray());
+        EventCursor c = over(o.toByteArray());
         assertEquals(Event.ENTER, c.next());
         assertEquals(Event.CORRUPT, c.next());
         assertSame(Fault.METHOD_ID_LIMIT, c.fault());
@@ -168,18 +170,18 @@ final class EventCursorTest {
         assertEquals(second, c.eventIndex());
         assertEquals(1, c.decodedEvents());
 
-        final byte[] ok = new TraceBuilder.Payload(BASE).enter(BASE, Vbtm.METHOD_ID_LIMIT - 1).bytes();
+        byte[] ok = new TraceBuilder.Payload(BASE).enter(BASE, Vbtm.METHOD_ID_LIMIT - 1).bytes();
         assertEquals(Event.ENTER, over(ok).next());
     }
 
     @Test
     void anExceptionIdAtTheFormatLimitIsCorruptInsteadOfBeingClampedToUnknown() {
-        final ByteArrayOutputStream o = new ByteArrayOutputStream();
+        ByteArrayOutputStream o = new ByteArrayOutputStream();
         o.writeBytes(new TraceBuilder.Payload(BASE).enter(BASE, 1).bytes());
-        final int second = o.size();
+        int second = o.size();
         o.write(2 | 1);
         varint(o, Vbtm.EXCEPTION_ID_LIMIT);
-        final EventCursor c = over(o.toByteArray());
+        EventCursor c = over(o.toByteArray());
         assertEquals(Event.ENTER, c.next());
         assertEquals(Event.CORRUPT, c.next());
         assertSame(Fault.EXCEPTION_ID_LIMIT, c.fault());
@@ -190,12 +192,12 @@ final class EventCursorTest {
 
     @Test
     void aNegativeMethodIdIsCorruptInsteadOfAnEnterThatConsumersWouldIndexArraysWith() {
-        final ByteArrayOutputStream o = new ByteArrayOutputStream();
+        ByteArrayOutputStream o = new ByteArrayOutputStream();
         o.writeBytes(new TraceBuilder.Payload(BASE).enter(BASE, 1).bytes());
-        final int second = o.size();
+        int second = o.size();
         o.write(0);
         varint(o, -1);
-        final EventCursor c = over(o.toByteArray());
+        EventCursor c = over(o.toByteArray());
         assertEquals(Event.ENTER, c.next());
         assertEquals(Event.CORRUPT, c.next(), "a ten-byte varint with bit 63 set must not pass the upper-bound check");
         assertSame(Fault.METHOD_ID_LIMIT, c.fault());
@@ -206,12 +208,12 @@ final class EventCursorTest {
 
     @Test
     void aNegativeExceptionIdIsCorruptInsteadOfPassingAsANormalReturn() {
-        final ByteArrayOutputStream o = new ByteArrayOutputStream();
+        ByteArrayOutputStream o = new ByteArrayOutputStream();
         o.writeBytes(new TraceBuilder.Payload(BASE).enter(BASE, 1).bytes());
-        final int second = o.size();
+        int second = o.size();
         o.write(2 | 1);
         varint(o, -1);
-        final EventCursor c = over(o.toByteArray());
+        EventCursor c = over(o.toByteArray());
         assertEquals(Event.ENTER, c.next());
         assertEquals(Event.CORRUPT, c.next(),
                 "exception() == -1 means no exception, so a thrown exit would read as a normal return");
@@ -222,19 +224,19 @@ final class EventCursorTest {
 
     @Test
     void thePayloadWriterRefusesANegativeMethodIdThatTheCursorWouldRejectAsCorrupt() {
-        final TraceBuilder.Payload p = new TraceBuilder.Payload(BASE);
+        TraceBuilder.Payload p = new TraceBuilder.Payload(BASE);
         assertThrows(IllegalArgumentException.class, () -> p.enter(BASE, -1));
     }
 
     @Test
     void anEnterDeltaThatPushesTheClockPastTheFormatLimitIsCorruptWithoutAdvancingTheTicks() {
-        final ByteArrayOutputStream o = new ByteArrayOutputStream();
+        ByteArrayOutputStream o = new ByteArrayOutputStream();
         o.writeBytes(new TraceBuilder.Payload(BASE).enter(BASE, 1).bytes());
-        final int second = o.size();
-        final long delta = Vbtm.MAX_TICKS - BASE + 1;
+        int second = o.size();
+        long delta = Vbtm.MAX_TICKS - BASE + 1;
         varint(o, delta << 1);
         varint(o, 2);
-        final EventCursor c = over(o.toByteArray());
+        EventCursor c = over(o.toByteArray());
         assertEquals(Event.ENTER, c.next());
         assertEquals(Event.CORRUPT, c.next(),
                 "ticks past MAX_TICKS overflow every consumer's ticks * NANOS_PER_TICK into negative nanoseconds");
@@ -248,13 +250,13 @@ final class EventCursorTest {
 
     @Test
     void anExitDeltaThatPushesTheClockPastTheFormatLimitIsCorruptEvenAfterItsExceptionIdWasRead() {
-        final ByteArrayOutputStream o = new ByteArrayOutputStream();
+        ByteArrayOutputStream o = new ByteArrayOutputStream();
         o.writeBytes(new TraceBuilder.Payload(BASE).enter(BASE, 1).bytes());
-        final int second = o.size();
-        final long delta = Vbtm.MAX_TICKS - BASE + 1;
+        int second = o.size();
+        long delta = Vbtm.MAX_TICKS - BASE + 1;
         varint(o, (delta << 2) | 2 | 1);
         varint(o, 1);
-        final EventCursor c = over(o.toByteArray());
+        EventCursor c = over(o.toByteArray());
         assertEquals(Event.ENTER, c.next());
         assertEquals(Event.CORRUPT, c.next());
         assertSame(Fault.TICKS_LIMIT, c.fault());
@@ -266,12 +268,12 @@ final class EventCursorTest {
 
     @Test
     void aTenByteHeaderWithBitSixtyThreeSetIsATicksLimitFaultNotAHugeForwardJump() {
-        final ByteArrayOutputStream o = new ByteArrayOutputStream();
+        ByteArrayOutputStream o = new ByteArrayOutputStream();
         o.writeBytes(new TraceBuilder.Payload(BASE).enter(BASE, 1).bytes());
-        final int second = o.size();
+        int second = o.size();
         varint(o, -1L << 1);
         varint(o, 2);
-        final EventCursor c = over(o.toByteArray());
+        EventCursor c = over(o.toByteArray());
         assertEquals(Event.ENTER, c.next());
         assertEquals(Event.CORRUPT, c.next(), "h >>> 1 of a negative header is 2^62, far past MAX_TICKS");
         assertSame(Fault.TICKS_LIMIT, c.fault());
@@ -281,9 +283,9 @@ final class EventCursorTest {
 
     @Test
     void aDeltaThatLandsExactlyOnTheFormatLimitIsStillAnEvent() {
-        final byte[] b = new TraceBuilder.Payload(BASE).enter(BASE, 1).enter(Vbtm.MAX_TICKS, 2).exit(Vbtm.MAX_TICKS)
+        byte[] b = new TraceBuilder.Payload(BASE).enter(BASE, 1).enter(Vbtm.MAX_TICKS, 2).exit(Vbtm.MAX_TICKS)
                 .bytes();
-        final EventCursor c = over(b);
+        EventCursor c = over(b);
         assertEquals(Event.ENTER, c.next());
         assertEquals(Event.ENTER, c.next());
         assertEquals(Vbtm.MAX_TICKS, c.ticks(), "MAX_TICKS itself still multiplies into a positive long");
@@ -294,7 +296,7 @@ final class EventCursorTest {
 
     @Test
     void thePayloadWriterRefusesTicksOutsideTheRangeTheCursorAccepts() {
-        final TraceBuilder.Payload p = new TraceBuilder.Payload(BASE);
+        TraceBuilder.Payload p = new TraceBuilder.Payload(BASE);
         assertThrows(IllegalArgumentException.class, () -> p.enter(Vbtm.MAX_TICKS + 1, 1));
         assertThrows(IllegalArgumentException.class, () -> p.enter(-1, 1));
         assertThrows(IllegalArgumentException.class, () -> p.exit(Vbtm.MAX_TICKS + 1));
@@ -303,9 +305,9 @@ final class EventCursorTest {
 
     @Test
     void resetReusesTheCursorWithoutLeakingThePreviousPayload() {
-        final EventCursor c = over(threeEvents());
+        EventCursor c = over(threeEvents());
         drain(c);
-        final byte[] b = new TraceBuilder.Payload(7).enter(7, 9).bytes();
+        byte[] b = new TraceBuilder.Payload(7).enter(7, 9).bytes();
         c.reset(b, 0, b.length, 7);
         assertEquals(Event.ENTER, c.next());
         assertEquals(7, c.ticks());

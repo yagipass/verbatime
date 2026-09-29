@@ -49,14 +49,14 @@ public final class RecordingsView extends ViewPart {
 
     private TableViewer viewer;
 
-    public static void refreshIn(final IWorkbenchPage page) {
-        if (page.findView(ID) instanceof final RecordingsView v) {
+    public static void refreshIn(IWorkbenchPage page) {
+        if (page.findView(ID) instanceof RecordingsView v) {
             v.refresh();
         }
     }
 
     @Override
-    public void createPartControl(final Composite parent) {
+    public void createPartControl(Composite parent) {
         viewer = new TableViewer(parent, SWT.MULTI | SWT.FULL_SELECTION | SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL);
         viewer.getTable().setHeaderVisible(true);
         viewer.setContentProvider(ArrayContentProvider.getInstance());
@@ -66,34 +66,34 @@ public final class RecordingsView extends ViewPart {
         column("Size", 90, SWT.RIGHT, e -> ControlTexts.sizeOrUnknown(e.size()));
         column("Modified", 150, SWT.LEFT, e -> MODIFIED.format(Instant.ofEpochMilli(e.modifiedMs())));
         viewer.addDoubleClickListener(e -> {
-            if (e.getSelection() instanceof final IStructuredSelection s
-                    && s.getFirstElement() instanceof final Entry en) {
+            if (e.getSelection() instanceof IStructuredSelection s
+                    && s.getFirstElement() instanceof Entry en) {
                 open(en.file());
             }
         });
 
-        final Action deleteAction = new Action("Delete") {
+        Action deleteAction = new Action("Delete") {
             @Override
             public void run() {
                 deleteSelected();
             }
         };
         deleteAction.setToolTipText("Delete the selected recording file");
-        final ISharedImages shared = PlatformUI.getWorkbench().getSharedImages();
+        ISharedImages shared = PlatformUI.getWorkbench().getSharedImages();
         deleteAction.setImageDescriptor(shared.getImageDescriptor(ISharedImages.IMG_TOOL_DELETE));
         deleteAction.setDisabledImageDescriptor(shared.getImageDescriptor(ISharedImages.IMG_TOOL_DELETE_DISABLED));
         deleteAction.setEnabled(false);
         viewer.addSelectionChangedListener(e -> deleteAction.setEnabled(!selected().isEmpty()));
         viewer.getTable().addKeyListener(new KeyAdapter() {
             @Override
-            public void keyPressed(final KeyEvent e) {
+            public void keyPressed(KeyEvent e) {
                 if (e.keyCode == SWT.DEL && deleteAction.isEnabled()) {
                     deleteAction.run();
                 }
             }
         });
         getViewSite().getActionBars().getToolBarManager().add(deleteAction);
-        final MenuManager menu = new MenuManager();
+        MenuManager menu = new MenuManager();
         menu.add(deleteAction);
         viewer.getControl().setMenu(menu.createContextMenu(viewer.getControl()));
 
@@ -101,7 +101,7 @@ public final class RecordingsView extends ViewPart {
         refresh();
     }
 
-    private void column(final String title, final int width, final int style, final Function<Entry, String> text) {
+    private void column(String title, int width, int style, Function<Entry, String> text) {
         Columns.addTable(viewer, title, width, style,
                 new Columns.ColumnLabels<>(Entry.class, text, e -> e.file().toString(), false));
     }
@@ -110,16 +110,16 @@ public final class RecordingsView extends ViewPart {
         if (viewer == null || viewer.getControl().isDisposed()) {
             return;
         }
-        final Path dir = Preferences.get().recordingsDir();
-        final List<Entry> entries = LocalRecordings.scan(dir);
+        Path dir = Preferences.get().recordingsDir();
+        List<Entry> entries = LocalRecordings.scan(dir);
         viewer.setInput(entries);
         setContentDescription(Formats.plural(entries.size(), "recording") + " in " + dir);
     }
 
     private List<Entry> selected() {
-        final List<Entry> out = new ArrayList<>();
-        for (final Object o : viewer.getStructuredSelection()) {
-            if (o instanceof final Entry e) {
+        List<Entry> out = new ArrayList<>();
+        for (Object o : viewer.getStructuredSelection()) {
+            if (o instanceof Entry e) {
                 out.add(e);
             }
         }
@@ -127,13 +127,13 @@ public final class RecordingsView extends ViewPart {
     }
 
     private void deleteSelected() {
-        final List<Entry> chosen = selected();
+        List<Entry> chosen = selected();
         if (chosen.isEmpty()) {
             return;
         }
-        final IWorkbenchPage page = getSite().getPage();
-        final List<Entry> targets = LocalRecordings.deletable(chosen, TransferJob::isTransferring);
-        final int skipped = chosen.size() - targets.size();
+        IWorkbenchPage page = getSite().getPage();
+        List<Entry> targets = LocalRecordings.deletable(chosen, TransferJob::isTransferring);
+        int skipped = chosen.size() - targets.size();
         if (targets.isEmpty()) {
             MessageDialog.openError(getSite().getShell(), "Delete recording",
                     ControlTexts.stillTransferringText(chosen.get(0)));
@@ -144,15 +144,15 @@ public final class RecordingsView extends ViewPart {
                 ControlTexts.deletePrompt(targets, skipped))) {
             return;
         }
-        final List<IEditorReference> open = new ArrayList<>();
-        for (final Entry e : targets) {
+        List<IEditorReference> open = new ArrayList<>();
+        for (Entry e : targets) {
             open.addAll(List.of(page.findEditors(new RecordingEditorInput(e.file()), RecordingEditorInput.EDITOR_ID,
                     IWorkbenchPage.MATCH_INPUT | IWorkbenchPage.MATCH_ID)));
         }
         if (!open.isEmpty()) {
             page.closeEditors(open.toArray(IEditorReference[]::new), false);
         }
-        final LocalRecordings.DeleteResult result = LocalRecordings.deleteAll(Preferences.get().recordingsDir(),
+        LocalRecordings.DeleteResult result = LocalRecordings.deleteAll(Preferences.get().recordingsDir(),
                 targets);
         refresh();
         if (result.failed() > 0) {
@@ -161,7 +161,7 @@ public final class RecordingsView extends ViewPart {
         }
     }
 
-    private void open(final Path file) {
+    private void open(Path file) {
         RecordingEditorInput.openOrReport(getSite().getPage(), file, this::setContentDescription);
     }
 

@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.format.Vbtm;
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot.Session;
@@ -42,9 +44,9 @@ final class ExportHead {
 
     private long bodyEnd;
 
-    ExportHead(final TraceSnapshot data, final Session session, final long floorNs, final ExportNames names,
-            final BodyPass pass, final OutlineHeap top, final int width, final long sessionStartTicks,
-            final long sessionDurTicks) {
+    ExportHead(TraceSnapshot data, Session session, long floorNs, ExportNames names,
+            BodyPass pass, OutlineHeap top, int width, long sessionStartTicks,
+            long sessionDurTicks) {
         this.data = data;
         this.session = session;
         this.floorNs = floorNs;
@@ -60,24 +62,24 @@ final class ExportHead {
         return bodyEnd;
     }
 
-    byte[] build(final long bodyLines) {
+    byte[] build(long bodyLines) {
         for (int id = pass.used().nextSetBit(0); id >= 0; id = pass.used().nextSetBit(id + 1)) {
             names.displayName(id);
         }
-        final int methodsUsed = names.registeredCount();
-        final int[] order = top.byLine();
-        final int callsWidth = callsWidth();
-        final List<String> hotSelf = hotRows(true, SessionExporter.HOT_BY_SELF_LIMIT, callsWidth);
-        final List<String> hotCalls = hotRows(false, SessionExporter.HOT_BY_CALLS_LIMIT, callsWidth);
-        final GcSection gc = gcRows();
-        final List<String> gcRows = gc.rows();
-        final int exceptionCount = pass.exceptionCount();
+        int methodsUsed = names.registeredCount();
+        int[] order = top.byLine();
+        int callsWidth = callsWidth();
+        List<String> hotSelf = hotRows(true, SessionExporter.HOT_BY_SELF_LIMIT, callsWidth);
+        List<String> hotCalls = hotRows(false, SessionExporter.HOT_BY_CALLS_LIMIT, callsWidth);
+        GcSection gc = gcRows();
+        List<String> gcRows = gc.rows();
+        int exceptionCount = pass.exceptionCount();
 
-        final StringBuilder sb = new StringBuilder(1 << 16);
+        StringBuilder sb = new StringBuilder(1 << 16);
         header(sb, methodsUsed, gcRows.size(), gc.ticks());
-        final long headerLines = newlines(sb);
+        long headerLines = newlines(sb);
         sb.append('\n');
-        final String[] what = {
+        String[] what = {
                 "outline: the " + grouped(order.length) + " longest calls as an index into the body, where L numbers are file lines",
                 "hot methods by self: " + grouped(hotSelf.size()) + " methods, self / total / calls over closed calls only",
                 "hot methods by calls: " + grouped(hotCalls.size()) + " methods",
@@ -86,46 +88,46 @@ final class ExportHead {
                 "gc pauses: " + grouped(gcRows.size()) + " stop-the-world pauses in this session, start dur kind collector: cause",
                 "body: " + grouped(bodyLines) + " lines, one call per line in time order" };
 
-        final long[] rowCounts = { what.length, order.length, hotSelf.size() + 1, hotCalls.size() + 1, methodsUsed,
+        long[] rowCounts = { what.length, order.length, hotSelf.size() + 1, hotCalls.size() + 1, methodsUsed,
                 exceptionCount, gcRows.size(), bodyLines };
-        final long[] starts = new long[rowCounts.length];
-        final long[] ends = new long[rowCounts.length];
-        long start = headerLines + 2;
+        long[] starts = new long[rowCounts.length];
+        long[] ends = new long[rowCounts.length];
+        @Var long start = headerLines + 2;
         for (int i = 0; i < rowCounts.length; i++) {
             starts[i] = start;
             ends[i] = rowCounts[i] == 0 ? start : start + 1 + rowCounts[i];
             start = ends[i] + 2;
         }
-        final long bodyStart = starts[rowCounts.length - 1];
+        long bodyStart = starts[rowCounts.length - 1];
         bodyEnd = ends[rowCounts.length - 1];
-        final String[] ranges = new String[what.length];
-        int rangeWidth = 0;
+        String[] ranges = new String[what.length];
+        @Var int rangeWidth = 0;
         for (int i = 0; i < ranges.length; i++) {
             ranges[i] = "L" + starts[i + 1] + "-L" + ends[i + 1];
             rangeWidth = Math.max(rangeWidth, ranges[i].length());
         }
-        final List<String> contents = new ArrayList<>(ranges.length);
+        List<String> contents = new ArrayList<>(ranges.length);
         for (int i = 0; i < ranges.length; i++) {
-            final StringBuilder row = new StringBuilder(ranges[i]);
+            StringBuilder row = new StringBuilder(ranges[i]);
             pad(row, rangeWidth - ranges[i].length() + 2);
             contents.add(row.append(what[i]).toString());
         }
-        final List<String> selfRows = new ArrayList<>(hotSelf.size() + 1);
+        List<String> selfRows = new ArrayList<>(hotSelf.size() + 1);
         selfRows.add(hotHeader(callsWidth));
         selfRows.addAll(hotSelf);
-        final List<String> callRows = new ArrayList<>(hotCalls.size() + 1);
+        List<String> callRows = new ArrayList<>(hotCalls.size() + 1);
         callRows.add(hotHeader(callsWidth));
         callRows.addAll(hotCalls);
-        final List<String> methodRows = new ArrayList<>(methodsUsed);
+        List<String> methodRows = new ArrayList<>(methodsUsed);
         for (int i = 0; i < methodsUsed; i++) {
-            final int id = names.registeredIdAt(i);
+            int id = names.registeredIdAt(i);
             methodRows.add(names.displayName(id) + " = " + names.fullName(id));
         }
-        final List<String> excRows = new ArrayList<>(exceptionCount);
+        List<String> excRows = new ArrayList<>(exceptionCount);
         for (int i = 0; i < exceptionCount; i++) {
             excRows.add("e" + (i + 1) + " = " + data.exceptionName(pass.exceptionIdAt(i)));
         }
-        final List<Section> sections = List.of(new Section("## contents", contents),
+        List<Section> sections = List.of(new Section("## contents", contents),
                 new Section("## outline: nodes >= " + SessionExporter.msText(top.thresholdTicks()) + " ms, "
                         + order.length + " of " + grouped(pass.listedCalls()) + " body nodes",
                         outlineRows(order, bodyStart + 1)),
@@ -134,9 +136,9 @@ final class ExportHead {
                 new Section("## methods: " + grouped(methodsUsed) + " used in this session", methodRows),
                 new Section("## exceptions: " + grouped(exceptionCount) + " classes thrown in this session", excRows),
                 new Section("## gc pauses: " + grouped(gcRows.size()) + " in this session, clipped to it", gcRows));
-        for (final Section s : sections) {
+        for (Section s : sections) {
             sb.append(s.heading()).append("\n\n");
-            for (final String r : s.rows()) {
+            for (String r : s.rows()) {
                 sb.append(r).append('\n');
             }
             if (!s.rows().isEmpty()) {
@@ -150,13 +152,13 @@ final class ExportHead {
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    private void header(final StringBuilder sb, final int methodsUsed, final int gcPauses, final long gcTicks) {
-        final String status = data.corruptOffset >= 0 ? "corrupt at offset " + data.corruptOffset
+    private void header(StringBuilder sb, int methodsUsed, int gcPauses, long gcTicks) {
+        String status = data.corruptOffset >= 0 ? "corrupt at offset " + data.corruptOffset
                 : data.truncated ? "truncated" : "complete";
-        final String root = session.rootMethodId >= 0 ? names.displayName(session.rootMethodId) : "<no enter>";
-        final String compact = SessionExporter.floorLabelCompact(floorNs);
-        final long calls = pass.totalCalls();
-        final long listed = pass.listedCalls();
+        String root = session.rootMethodId >= 0 ? names.displayName(session.rootMethodId) : "<no enter>";
+        String compact = SessionExporter.floorLabelCompact(floorNs);
+        long calls = pass.totalCalls();
+        long listed = pass.listedCalls();
         sb.append("# verbatime session export v1\n\n");
         sb.append("file: ").append(ExportNames.sanitize(data.path.getFileName().toString())).append("  format: ")
                 .append(Vbtm.MAGIC).append(" v").append(Vbtm.VERSION).append("  status: ").append(status).append('\n');
@@ -183,25 +185,25 @@ final class ExportHead {
     }
 
     private GcSection gcRows() {
-        final TraceSnapshot.GcPauses gc = data.gc;
-        final long sessionEndNs = session.endNs;
-        final List<long[]> inside = new ArrayList<>();
+        TraceSnapshot.GcPauses gc = data.gc;
+        long sessionEndNs = session.endNs;
+        List<long[]> inside = new ArrayList<>();
         for (int i = 0; i < gc.count; i++) {
-            final long a = Math.max(gc.startNs[i], session.startNs);
-            final long b = Math.min(gc.startNs[i] + gc.durNs[i], sessionEndNs);
+            long a = Math.max(gc.startNs[i], session.startNs);
+            long b = Math.min(gc.startNs[i] + gc.durNs[i], sessionEndNs);
             if (b > a) {
                 inside.add(new long[] { a, b, i });
             }
         }
         inside.sort((x, y) -> Long.compare(x[0], y[0]));
-        final List<String> rows = new ArrayList<>(inside.size());
-        long ticks = 0;
-        for (final long[] p : inside) {
-            final long startTicks = (p[0] - session.startNs) / Vbtm.NANOS_PER_TICK;
-            final long durTicks = (p[1] - p[0]) / Vbtm.NANOS_PER_TICK;
+        List<String> rows = new ArrayList<>(inside.size());
+        @Var long ticks = 0;
+        for (long[] p : inside) {
+            long startTicks = (p[0] - session.startNs) / Vbtm.NANOS_PER_TICK;
+            long durTicks = (p[1] - p[0]) / Vbtm.NANOS_PER_TICK;
             ticks += durTicks;
-            final int i = (int) p[2];
-            final String kind = gc.action[i] == Vbtm.GC_ACTION_MINOR ? "minor"
+            int i = (int) p[2];
+            String kind = gc.action[i] == Vbtm.GC_ACTION_MINOR ? "minor"
                     : gc.action[i] == Vbtm.GC_ACTION_MAJOR ? "major" : "pause";
             rows.add(SessionExporter.msText(startTicks) + " " + SessionExporter.msText(durTicks) + " " + kind + " "
                     + ExportNames.sanitize(gc.collector[i]) + ": " + ExportNames.sanitize(gc.cause[i]));
@@ -209,18 +211,18 @@ final class ExportHead {
         return new GcSection(rows, ticks);
     }
 
-    private List<String> outlineRows(final int[] order, final long anchorBase) {
-        final List<String> rows = new ArrayList<>(order.length);
-        final int n = order.length;
-        final long[] outlineChildren = new long[n];
-        final long[] outlineChildDur = new long[n];
-        final int[] lastAtDepth = new int[pass.maxDepth() + 2];
+    private List<String> outlineRows(int[] order, long anchorBase) {
+        List<String> rows = new ArrayList<>(order.length);
+        int n = order.length;
+        long[] outlineChildren = new long[n];
+        long[] outlineChildDur = new long[n];
+        int[] lastAtDepth = new int[pass.maxDepth() + 2];
         Arrays.fill(lastAtDepth, -1);
         for (int i = 0; i < n; i++) {
-            final int e = order[i];
-            final int d = top.depth(e);
+            int e = order[i];
+            int d = top.depth(e);
             if (d > 0 && lastAtDepth[d - 1] >= 0) {
-                final int p = lastAtDepth[d - 1];
+                int p = lastAtDepth[d - 1];
                 outlineChildren[p]++;
                 outlineChildDur[p] += top.dur(e);
             }
@@ -232,19 +234,19 @@ final class ExportHead {
                 lastAtDepth[k] = -1;
             }
         }
-        final int anchorWidth = digits(anchorBase + (n > 0 ? top.line(order[n - 1]) : 0)) + 1;
-        final long denom = Math.max(sessionDurTicks, 1);
+        int anchorWidth = digits(anchorBase + (n > 0 ? top.line(order[n - 1]) : 0)) + 1;
+        long denom = Math.max(sessionDurTicks, 1);
         for (int i = 0; i < n; i++) {
-            final int e = order[i];
-            final StringBuilder sb = new StringBuilder(160);
-            final String anchor = "L" + (anchorBase + top.line(e));
+            int e = order[i];
+            StringBuilder sb = new StringBuilder(160);
+            String anchor = "L" + (anchorBase + top.line(e));
             sb.append(anchor);
             pad(sb, anchorWidth - anchor.length() + 1);
             padLeft(sb, SessionExporter.msText(top.start(e) - sessionStartTicks), width);
             sb.append(' ');
             padLeft(sb, SessionExporter.msText(top.dur(e)), width);
             sb.append(' ');
-            final long tenths = (top.dur(e) * 1000 + denom / 2) / denom;
+            long tenths = (top.dur(e) * 1000 + denom / 2) / denom;
             padLeft(sb, tenths / 10 + "." + tenths % 10 + "%", 6);
             sb.append("  ");
             pad(sb, top.depth(e));
@@ -252,7 +254,7 @@ final class ExportHead {
             if (top.children(e) > 0) {
                 sb.append(" self ").append(SessionExporter.msText(top.self(e)));
             }
-            final long hidden = top.children(e) - outlineChildren[i];
+            long hidden = top.children(e) - outlineChildren[i];
             if (hidden > 0) {
                 sb.append(" hidden ").append(hidden).append(" calls ")
                         .append(SessionExporter.msText(top.dur(e) - top.self(e) - outlineChildDur[i]));
@@ -272,9 +274,9 @@ final class ExportHead {
         return rows;
     }
 
-    private String hotHeader(final int callsWidth) {
-        final int w = Math.max(width, 8);
-        final StringBuilder sb = new StringBuilder();
+    private String hotHeader(int callsWidth) {
+        int w = Math.max(width, 8);
+        StringBuilder sb = new StringBuilder();
         padLeft(sb, "self_ms", w);
         sb.append(' ');
         padLeft(sb, "total_ms", w);
@@ -285,8 +287,8 @@ final class ExportHead {
     }
 
     private int callsWidth() {
-        long max = 0;
-        for (final long c : pass.calls()) {
+        @Var long max = 0;
+        for (long c : pass.calls()) {
             if (c > max) {
                 max = c;
             }
@@ -294,11 +296,11 @@ final class ExportHead {
         return Math.max(digits(max), 5);
     }
 
-    private List<String> hotRows(final boolean bySelf, final int limit, final int callsWidth) {
-        final long[] calls = pass.calls();
-        final long[] totalTicks = pass.totalTicks();
-        final long[] selfTicks = pass.selfTicks();
-        final List<Integer> ids = new ArrayList<>();
+    private List<String> hotRows(boolean bySelf, int limit, int callsWidth) {
+        long[] calls = pass.calls();
+        long[] totalTicks = pass.totalTicks();
+        long[] selfTicks = pass.selfTicks();
+        List<Integer> ids = new ArrayList<>();
         for (int i = 0; i < calls.length; i++) {
             if (calls[i] > 0) {
                 ids.add(i);
@@ -306,7 +308,7 @@ final class ExportHead {
         }
         if (bySelf) {
             ids.sort((a, b) -> {
-                int c = Long.compare(selfTicks[b], selfTicks[a]);
+                @Var int c = Long.compare(selfTicks[b], selfTicks[a]);
                 if (c == 0) {
                     c = Long.compare(totalTicks[b], totalTicks[a]);
                 }
@@ -317,18 +319,18 @@ final class ExportHead {
             });
         } else {
             ids.sort((a, b) -> {
-                int c = Long.compare(calls[b], calls[a]);
+                @Var int c = Long.compare(calls[b], calls[a]);
                 if (c == 0) {
                     c = Long.compare(selfTicks[b], selfTicks[a]);
                 }
                 return c != 0 ? c : Integer.compare(a, b);
             });
         }
-        final int w = Math.max(width, 8);
-        final List<String> rows = new ArrayList<>();
+        int w = Math.max(width, 8);
+        List<String> rows = new ArrayList<>();
         for (int i = 0; i < Math.min(limit, ids.size()); i++) {
-            final int id = ids.get(i);
-            final StringBuilder sb = new StringBuilder();
+            int id = ids.get(i);
+            StringBuilder sb = new StringBuilder();
             padLeft(sb, SessionExporter.msText(selfTicks[id]), w);
             sb.append(' ');
             padLeft(sb, SessionExporter.msText(totalTicks[id]), w);
@@ -340,8 +342,8 @@ final class ExportHead {
         return rows;
     }
 
-    private static long newlines(final CharSequence cs) {
-        long n = 0;
+    private static long newlines(CharSequence cs) {
+        @Var long n = 0;
         for (int i = 0; i < cs.length(); i++) {
             if (cs.charAt(i) == '\n') {
                 n++;
@@ -350,21 +352,21 @@ final class ExportHead {
         return n;
     }
 
-    private static String grouped(final long v) {
+    private static String grouped(long v) {
         return String.format(Locale.US, "%,d", v);
     }
 
-    private static int digits(final long v) {
+    private static int digits(long v) {
         return Long.toString(Math.max(v, 0)).length();
     }
 
-    private static void pad(final StringBuilder sb, final int n) {
+    private static void pad(StringBuilder sb, int n) {
         for (int i = 0; i < n; i++) {
             sb.append(' ');
         }
     }
 
-    private static void padLeft(final StringBuilder sb, final String s, final int w) {
+    private static void padLeft(StringBuilder sb, String s, int w) {
         pad(sb, w - s.length());
         sb.append(s);
     }

@@ -13,7 +13,7 @@ public class Warmup {
     @Inject
     OrderService orders;
 
-    void onStart(@Observes final StartupEvent event) {
+    void onStart(@Observes StartupEvent event) {
         orders.placeOrder("warmup", 1);
     }
 }

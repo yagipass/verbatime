@@ -29,14 +29,14 @@ final class SessionExporterFixtureTest {
     private static final long FLOOR_NS = 10_000;
 
     private static byte[] trace() {
-        final TraceBuilder w = TestTraces.writer();
+        TraceBuilder w = TestTraces.writer();
         w.thread(7, "main");
         w.clazz(1, "pkg.Root", "run()V");
         w.clazz(2, "pkg.A", "a()V", "getChar()I", "getChar(ZZ)I", "tiny()V");
         w.clazz(6, "pkg.other.A", "a()V");
         w.exception(1, "java.lang.IllegalStateException");
         w.exception(2, "pkg.AppException");
-        final TraceBuilder.Payload p = new TraceBuilder.Payload(100);
+        TraceBuilder.Payload p = new TraceBuilder.Payload(100);
         p.enter(100, 1);
         p.enter(110, 2);
         p.enter(120, 3).exit(130);
@@ -53,19 +53,19 @@ final class SessionExporterFixtureTest {
         return w.bytes();
     }
 
-    private Result export(final TraceSnapshot d, final Path out) throws IOException {
+    private Result export(TraceSnapshot d, Path out) throws IOException {
         return SessionExporter.export(d, d.sessions.get(0), FLOOR_NS, out, TraceIndexer.ProgressListener.NONE,
                 SessionExporter.OUTLINE_LIMIT, SessionExporter.WRITE_BUFFER_BYTES);
     }
 
     @Test
     void theWholeFileIsPinned() throws IOException {
-        final TraceSnapshot d = TestTraces.index(trace(), 1 << 20);
+        TraceSnapshot d = TestTraces.index(trace(), 1 << 20);
 
-        final Path out = dir.resolve("s1.txt");
-        final Result r = export(d, out);
+        Path out = dir.resolve("s1.txt");
+        Result r = export(d, out);
 
-        final String expected = String.join("\n", List.of(
+        String expected = String.join("\n", List.of(
                 "# verbatime session export v1",
                 "",
                 "file: " + d.path.getFileName() + "  format: vbtm v1  status: complete",
@@ -158,10 +158,10 @@ final class SessionExporterFixtureTest {
         assertEquals(17_000, r.outlineThresholdNs());
         assertFalse(Files.exists(dir.resolve("s1.txt.part")), "the staging file is gone");
 
-        final ParsedExport t = ParsedExport.read(out);
+        ParsedExport t = ParsedExport.read(out);
         t.checkInvariants("fixture");
-        for (final ParsedExport.OutlineRow o : t.outline) {
-            final ParsedExport.BodyLine b = t.bodyAt(o.anchor());
+        for (ParsedExport.OutlineRow o : t.outline) {
+            ParsedExport.BodyLine b = t.bodyAt(o.anchor());
             assertEquals(o.start(), b.start(), "anchor resolves to the same call: " + o.raw());
             assertEquals(o.dur(), b.dur(), o.raw());
             assertEquals(o.depth(), b.depth(), o.raw());
@@ -171,7 +171,7 @@ final class SessionExporterFixtureTest {
 
     @Test
     void sameInputSameBytesSoExportsCanBeDiffed() throws IOException {
-        final TraceSnapshot d = TestTraces.index(trace(), 1 << 20);
+        TraceSnapshot d = TestTraces.index(trace(), 1 << 20);
         export(d, dir.resolve("a.txt"));
         export(d, dir.resolve("b.txt"));
         assertEquals(Files.readString(dir.resolve("a.txt")), Files.readString(dir.resolve("b.txt")));
@@ -179,12 +179,12 @@ final class SessionExporterFixtureTest {
 
     @Test
     void floorZeroListsEveryCallAndNeedsNoAccountingLines() throws IOException {
-        final TraceSnapshot d = TestTraces.index(trace(), 1 << 20);
-        final Path out = dir.resolve("all.txt");
-        final Result r = SessionExporter.export(d, d.sessions.get(0), 0, out, TraceIndexer.ProgressListener.NONE);
+        TraceSnapshot d = TestTraces.index(trace(), 1 << 20);
+        Path out = dir.resolve("all.txt");
+        Result r = SessionExporter.export(d, d.sessions.get(0), 0, out, TraceIndexer.ProgressListener.NONE);
         assertEquals(8, r.listedCalls());
         assertEquals(0, r.belowFloorCalls());
-        final ParsedExport t = ParsedExport.read(out);
+        ParsedExport t = ParsedExport.read(out);
         assertEquals(8, t.body.size());
         assertTrue(t.body.stream().noneMatch(ParsedExport.BodyLine::accounting));
         assertEquals("0.0211 0.0001 3 A.tiny", t.body.get(6).raw(), "the 100 ns nested call is one tick");
@@ -200,13 +200,13 @@ final class SessionExporterFixtureTest {
 
     @Test
     void theFlagSlotIsSizedForTheRecordingsExceptionCountAndAnUnknownClassKeepsABareMark() throws IOException {
-        final TraceBuilder w = TestTraces.writer();
+        TraceBuilder w = TestTraces.writer();
         w.thread(7, "main");
         w.clazz(1, "pkg.Root", "run()V", "step()V", "leaf()V");
         for (int id = 1; id <= 10; id++) {
             w.exception(id, "pkg.Ex" + id);
         }
-        final TraceBuilder.Payload p = new TraceBuilder.Payload(100);
+        TraceBuilder.Payload p = new TraceBuilder.Payload(100);
         p.enter(100, 1);
         p.enter(110, 2);
         p.enter(120, 3).exitThrow(200_120, 0);
@@ -214,11 +214,11 @@ final class SessionExporterFixtureTest {
         p.exit(400_100);
         w.chunk(7, 100, p.bytes(), true);
         w.end();
-        final TraceSnapshot d = TestTraces.index(w);
-        final Path out = dir.resolve("wide.txt");
+        TraceSnapshot d = TestTraces.index(w);
+        Path out = dir.resolve("wide.txt");
         export(d, out);
 
-        final ParsedExport t = ParsedExport.read(out);
+        ParsedExport t = ParsedExport.read(out);
         assertEquals(List.of("0.0000 40.0000 0 Root.run self 10.0000     ", "0.0010 30.0000 1 Root.step self 10.0000 !e1 ",
                 "0.0020 20.0000 2 Root.leaf !"), t.body.stream().map(ParsedExport.BodyLine::raw).toList(),
                 "a deferred line's flag slot has room for the widest number the recording can need, 2 digits for 10 classes, so"
@@ -232,8 +232,8 @@ final class SessionExporterFixtureTest {
 
     @Test
     void cancellationLeavesNoFileBehind() throws IOException {
-        final TraceSnapshot d = TestTraces.index(trace(), 1 << 20);
-        final Path out = dir.resolve("cancelled.txt");
+        TraceSnapshot d = TestTraces.index(trace(), 1 << 20);
+        Path out = dir.resolve("cancelled.txt");
         assertThrows(TraceIndexer.CancelledException.class,
                 () -> SessionExporter.export(d, d.sessions.get(0), FLOOR_NS, out, (done, total) -> true));
         assertFalse(Files.exists(out));
@@ -242,19 +242,19 @@ final class SessionExporterFixtureTest {
 
     @Test
     void aSessionWithoutFramesStillGetsAWellFormedFile() throws IOException {
-        final TraceBuilder w = TestTraces.writer();
+        TraceBuilder w = TestTraces.writer();
         w.thread(9, "idle");
         w.chunk(9, 150, new byte[0], true);
         w.end();
-        final TraceSnapshot d = TestTraces.index(w);
-        final Session s = d.sessions.get(0);
+        TraceSnapshot d = TestTraces.index(w);
+        Session s = d.sessions.get(0);
         assertEquals(0, s.callCount);
         assertTrue(d.threads.isEmpty(), "the index keeps no model for a thread without frames");
-        final Path out = dir.resolve("empty.txt");
-        final Result r = SessionExporter.export(d, s, FLOOR_NS, out, TraceIndexer.ProgressListener.NONE);
+        Path out = dir.resolve("empty.txt");
+        Result r = SessionExporter.export(d, s, FLOOR_NS, out, TraceIndexer.ProgressListener.NONE);
         assertEquals(0, r.calls());
         assertEquals(0, r.bodyLines());
-        final ParsedExport t = ParsedExport.read(out);
+        ParsedExport t = ParsedExport.read(out);
         assertEquals("session: #1  thread: idle  root: <no enter>", t.line(ParsedExport.LINE_SESSION));
         assertEquals("duration: 0.0000 ms  calls: 0  max depth: 0  methods used: 0", t.line(ParsedExport.LINE_DURATION));
         assertEquals("## body: 0 lines", t.line(t.bodyStart), "an empty body is a heading with no blank line to trail");

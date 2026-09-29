@@ -27,29 +27,29 @@ final class HotCommand {
     private HotCommand() {
     }
 
-    static int run(final List<String> argv, final PrintStream stdout) {
-        final Args args = Args.parse("hot", argv, Set.of("by", "limit"), Set.of("json"));
+    static int run(List<String> argv, PrintStream stdout) {
+        Args args = Args.parse("hot", argv, Set.of("by", "limit"), Set.of("json"));
         args.rejectPositionalsBeyond(2);
-        final TraceFile file = TraceFile.open(args.positional(0, "the .vbtm file"));
-        final Out out = new Out(stdout, args.has("json"));
-        final Names names = new Names(file);
-        final Scope scope = Scope.of(file, args.positionalOrNull(1));
-        final String by = args.choice("by", "self", "self", "total", "calls");
-        final int limit = args.positiveInt("limit", 30);
+        TraceFile file = TraceFile.open(args.positional(0, "the .vbtm file"));
+        Out out = new Out(stdout, args.has("json"));
+        Names names = new Names(file);
+        Scope scope = Scope.of(file, args.positionalOrNull(1));
+        String by = args.choice("by", "self", "self", "total", "calls");
+        int limit = args.positiveInt("limit", 30);
 
-        final MethodTotals totals = new MethodTotals(Math.max(file.methodCount, 16));
-        final SessionWalker walker = new SessionWalker(file);
-        for (final TraceFile.Session s : scope.sessions) {
+        MethodTotals totals = new MethodTotals(Math.max(file.methodCount, 16));
+        SessionWalker walker = new SessionWalker(file);
+        for (TraceFile.Session s : scope.sessions) {
             walker.walk(s, totals);
         }
 
-        final List<Integer> ids = new ArrayList<>();
+        List<Integer> ids = new ArrayList<>();
         for (int id = 0; id < totals.calls.length; id++) {
             if (totals.calls[id] > 0) {
                 ids.add(id);
             }
         }
-        final long[] key = switch (by) {
+        long[] key = switch (by) {
             case "total" -> totals.totalTicks;
             case "calls" -> totals.calls;
             default -> totals.selfTicks;
@@ -62,11 +62,11 @@ final class HotCommand {
         out.text("");
         out.json(new Json("scope").put("scope", scope.label).ms("root_ms", totals.rootTicks)
                 .put("calls", totals.allCalls).put("methods", ids.size()).put("sort", by));
-        final Out.Table table = new Out.Table(">self_ms", ">self%", ">total_ms", ">calls", "method");
-        final int shown = Math.min(limit, ids.size());
-        final Legend legend = new Legend(names);
+        Out.Table table = new Out.Table(">self_ms", ">self%", ">total_ms", ">calls", "method");
+        int shown = Math.min(limit, ids.size());
+        Legend legend = new Legend(names);
         for (int i = 0; i < shown; i++) {
-            final int id = ids.get(i);
+            int id = ids.get(i);
             table.add(Formats.ms(totals.selfTicks[id]), Formats.percent(totals.selfTicks[id], totals.rootTicks),
                     Formats.ms(totals.totalTicks[id]), Formats.grouped(totals.calls[id]), names.displayName(id));
             out.json(new Json("method").put("method", names.displayName(id)).put("full", names.fullName(id))
@@ -95,7 +95,7 @@ final class HotCommand {
 
         private int[] openCalls;
 
-        MethodTotals(final int capacity) {
+        MethodTotals(int capacity) {
             calls = new long[capacity];
             selfTicks = new long[capacity];
             totalTicks = new long[capacity];
@@ -103,7 +103,7 @@ final class HotCommand {
         }
 
         @Override
-        public void enter(final long ordinal, final int depth, final int methodId, final long startTicks) {
+        public void enter(long ordinal, int depth, int methodId, long startTicks) {
             if (methodId >= calls.length) {
                 allocate(Math.max(methodId + 1, calls.length * 2));
             }
@@ -111,8 +111,8 @@ final class HotCommand {
         }
 
         @Override
-        public void exit(final long ordinal, final int depth, final int methodId, final long startTicks,
-                final long durTicks, final long self, final int exceptionId, final boolean unclosed) {
+        public void exit(long ordinal, int depth, int methodId, long startTicks,
+                long durTicks, long self, int exceptionId, boolean unclosed) {
             allCalls++;
             calls[methodId]++;
             selfTicks[methodId] += self;
@@ -124,7 +124,7 @@ final class HotCommand {
             }
         }
 
-        private void allocate(final int capacity) {
+        private void allocate(int capacity) {
             calls = Arrays.copyOf(calls, capacity);
             selfTicks = Arrays.copyOf(selfTicks, capacity);
             totalTicks = Arrays.copyOf(totalTicks, capacity);

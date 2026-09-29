@@ -4,20 +4,22 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.google.errorprone.annotations.Var;
+
 final class CallTree {
 
     private final TreeCommand tree;
 
     private final Out out;
 
-    CallTree(final TreeCommand tree) {
+    CallTree(TreeCommand tree) {
         this.tree = tree;
         this.out = tree.out;
     }
 
     void print() {
-        final long floor = tree.autoFloor() ? chooseFloor() : tree.floorTicks();
-        final Lines lines = new Lines(tree.walker, tree.at, floor, tree.maxDepth, tree.limit);
+        long floor = tree.autoFloor() ? chooseFloor() : tree.floorTicks();
+        Lines lines = new Lines(tree.walker, tree.at, floor, tree.maxDepth, tree.limit);
         tree.walk(lines);
         tree.header(lines, lines.subtreeCalls);
         out.text("floor: " + tree.floorText(floor, "none, every call is printed") + "  depth: "
@@ -26,10 +28,10 @@ final class CallTree {
         tree.exceptionsLegend(lines.thrown.countByException);
         tree.gcLegend(lines.startTicks, lines.durTicks);
         out.text("");
-        final long sessionStart = tree.walker.startTicks;
-        final Legend legend = new Legend(tree.names);
-        Line largestFold = null;
-        for (final Line l : lines.lines) {
+        long sessionStart = tree.walker.startTicks;
+        Legend legend = new Legend(tree.names);
+        @Var Line largestFold = null;
+        for (Line l : lines.lines) {
             if (l.fold == null) {
                 printCall(l, sessionStart);
                 legend.add(l.methodId);
@@ -48,18 +50,18 @@ final class CallTree {
     }
 
     private long chooseFloor() {
-        final FloorHeap heap = new FloorHeap(Math.max(tree.limit * 2 / 3, 1));
+        FloorHeap heap = new FloorHeap(Math.max(tree.limit * 2 / 3, 1));
         tree.walk(new SubtreeVisitor(tree.walker, tree.at) {
 
             @Override
-            void onEnter(final long ordinal, final int level, final int depth, final int methodId,
-                    final long startTicks) {
+            void onEnter(long ordinal, int level, int depth, int methodId,
+                    long startTicks) {
             }
 
             @Override
-            void onExit(final long ordinal, final int level, final int depth, final int methodId,
-                    final long startTicks, final long durTicks, final long selfTicks, final int exceptionId,
-                    final boolean unclosed) {
+            void onExit(long ordinal, int level, int depth, int methodId,
+                    long startTicks, long durTicks, long selfTicks, int exceptionId,
+                    boolean unclosed) {
                 if (level <= tree.maxDepth) {
                     heap.offer(durTicks);
                 }
@@ -68,9 +70,9 @@ final class CallTree {
         return heap.floor();
     }
 
-    private void printCall(final Line l, final long sessionStart) {
-        final String id = tree.callId(l.ordinal);
-        final StringBuilder sb = new StringBuilder();
+    private void printCall(Line l, long sessionStart) {
+        String id = tree.callId(l.ordinal);
+        StringBuilder sb = new StringBuilder();
         sb.append(id).append(' ').append(Formats.ms(l.startTicks - sessionStart)).append(' ')
                 .append(Formats.ms(l.durTicks)).append(' ').append(l.depth).append(' ')
                 .append(tree.names.displayName(l.methodId));
@@ -95,10 +97,10 @@ final class CallTree {
                 .put("unclosed", l.unclosed));
     }
 
-    private void printFold(final Line l, final long sessionStart) {
-        final Fold fold = l.fold;
-        final String parent = tree.callId(l.ordinal);
-        final StringBuilder sb = new StringBuilder();
+    private void printFold(Line l, long sessionStart) {
+        Fold fold = l.fold;
+        String parent = tree.callId(l.ordinal);
+        StringBuilder sb = new StringBuilder();
         sb.append("- ").append(Formats.ms(fold.firstStartTicks - sessionStart)).append(' ')
                 .append(Formats.ms(fold.ticks)).append(' ').append(l.depth).append(" ·")
                 .append(Formats.plural(fold.count, "call")).append(" of ").append(parent).append(' ')
@@ -117,9 +119,9 @@ final class CallTree {
                 .put("methods", fold.methodsText(tree.names, 20)));
     }
 
-    private void printLargestFold(final Line l, final long rootOrdinal, final long floor) {
-        final String parent = tree.callId(l.ordinal);
-        final String next;
+    private void printLargestFold(Line l, long rootOrdinal, long floor) {
+        String parent = tree.callId(l.ordinal);
+        String next;
         if (l.ordinal != rootOrdinal) {
             next = tree.args.commandWith("at", parent, "floor", null);
         } else if (l.fold.byDepth) {
@@ -156,7 +158,7 @@ final class CallTree {
 
         long floorTicks;
 
-        Line(final long ordinal, final int depth, final int methodId, final long startTicks) {
+        Line(long ordinal, int depth, int methodId, long startTicks) {
             this.ordinal = ordinal;
             this.depth = depth;
             this.methodId = methodId;
@@ -192,7 +194,7 @@ final class CallTree {
 
         private Fold[] folds = new Fold[64];
 
-        Lines(final SessionWalker walker, final long at, final long floorTicks, final int maxDepth, final int limit) {
+        Lines(SessionWalker walker, long at, long floorTicks, int maxDepth, int limit) {
             super(walker, at);
             this.floorTicks = floorTicks;
             this.maxDepth = maxDepth;
@@ -200,8 +202,8 @@ final class CallTree {
         }
 
         @Override
-        void onEnter(final long ordinal, final int level, final int depth, final int methodId,
-                final long startTicks) {
+        void onEnter(long ordinal, int level, int depth, int methodId,
+                long startTicks) {
             if (level == lineIndex.length) {
                 allocate(level * 2);
             }
@@ -225,34 +227,34 @@ final class CallTree {
         }
 
         @Override
-        void onExit(final long ordinal, final int level, final int depth, final int methodId, final long startTicks,
-                final long durTicks, final long selfTicks, final int exceptionId, final boolean unclosed) {
+        void onExit(long ordinal, int level, int depth, int methodId, long startTicks,
+                long durTicks, long selfTicks, int exceptionId, boolean unclosed) {
             subtree[level]++;
             if (level > 0) {
                 subtree[level - 1] += subtree[level];
             } else {
                 subtreeCalls += subtree[level];
             }
-            final int index = lineIndex[level];
-            final boolean shown = level == 0 || (level <= maxDepth && durTicks >= floorTicks);
+            int index = lineIndex[level];
+            boolean shown = level == 0 || (level <= maxDepth && durTicks >= floorTicks);
             if (!shown) {
                 if (index >= 0) {
                     lines.subList(index, lines.size()).clear();
                 }
                 if (level > 0 && level - 1 <= maxDepth) {
-                    final Fold parent = folds[level - 1];
+                    Fold parent = folds[level - 1];
                     parent.add(methodId, startTicks, durTicks, subtree[level],
                             exceptionId != SessionWalker.NO_EXCEPTION);
                     parent.byDepth = level > maxDepth;
                 }
                 return;
             }
-            final Fold fold = folds[level];
+            Fold fold = folds[level];
             if (index < 0) {
                 more += fold.count > 0 ? 2 : 1;
                 return;
             }
-            final Line l = lines.get(index);
+            Line l = lines.get(index);
             l.durTicks = durTicks;
             l.selfTicks = selfTicks;
             l.children = children[level];
@@ -261,7 +263,7 @@ final class CallTree {
             closed++;
             if (fold.count > 0) {
                 if (recording) {
-                    final Line folded = new Line(ordinal, depth + 1, -1, fold.firstStartTicks);
+                    Line folded = new Line(ordinal, depth + 1, -1, fold.firstStartTicks);
                     folded.fold = fold.copy();
                     folded.floorTicks = floorTicks;
                     lines.add(folded);
@@ -275,7 +277,7 @@ final class CallTree {
             }
         }
 
-        private void allocate(final int capacity) {
+        private void allocate(int capacity) {
             lineIndex = Arrays.copyOf(lineIndex, capacity);
             subtree = Arrays.copyOf(subtree, capacity);
             children = Arrays.copyOf(children, capacity);

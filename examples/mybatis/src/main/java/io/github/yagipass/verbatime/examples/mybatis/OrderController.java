@@ -13,12 +13,12 @@ public class OrderController {
 
     private final PersistentOrderService orders;
 
-    OrderController(final PersistentOrderService orders) {
+    OrderController(PersistentOrderService orders) {
         this.orders = orders;
     }
 
     @GetMapping("/orders")
-    public OrderRow place(@RequestParam(defaultValue = "widget") final String sku, @RequestParam(defaultValue = "1") final int qty) {
+    public OrderRow place(@RequestParam(defaultValue = "widget") String sku, @RequestParam(defaultValue = "1") int qty) {
         return orders.place(sku, qty);
     }
 
@@ -28,7 +28,7 @@ public class OrderController {
     }
 
     @GetMapping("/orders/{id}")
-    public ResponseEntity<OrderRow> find(@PathVariable final long id) {
+    public ResponseEntity<OrderRow> find(@PathVariable long id) {
         return ResponseEntity.of(orders.find(id));
     }
 }

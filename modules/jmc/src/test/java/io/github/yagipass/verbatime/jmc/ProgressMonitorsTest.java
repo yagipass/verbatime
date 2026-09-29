@@ -15,15 +15,15 @@ final class ProgressMonitorsTest {
         int worked;
 
         @Override
-        public void worked(final int work) {
+        public void worked(int work) {
             worked += work;
         }
     }
 
     @Test
     void reportsGrowthOnlyAndSumsToTheTaskTotal() {
-        final Counting m = new Counting();
-        final TraceIndexer.ProgressListener p = ProgressMonitors.of(m);
+        Counting m = new Counting();
+        TraceIndexer.ProgressListener p = ProgressMonitors.of(m);
         assertFalse(p.report(10, 100));
         assertEquals(100, m.worked);
         assertFalse(p.report(10, 100));
@@ -35,8 +35,8 @@ final class ProgressMonitorsTest {
 
     @Test
     void neverOvershootsEvenIfTheFileGrewUnderneath() {
-        final Counting m = new Counting();
-        final TraceIndexer.ProgressListener p = ProgressMonitors.of(m);
+        Counting m = new Counting();
+        TraceIndexer.ProgressListener p = ProgressMonitors.of(m);
         p.report(150, 100);
         assertEquals(ProgressMonitors.TICKS, m.worked);
         p.report(0, 0);
@@ -45,8 +45,8 @@ final class ProgressMonitorsTest {
 
     @Test
     void theMonitorsCancelButtonBecomesTheReadersCancelRequest() {
-        final Counting m = new Counting();
-        final TraceIndexer.ProgressListener p = ProgressMonitors.of(m);
+        Counting m = new Counting();
+        TraceIndexer.ProgressListener p = ProgressMonitors.of(m);
         assertFalse(p.report(1, 10));
         m.setCanceled(true);
         assertTrue(p.report(2, 10));

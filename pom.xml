@@ -56,6 +56,12 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
+        <groupId>com.google.errorprone</groupId>
+        <artifactId>error_prone_annotations</artifactId>
+        <version>${errorprone.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter</artifactId>
         <version>${junit.version}</version>
@@ -78,7 +84,7 @@
               <arg>-Werror</arg>
               <arg>-XDcompilePolicy=simple</arg>
               <arg>--should-stop=ifError=FLOW</arg>
-              <arg>-Xplugin:ErrorProne ${errorprone.flags}</arg>
+              <arg>-Xplugin:ErrorProne -Xep:Var:ERROR -Xep:UnnecessaryFinal:ERROR ${errorprone.flags}</arg>
               <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
             </compilerArgs>
             <annotationProcessorPaths>

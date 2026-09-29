@@ -25,18 +25,18 @@ final class ViewerBridgeTest {
         boolean disposed;
 
         @Override
-        public void define(final String name, final Consumer<Object[]> body) {
+        public void define(String name, Consumer<Object[]> body) {
             defined.put(name, body);
             events.add("define " + name);
         }
 
         @Override
-        public void load(final String html) {
+        public void load(String html) {
             events.add("load " + html);
         }
 
         @Override
-        public void execute(final String js) {
+        public void execute(String js) {
             events.add(js);
         }
 
@@ -56,7 +56,7 @@ final class ViewerBridgeTest {
             events.add("dispose");
         }
 
-        void call(final String fn, final Object... args) {
+        void call(String fn, Object... args) {
             defined.get(fn).accept(args);
         }
     }
@@ -75,7 +75,7 @@ final class ViewerBridgeTest {
         }
 
         @Override
-        public void requestWindow(final long reqId, final long t0Ns, final long t1Ns, final int px) {
+        public void requestWindow(long reqId, long t0Ns, long t1Ns, int px) {
             calls.add("window " + reqId + " " + t0Ns + " " + t1Ns + " " + px);
         }
 
@@ -85,18 +85,18 @@ final class ViewerBridgeTest {
         }
 
         @Override
-        public void select(final SelectedCall frame) {
+        public void select(SelectedCall frame) {
             selections++;
             selected = frame;
         }
 
         @Override
-        public void requestSearch(final long reqId, final String query) {
+        public void requestSearch(long reqId, String query) {
             calls.add("search " + reqId + " " + query);
         }
 
         @Override
-        public void requestMatch(final long reqId, final boolean forward, final long posNs) {
+        public void requestMatch(long reqId, boolean forward, long posNs) {
             calls.add("match " + reqId + " " + forward + " " + posNs);
         }
 
@@ -114,10 +114,10 @@ final class ViewerBridgeTest {
 
     @Test
     void openDefinesEveryHostFunctionBeforeThePageLoads() {
-        final FakePage page = new FakePage();
+        FakePage page = new FakePage();
         bridge.open(page, "<html>");
-        final List<String> expected = new ArrayList<>();
-        for (final String fn : ViewerBridge.HOST_FUNCTIONS) {
+        List<String> expected = new ArrayList<>();
+        for (String fn : ViewerBridge.HOST_FUNCTIONS) {
             expected.add("define " + fn);
         }
         expected.add("load <html>");
@@ -127,7 +127,7 @@ final class ViewerBridgeTest {
 
     @Test
     void outboundCallsAreTheExactScriptThePageExpects() {
-        final FakePage page = new FakePage();
+        FakePage page = new FakePage();
         bridge.open(page, "");
         page.events.clear();
         bridge.update("{\"a\":1}", true);
@@ -144,10 +144,10 @@ final class ViewerBridgeTest {
 
     @Test
     void aReplyForAStaleGenerationIsDroppedAndTheStaleBranchRuns() {
-        final FakePage page = new FakePage();
+        FakePage page = new FakePage();
         bridge.open(page, "");
-        final long gen = bridge.generation();
-        final List<String> ran = new ArrayList<>();
+        long gen = bridge.generation();
+        List<String> ran = new ArrayList<>();
         bridge.postIfCurrent(gen, () -> ran.add("fresh"), () -> ran.add("stale"));
         ui.runPosted();
         bridge.postIfCurrent(gen, () -> ran.add("fresh-2"), () -> ran.add("stale-2"));
@@ -161,9 +161,9 @@ final class ViewerBridgeTest {
 
     @Test
     void closeBumpsTheGenerationDisposesThePageAndSilencesLaterCalls() {
-        final FakePage page = new FakePage();
+        FakePage page = new FakePage();
         bridge.open(page, "");
-        final long before = bridge.generation();
+        long before = bridge.generation();
         bridge.close();
         assertNotEquals(before, bridge.generation());
         assertTrue(page.disposed);
@@ -172,7 +172,7 @@ final class ViewerBridgeTest {
         bridge.windowReply("{}");
         assertTrue(page.events.isEmpty(), "nothing is executed on a page that is gone");
 
-        final FakePage second = new FakePage();
+        FakePage second = new FakePage();
         bridge.open(second, "again");
         assertEquals(ViewerBridge.HOST_FUNCTIONS.size(), second.defined.size(), "a reopened page gets its own functions");
         assertFalse(page.defined.isEmpty(), "the old page is never touched again");
@@ -180,7 +180,7 @@ final class ViewerBridgeTest {
 
     @Test
     void inboundArgumentsAreNarrowedFromTheDoublesTheBrowserSends() {
-        final FakePage page = new FakePage();
+        FakePage page = new FakePage();
         bridge.open(page, "");
         page.call("vbtmHostReady");
         page.call("vbtmHostRequestWindow", 1.0, 2.0, 3.0, 1180.0);
@@ -196,11 +196,11 @@ final class ViewerBridgeTest {
 
     @Test
     void selectBuildsTheFrameFromNineArgumentsAndClearsOnFewer() {
-        final FakePage page = new FakePage();
+        FakePage page = new FakePage();
         bridge.open(page, "");
         page.call("vbtmHostSelect", 1.0, 100.0, 50.0, 20.0, 2.0, 7.0, -1.0, true,
                 new Object[] { 0.0, 200.0, 3.0, 90.0, 60.0, 5.0 });
-        final SelectedCall f = host.selected;
+        SelectedCall f = host.selected;
         assertEquals(1, f.tid());
         assertEquals(100, f.startNs());
         assertEquals(50, f.durNs());

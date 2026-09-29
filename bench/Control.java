@@ -10,6 +10,8 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
+import com.google.errorprone.annotations.Var;
+
 final class Control implements AutoCloseable {
 
     record Gc(long count, long millis) {
@@ -29,7 +31,7 @@ final class Control implements AutoCloseable {
 
     private final ObjectName collectors;
 
-    private Control(final JMXConnector connector) throws IOException, JMException {
+    private Control(JMXConnector connector) throws IOException, JMException {
         this.connector = connector;
         this.server = connector.getMBeanServerConnection();
         this.control = new ObjectName("verbatime:type=Control");
@@ -37,8 +39,8 @@ final class Control implements AutoCloseable {
         this.collectors = new ObjectName("java.lang:type=GarbageCollector,*");
     }
 
-    static Control connect(final String hostPort) throws IOException, JMException {
-        final JMXServiceURL url = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://" + hostPort + "/jmxrmi");
+    static Control connect(String hostPort) throws IOException, JMException {
+        JMXServiceURL url = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://" + hostPort + "/jmxrmi");
         return new Control(JMXConnectorFactory.connect(url));
     }
 
@@ -47,19 +49,19 @@ final class Control implements AutoCloseable {
     }
 
     Map<String, String> status() throws IOException, JMException {
-        final Map<String, String> map = new LinkedHashMap<>();
-        for (final String line : (String[]) server.invoke(control, "status", NO_ARGS, NO_SIGNATURE)) {
-            final int eq = line.indexOf('=');
+        Map<String, String> map = new LinkedHashMap<>();
+        for (String line : (String[]) server.invoke(control, "status", NO_ARGS, NO_SIGNATURE)) {
+            int eq = line.indexOf('=');
             map.put(line.substring(0, eq), line.substring(eq + 1));
         }
         return map;
     }
 
-    void replaceRoots(final String... specs) throws IOException, JMException {
+    void replaceRoots(String... specs) throws IOException, JMException {
         server.invoke(control, "replaceRoots", new Object[] { specs }, new String[] { "[Ljava.lang.String;" });
     }
 
-    long startRecording(final String name) throws IOException, JMException {
+    long startRecording(String name) throws IOException, JMException {
         return (Long) server.invoke(control, "startRecording", new Object[] { name }, new String[] { "java.lang.String" });
     }
 
@@ -67,14 +69,14 @@ final class Control implements AutoCloseable {
         server.invoke(control, "stopRecording", NO_ARGS, NO_SIGNATURE);
     }
 
-    byte[] download(final long recordingId) throws IOException, JMException {
-        final String[] idAndOffset = { "long", "long" };
-        final String[] id = { "long" };
-        final long stream = (Long) server.invoke(control, "openStream", new Object[] { recordingId, 0L }, idAndOffset);
-        final ByteArrayOutputStream all = new ByteArrayOutputStream();
+    byte[] download(long recordingId) throws IOException, JMException {
+        String[] idAndOffset = { "long", "long" };
+        String[] id = { "long" };
+        long stream = (Long) server.invoke(control, "openStream", new Object[] { recordingId, 0L }, idAndOffset);
+        ByteArrayOutputStream all = new ByteArrayOutputStream();
         try {
             while (true) {
-                final byte[] part = (byte[]) server.invoke(control, "readStream", new Object[] { stream }, id);
+                byte[] part = (byte[]) server.invoke(control, "readStream", new Object[] { stream }, id);
                 if (part == null) {
                     return all.toByteArray();
                 }
@@ -93,9 +95,9 @@ final class Control implements AutoCloseable {
     }
 
     Gc gc() throws IOException, JMException {
-        long count = 0;
-        long millis = 0;
-        for (final ObjectName name : server.queryNames(collectors, null)) {
+        @Var long count = 0;
+        @Var long millis = 0;
+        for (ObjectName name : server.queryNames(collectors, null)) {
             count += (Long) server.getAttribute(name, "CollectionCount");
             millis += (Long) server.getAttribute(name, "CollectionTime");
         }

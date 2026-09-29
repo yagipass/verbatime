@@ -22,28 +22,28 @@ final class JmxAgent implements Agent {
     private final ObjectName objectName;
 
     @SuppressWarnings("BanJNDI")
-    static JmxAgent dial(final String target) throws IOException {
-        final String url = target.startsWith("service:jmx:") ? target
+    static JmxAgent dial(String target) throws IOException {
+        String url = target.startsWith("service:jmx:") ? target
                 : "service:jmx:rmi:///jndi/rmi://" + target + "/jmxrmi";
-        final JMXConnector c = JMXConnectorFactory.connect(new JMXServiceURL(url));
+        JMXConnector c = JMXConnectorFactory.connect(new JMXServiceURL(url));
         try {
             return new JmxAgent(c.getMBeanServerConnection(), c);
-        } catch (final RuntimeException | IOException e) {
+        } catch (RuntimeException | IOException e) {
             try {
                 c.close();
-            } catch (final IOException closeError) {
+            } catch (IOException closeError) {
                 e.addSuppressed(closeError);
             }
             throw e;
         }
     }
 
-    private JmxAgent(final MBeanServerConnection connection, final AutoCloseable closer) {
+    private JmxAgent(MBeanServerConnection connection, AutoCloseable closer) {
         this.connection = connection;
         this.closer = closer;
         try {
             this.objectName = new ObjectName(OBJECT_NAME);
-        } catch (final MalformedObjectNameException e) {
+        } catch (MalformedObjectNameException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -54,13 +54,13 @@ final class JmxAgent implements Agent {
     }
 
     @Override
-    public String[] searchMethods(final String query, final int max) throws IOException {
+    public String[] searchMethods(String query, int max) throws IOException {
         return (String[]) invoke("searchMethods", new Object[] { query, max },
                 new String[] { "java.lang.String", "int" });
     }
 
     @Override
-    public void replaceRoots(final String[] specs) throws IOException {
+    public void replaceRoots(String[] specs) throws IOException {
         invoke("replaceRoots", new Object[] { specs }, new String[] { "[Ljava.lang.String;" });
     }
 
@@ -75,36 +75,36 @@ final class JmxAgent implements Agent {
     }
 
     @Override
-    public long openStream(final long recordingId, final long fromOffset) throws IOException {
+    public long openStream(long recordingId, long fromOffset) throws IOException {
         return ((Long) invoke("openStream", new Object[] { recordingId, fromOffset }, new String[] { "long", "long" }))
                 .longValue();
     }
 
     @Override
-    public byte[] readStream(final long streamId) throws IOException {
+    public byte[] readStream(long streamId) throws IOException {
         return (byte[]) invoke("readStream", new Object[] { streamId }, new String[] { "long" });
     }
 
     @Override
-    public void closeStream(final long streamId) throws IOException {
+    public void closeStream(long streamId) throws IOException {
         invoke("closeStream", new Object[] { streamId }, new String[] { "long" });
     }
 
-    private Object invoke(final String op, final Object[] params, final String[] sig) throws IOException {
+    private Object invoke(String op, Object[] params, String[] sig) throws IOException {
         try {
             return connection.invoke(objectName, op, params, sig);
-        } catch (final IOException e) {
+        } catch (IOException e) {
             throw e;
-        } catch (final Exception e) {
-            final Throwable cause = e.getCause() != null ? e.getCause() : e;
+        } catch (Exception e) {
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
             throw new IOException(op + ": " + cause.getMessage(), cause);
         }
     }
 
-    static Map<String, String> parseStatus(final String[] lines) {
-        final Map<String, String> m = new LinkedHashMap<>();
-        for (final String l : lines) {
-            final int eq = l.indexOf('=');
+    static Map<String, String> parseStatus(String[] lines) {
+        Map<String, String> m = new LinkedHashMap<>();
+        for (String l : lines) {
+            int eq = l.indexOf('=');
             if (eq > 0) {
                 m.put(l.substring(0, eq), l.substring(eq + 1));
             }
@@ -116,9 +116,9 @@ final class JmxAgent implements Agent {
     public void close() throws IOException {
         try {
             closer.close();
-        } catch (final IOException e) {
+        } catch (IOException e) {
             throw e;
-        } catch (final Exception e) {
+        } catch (Exception e) {
             throw new IOException(e);
         }
     }

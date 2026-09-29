@@ -19,15 +19,15 @@ final class TransferStateTest {
 
     private static final Transfer.Listener SILENT = new Transfer.Listener() {
         @Override
-        public void progress(final long bytes) {
+        public void progress(long bytes) {
         }
 
         @Override
-        public void finished(final long bytes) {
+        public void finished(long bytes) {
         }
 
         @Override
-        public void failed(final String message) {
+        public void failed(String message) {
         }
 
         @Override
@@ -35,15 +35,15 @@ final class TransferStateTest {
         }
     };
 
-    private static Transfer pull(final long id) {
+    private static Transfer pull(long id) {
         return new Transfer(new FakeAgent(), id, Path.of("/tmp/rec-" + id + ".vbtm"), 0, SILENT);
     }
 
     @Test
     void aPullCancelledByTheConnectionStaysStoppingUntilItReportsStopped() {
-        final TransferState t = new TransferState();
-        final List<String> cancelled = new ArrayList<>();
-        final Transfer first = pull(1);
+        TransferState t = new TransferState();
+        List<String> cancelled = new ArrayList<>();
+        Transfer first = pull(1);
         t.started(first, () -> cancelled.add("first"));
         t.transferred(120);
 
@@ -60,7 +60,7 @@ final class TransferStateTest {
 
         assertFalse(t.clearStopping(pull(9)), "a stranger's stopped() does not release the slot");
         assertTrue(t.clearStopping(first));
-        final TransferState.Deferred next = t.takeDeferred();
+        TransferState.Deferred next = t.takeDeferred();
         assertNotNull(next);
         assertEquals(2, next.recordingId());
         assertNull(t.takeDeferred(), "pending is handed out once");
@@ -70,14 +70,14 @@ final class TransferStateTest {
 
     @Test
     void aCallbackFromAnUnknownPullClearsNothing() {
-        final TransferState t = new TransferState();
-        final Transfer current = pull(5);
-        final FakeEditorHandle editor = new FakeEditorHandle();
+        TransferState t = new TransferState();
+        Transfer current = pull(5);
+        FakeEditorHandle editor = new FakeEditorHandle();
         t.started(current, () -> {
         });
         t.editorOpened(editor, 1_000);
 
-        final Transfer stale = pull(4);
+        Transfer stale = pull(4);
         assertFalse(t.isCurrent(stale));
         assertFalse(t.clearCurrent(stale), "a late callback from an earlier transfer must not end the current one");
         assertSame(current, t.current());
@@ -90,7 +90,7 @@ final class TransferStateTest {
 
     @Test
     void reloadsAreThrottledFromTheLastReloadNotFromTheFirstByte() {
-        final TransferState t = new TransferState();
+        TransferState t = new TransferState();
         t.editorOpened(new FakeEditorHandle(), 10_000);
         assertFalse(t.reloadDue(10_000 + TransferState.RELOAD_THROTTLE_MS - 1));
         assertTrue(t.reloadDue(10_000 + TransferState.RELOAD_THROTTLE_MS));
@@ -101,7 +101,7 @@ final class TransferStateTest {
 
     @Test
     void agentRateAveragesSuccessiveSamplesAndForgetsThemOnReset() {
-        final TransferState t = new TransferState();
+        TransferState t = new TransferState();
         assertEquals(0, t.sampleAgentRate(1_000, 100), "one sample is not a rate yet");
         assertEquals(100.0, t.sampleAgentRate(2_000, 200), "100 bytes in 1 s");
         assertEquals(150.0, t.sampleAgentRate(3_000, 400), "(100 + 200) / 2: the new sample is averaged in");

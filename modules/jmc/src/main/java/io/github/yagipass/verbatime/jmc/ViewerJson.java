@@ -2,6 +2,8 @@ package io.github.yagipass.verbatime.jmc;
 
 import java.util.BitSet;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.jmc.index.Calls;
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot.Session;
@@ -29,7 +31,7 @@ public final class ViewerJson {
         private int gcSent;
 
         public SentSessions copy() {
-            final SentSessions c = new SentSessions();
+            SentSessions c = new SentSessions();
             c.sent = sent;
             c.open.or(open);
             c.generation = generation;
@@ -50,13 +52,13 @@ public final class ViewerJson {
         final BitSet exceptions = new BitSet();
 
         public SentNames copy() {
-            final SentNames c = new SentNames();
+            SentNames c = new SentNames();
             c.methods.or(methods);
             c.exceptions.or(exceptions);
             return c;
         }
 
-        public void or(final SentNames o) {
+        public void or(SentNames o) {
             methods.or(o.methods);
             exceptions.or(o.exceptions);
         }
@@ -67,8 +69,8 @@ public final class ViewerJson {
         }
     }
 
-    public static String metaJson(final TraceSnapshot d, final SentNames sent, final SentSessions cursor) {
-        final StringBuilder sb = new StringBuilder(1 << 16);
+    public static String metaJson(TraceSnapshot d, SentNames sent, SentSessions cursor) {
+        StringBuilder sb = new StringBuilder(1 << 16);
 
         sb.append("{\"meta\":{\"source\":");
         Json.appendQuoted(sb, d.path.getFileName().toString());
@@ -85,17 +87,17 @@ public final class ViewerJson {
             sb.append(",\"corruptReason\":");
             Json.appendQuoted(sb, d.corruptReason);
         }
-        final int size = d.sessions.size();
-        final boolean reset = cursor.generation != d.generation || size < cursor.sent;
+        int size = d.sessions.size();
+        boolean reset = cursor.generation != d.generation || size < cursor.sent;
         sb.append(",\"sessionsReset\":").append(reset);
         sb.append(",\"sessions\":[");
-        final BitSet used = new BitSet();
-        boolean firstItem = true;
+        BitSet used = new BitSet();
+        @Var boolean firstItem = true;
         for (int i = 0; i < size; i++) {
             if (!reset && i < cursor.sent && !cursor.open.get(i)) {
                 continue;
             }
-            final Session s = d.sessions.get(i);
+            Session s = d.sessions.get(i);
             if (s.rootMethodId >= 0) {
                 used.set(s.rootMethodId);
             }
@@ -122,8 +124,8 @@ public final class ViewerJson {
         cursor.lastReset = reset;
         sb.append("],\"threads\":[");
         firstItem = true;
-        final double bucketNs = Math.max(d.maxNs - d.minNs, 1) / (double) COVERAGE_BUCKETS;
-        for (final ThreadIndex m : d.threads) {
+        double bucketNs = Math.max(d.maxNs - d.minNs, 1) / (double) COVERAGE_BUCKETS;
+        for (ThreadIndex m : d.threads) {
             if (!firstItem) {
                 sb.append(',');
             }
@@ -138,8 +140,8 @@ public final class ViewerJson {
             sb.append("]}");
         }
         sb.append("],\"gc\":{");
-        final boolean gcReset = reset || d.gc.count < cursor.gcSent;
-        final int gcFrom = gcReset ? 0 : cursor.gcSent;
+        boolean gcReset = reset || d.gc.count < cursor.gcSent;
+        int gcFrom = gcReset ? 0 : cursor.gcSent;
         sb.append("\"reset\":").append(gcReset);
         sb.append(",\"totalNs\":").append(d.gc.totalNs);
         sb.append(",\"items\":[");
@@ -165,14 +167,14 @@ public final class ViewerJson {
         return sb.toString();
     }
 
-    public static String windowJson(final TraceSnapshot d, final Window r, final long reqId, final SentNames sent) {
-        final StringBuilder sb = new StringBuilder(1 << 16);
+    public static String windowJson(TraceSnapshot d, Window r, long reqId, SentNames sent) {
+        StringBuilder sb = new StringBuilder(1 << 16);
         sb.append("{\"reqId\":").append(reqId);
         sb.append(",\"threads\":[");
-        final BitSet used = new BitSet();
-        final BitSet usedExc = new BitSet();
-        boolean firstThread = true;
-        for (final Calls tf : r.callsByThread) {
+        BitSet used = new BitSet();
+        BitSet usedExc = new BitSet();
+        @Var boolean firstThread = true;
+        for (Calls tf : r.callsByThread) {
             if (!firstThread) {
                 sb.append(',');
             }
@@ -180,7 +182,7 @@ public final class ViewerJson {
             sb.append("{\"tid\":").append(tf.tid);
             sb.append(",\"count\":").append(tf.count);
             sb.append(",\"startDeltas\":[");
-            long prev = 0;
+            @Var long prev = 0;
             for (int i = 0; i < tf.count; i++) {
                 if (i > 0) {
                     sb.append(',');
@@ -203,7 +205,7 @@ public final class ViewerJson {
             sb.append("],\"selfNs\":[");
             appendLongs(sb, tf.selfNs, tf.count);
             sb.append("],\"unclosed\":[");
-            boolean firstU = true;
+            @Var boolean firstU = true;
             for (int i = 0; i < tf.count; i++) {
                 if (tf.unclosed[i]) {
                     if (!firstU) {
@@ -214,9 +216,9 @@ public final class ViewerJson {
                 }
             }
             sb.append("],\"exc\":[");
-            boolean firstT = true;
+            @Var boolean firstT = true;
             for (int i = 0; i < tf.count; i++) {
-                final int exc = tf.exceptionId[i];
+                int exc = tf.exceptionId[i];
                 if (exc >= 0) {
                     if (!firstT) {
                         sb.append(',');
@@ -238,13 +240,13 @@ public final class ViewerJson {
         return sb.toString();
     }
 
-    public static String searchJson(final long reqId, final BitSet ids, final long calls) {
-        final StringBuilder sb = new StringBuilder(1 << 12);
+    public static String searchJson(long reqId, BitSet ids, long calls) {
+        StringBuilder sb = new StringBuilder(1 << 12);
         sb.append("{\"reqId\":").append(reqId);
         sb.append(",\"methods\":").append(ids.cardinality());
         sb.append(",\"calls\":").append(calls);
         sb.append(",\"ids\":[");
-        boolean first = true;
+        @Var boolean first = true;
         for (int id = ids.nextSetBit(0); id >= 0; id = ids.nextSetBit(id + 1)) {
             if (!first) {
                 sb.append(',');
@@ -256,8 +258,8 @@ public final class ViewerJson {
         return sb.toString();
     }
 
-    public static String matchJson(final long reqId, final MatchSearch.Match m) {
-        final StringBuilder sb = new StringBuilder(160);
+    public static String matchJson(long reqId, MatchSearch.Match m) {
+        StringBuilder sb = new StringBuilder(160);
         sb.append("{\"reqId\":").append(reqId);
         if (m == null) {
             sb.append(",\"match\":null}");
@@ -272,29 +274,29 @@ public final class ViewerJson {
         return sb.toString();
     }
 
-    private static void appendCoverage(final StringBuilder sb, final ThreadIndex m, final long minNs,
-            final double bucketNs) {
-        final int n = COVERAGE_BUCKETS;
-        final double[] covered = new double[n];
+    private static void appendCoverage(StringBuilder sb, ThreadIndex m, long minNs,
+            double bucketNs) {
+        int n = COVERAGE_BUCKETS;
+        double[] covered = new double[n];
         for (int i = 0; i < m.overview.count; i++) {
             if (m.overview.depth[i] != 0) {
                 continue;
             }
-            final double s = m.overview.startNs[i] - minNs;
-            final double e = s + m.overview.durNs[i];
-            final int b0 = (int) (s / bucketNs);
-            final int b1 = Math.min((int) (e / bucketNs), n - 1);
+            double s = m.overview.startNs[i] - minNs;
+            double e = s + m.overview.durNs[i];
+            int b0 = (int) (s / bucketNs);
+            int b1 = Math.min((int) (e / bucketNs), n - 1);
             for (int b = b0; b <= b1; b++) {
-                final double overlap = Math.min(e, (b + 1) * bucketNs) - Math.max(s, b * bucketNs);
+                double overlap = Math.min(e, (b + 1) * bucketNs) - Math.max(s, b * bucketNs);
                 if (overlap > 0) {
                     covered[b] += overlap;
                 }
             }
         }
-        int runValue = -1;
-        int runLength = 0;
+        @Var int runValue = -1;
+        @Var int runLength = 0;
         for (int i = 0; i < n; i++) {
-            final int v = Math.min(Math.max((int) Math.round(covered[i] / bucketNs * 100), 0), 100);
+            int v = Math.min(Math.max((int) Math.round(covered[i] / bucketNs * 100), 0), 100);
             if (v == runValue) {
                 runLength++;
                 continue;
@@ -308,9 +310,9 @@ public final class ViewerJson {
         sb.append(runValue).append(',').append(runLength);
     }
 
-    private static void appendNewNames(final StringBuilder sb, final TraceSnapshot d, final BitSet used,
-            final BitSet sent) {
-        boolean first = true;
+    private static void appendNewNames(StringBuilder sb, TraceSnapshot d, BitSet used,
+            BitSet sent) {
+        @Var boolean first = true;
         for (int id = used.nextSetBit(0); id >= 0; id = used.nextSetBit(id + 1)) {
             if (!sent.get(id)) {
                 sent.set(id);
@@ -325,14 +327,14 @@ public final class ViewerJson {
         }
     }
 
-    private static void appendNewExceptionNames(final StringBuilder sb, final TraceSnapshot d, final BitSet used,
-            final BitSet sent) {
-        boolean first = true;
+    private static void appendNewExceptionNames(StringBuilder sb, TraceSnapshot d, BitSet used,
+            BitSet sent) {
+        @Var boolean first = true;
         for (int id = used.nextSetBit(1); id >= 0; id = used.nextSetBit(id + 1)) {
             if (sent.get(id)) {
                 continue;
             }
-            final String name = id < d.exceptionNames.length ? d.exceptionNames[id] : null;
+            String name = id < d.exceptionNames.length ? d.exceptionNames[id] : null;
             if (name == null) {
                 continue;
             }
@@ -347,7 +349,7 @@ public final class ViewerJson {
         }
     }
 
-    private static void appendLongs(final StringBuilder sb, final long[] a, final int n) {
+    private static void appendLongs(StringBuilder sb, long[] a, int n) {
         for (int i = 0; i < n; i++) {
             if (i > 0) {
                 sb.append(',');
@@ -356,7 +358,7 @@ public final class ViewerJson {
         }
     }
 
-    private static void appendInts(final StringBuilder sb, final int[] a, final int n) {
+    private static void appendInts(StringBuilder sb, int[] a, int n) {
         for (int i = 0; i < n; i++) {
             if (i > 0) {
                 sb.append(',');

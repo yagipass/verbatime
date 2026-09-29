@@ -28,37 +28,37 @@ final class LazyTreeContentProvider<R> implements ILazyTreeContentProvider {
 
     private final Supplier<Source<R>> source;
 
-    LazyTreeContentProvider(final TreeViewer viewer, final Class<R> type, final Supplier<Source<R>> source) {
+    LazyTreeContentProvider(TreeViewer viewer, Class<R> type, Supplier<Source<R>> source) {
         this.viewer = viewer;
         this.type = type;
         this.source = source;
     }
 
     @Override
-    public void updateElement(final Object parent, final int index) {
-        final Source<R> src = source.get();
+    public void updateElement(Object parent, int index) {
+        Source<R> src = source.get();
         if (src == null) {
             return;
         }
-        final R r = type.isInstance(parent) ? src.child(type.cast(parent), index) : src.root(index);
+        R r = type.isInstance(parent) ? src.child(type.cast(parent), index) : src.root(index);
         viewer.replace(parent, index, r);
         viewer.setHasChildren(r, src.hasChildren(r));
     }
 
     @Override
-    public void updateChildCount(final Object element, final int currentChildCount) {
-        final Source<R> src = source.get();
-        final int n = src == null ? 0 : type.isInstance(element) ? src.childCount(type.cast(element)) : src.rootCount();
+    public void updateChildCount(Object element, int currentChildCount) {
+        Source<R> src = source.get();
+        int n = src == null ? 0 : type.isInstance(element) ? src.childCount(type.cast(element)) : src.rootCount();
         if (n != currentChildCount) {
             viewer.setChildCount(element, n);
         }
     }
 
     @Override
-    public Object getParent(final Object element) {
-        final Source<R> src = source.get();
+    public Object getParent(Object element) {
+        Source<R> src = source.get();
         if (src != null && type.isInstance(element)) {
-            final R p = src.parent(type.cast(element));
+            R p = src.parent(type.cast(element));
             return p != null ? p : src;
         }
         return src;

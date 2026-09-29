@@ -1,5 +1,7 @@
 package io.github.yagipass.verbatime.format;
 
+import com.google.errorprone.annotations.Var;
+
 public final class Varint {
 
     public static final int MAX_BYTES = 10;
@@ -7,7 +9,7 @@ public final class Varint {
     private Varint() {
     }
 
-    public static int put(final byte[] b, int off, long v) {
+    public static int put(byte[] b, @Var int off, @Var long v) {
         while ((v & ~0x7FL) != 0) {
             b[off++] = (byte) ((v & 0x7F) | 0x80);
             v >>>= 7;
@@ -16,8 +18,8 @@ public final class Varint {
         return off;
     }
 
-    static int size(long v) {
-        int n = 1;
+    static int size(@Var long v) {
+        @Var int n = 1;
         while ((v & ~0x7FL) != 0) {
             v >>>= 7;
             n++;

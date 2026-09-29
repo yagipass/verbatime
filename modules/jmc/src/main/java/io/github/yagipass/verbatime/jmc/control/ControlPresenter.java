@@ -13,6 +13,8 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import com.google.errorprone.annotations.Var;
+
 import io.github.yagipass.verbatime.jmc.Formats;
 import io.github.yagipass.verbatime.jmc.UiThread;
 import io.github.yagipass.verbatime.jmc.recordings.LocalRecordings;
@@ -26,18 +28,18 @@ public final class ControlPresenter {
     record ViewState(State state, String connectionText, boolean recording, List<RootEntry> roots,
             String instrumentedText, String statusText, boolean startPending, boolean stopPending, boolean transferring) {
 
-        static ViewState disconnected(final State state) {
+        static ViewState disconnected(State state) {
             return new ViewState(state, null, false, List.of(), "", "Not connected", false, false, false);
         }
 
-        static ViewState connected(final String connectionText, final boolean recording,
-                final List<RootEntry> roots, final String instrumentedText, final String statusText,
-                final boolean startPending, final boolean stopPending, final boolean transferring) {
+        static ViewState connected(String connectionText, boolean recording,
+                List<RootEntry> roots, String instrumentedText, String statusText,
+                boolean startPending, boolean stopPending, boolean transferring) {
             return new ViewState(State.CONNECTED, connectionText, recording, roots, instrumentedText, statusText,
                     startPending, stopPending, transferring);
         }
 
-        ViewState withPending(final boolean startPending, final boolean stopPending) {
+        ViewState withPending(boolean startPending, boolean stopPending) {
             return new ViewState(state, connectionText, recording, roots, instrumentedText, statusText, startPending,
                     stopPending, transferring);
         }
@@ -161,9 +163,9 @@ public final class ControlPresenter {
 
     private volatile boolean disposed;
 
-    ControlPresenter(final View view, final UiThread uiThread, final Supplier<ExecutorService> newExecutor,
-            final Agent.Dialer dialer, final Settings settings, final LongSupplier nowMs,
-            final TransferScheduler scheduler) {
+    ControlPresenter(View view, UiThread uiThread, Supplier<ExecutorService> newExecutor,
+            Agent.Dialer dialer, Settings settings, LongSupplier nowMs,
+            TransferScheduler scheduler) {
         this.view = view;
         this.uiThread = uiThread;
         this.newExecutor = newExecutor;
@@ -178,14 +180,14 @@ public final class ControlPresenter {
         return state;
     }
 
-    void connect(final String target) {
+    void connect(String target) {
         if (agent != null || state == State.CONNECTING || target.isEmpty()) {
             return;
         }
         this.target = target;
         state = State.CONNECTING;
-        final int a = attempt.incrementAndGet();
-        final ExecutorService bg = newExecutor.get();
+        int a = attempt.incrementAndGet();
+        ExecutorService bg = newExecutor.get();
         background = bg;
         view.render(ViewState.disconnected(State.CONNECTING));
         view.message("Connecting: " + target);
@@ -195,23 +197,23 @@ public final class ControlPresenter {
             }
         });
         bg.execute(() -> {
-            Agent c = null;
+            @Var Agent c = null;
             try {
                 c = dialer.dial(target);
-                final Map<String, String> st = c.status();
+                Map<String, String> st = c.status();
                 if (!isAttempt(a)) {
                     closeQuietly(c);
                     bg.shutdown();
                     return;
                 }
-                final Agent ok = c;
+                Agent ok = c;
                 uiThread.post(() -> connected(a, bg, ok, st));
-            } catch (final Exception e) {
+            } catch (Exception e) {
                 if (c != null) {
                     closeQuietly(c);
                 }
                 bg.shutdown();
-                final String msg = String.valueOf(e.getMessage());
+                String msg = String.valueOf(e.getMessage());
                 uiThread.post(() -> isAttempt(a), () -> abandonAttempt("Connection failed: " + msg));
             }
         });
@@ -223,18 +225,18 @@ public final class ControlPresenter {
         }
     }
 
-    private boolean isAttempt(final int a) {
+    private boolean isAttempt(int a) {
         return !disposed && state == State.CONNECTING && a == attempt.get();
     }
 
-    private void abandonAttempt(final String message) {
+    private void abandonAttempt(String message) {
         state = State.DISCONNECTED;
         background = null;
         view.render(ViewState.disconnected(State.DISCONNECTED));
         view.message(message);
     }
 
-    private void connected(final int a, final ExecutorService bg, final Agent c, final Map<String, String> st) {
+    private void connected(int a, ExecutorService bg, Agent c, Map<String, String> st) {
         if (!isAttempt(a)) {
             bg.execute(() -> closeQuietly(c));
             bg.shutdown();
@@ -244,25 +246,25 @@ public final class ControlPresenter {
         connectionDir = LocalRecordings.fileSafe(target);
         settings.save(target, savedRoots);
         state = State.CONNECTED;
-        final AgentStatus status = AgentStatus.parse(st);
+        AgentStatus status = AgentStatus.parse(st);
         searchSupported = status.protocol() >= SEARCH_MIN_PROTOCOL;
         view.message("Connected to agent pid " + status.pid());
         apply(status);
         startPolling();
     }
 
-    private <T> void call(final Agent c, final Callable<T> op, final Consumer<T> onOk,
-            final Consumer<String> onFail) {
-        final ExecutorService bg = background;
+    private <T> void call(Agent c, Callable<T> op, Consumer<T> onOk,
+            Consumer<String> onFail) {
+        ExecutorService bg = background;
         if (bg == null || !isCurrent(c)) {
             return;
         }
         bg.execute(() -> {
-            final T result;
+            T result;
             try {
                 result = op.call();
-            } catch (final Exception e) {
-                final String msg = String.valueOf(e.getMessage());
+            } catch (Exception e) {
+                String msg = String.valueOf(e.getMessage());
                 uiThread.post(() -> isCurrent(c), () -> onFail.accept(msg));
                 return;
             }
@@ -271,7 +273,7 @@ public final class ControlPresenter {
     }
 
     @SuppressWarnings("ReferenceEquality")
-    private boolean isCurrent(final Agent c) {
+    private boolean isCurrent(Agent c) {
         return agent == c;
     }
 
@@ -279,11 +281,11 @@ public final class ControlPresenter {
         teardown(State.DISCONNECTED, "Disconnected");
     }
 
-    private void lost(final String msg) {
+    private void lost(String msg) {
         teardown(State.LOST, "Connection lost: " + msg);
     }
 
-    private void teardown(final State next, final String message) {
+    private void teardown(State next, String message) {
         transfer.cancelCurrent();
         transfer.dropDeferred();
         releaseClient();
@@ -312,8 +314,8 @@ public final class ControlPresenter {
             pollChainActive = false;
             return;
         }
-        final Agent c = agent;
-        final long now = nowMs.getAsLong();
+        Agent c = agent;
+        long now = nowMs.getAsLong();
         if (statusInFlight.get() == c && now - pollStartedMs >= STALL_TIMEOUT_MS) {
             lost("the agent has not answered for " + STALL_TIMEOUT_MS / 1000 + " s");
             pollChainActive = false;
@@ -332,11 +334,11 @@ public final class ControlPresenter {
         uiThread.postAfter(POLL_MS, this::pollTick);
     }
 
-    private void apply(final AgentStatus st) {
+    private void apply(AgentStatus st) {
         appliedRoots = st.roots();
         if (st.recording()) {
             startPending = false;
-            final long rid = st.recordingId();
+            long rid = st.recordingId();
             if (rid > 0 && transfer.transferringId() != rid) {
                 transferRecording(rid, st.recordingName(), Long.toString(st.recordingStartEpochMs()));
             }
@@ -360,14 +362,14 @@ public final class ControlPresenter {
         }
     }
 
-    private ViewState viewStateFor(final AgentStatus st) {
-        final String countText = ControlTexts.countText(st.instrumentedClasses(), st.instrumentedMethods());
-        final boolean transferring = !st.recording() && transfer.isActive();
-        final String recordingText;
+    private ViewState viewStateFor(AgentStatus st) {
+        String countText = ControlTexts.countText(st.instrumentedClasses(), st.instrumentedMethods());
+        boolean transferring = !st.recording() && transfer.isActive();
+        String recordingText;
         if (st.recording()) {
-            final long now = nowMs.getAsLong();
-            final long agentBytes = st.recordingBytes();
-            final double rate = agentBytes < 0 ? 0 : transfer.sampleAgentRate(now, agentBytes);
+            long now = nowMs.getAsLong();
+            long agentBytes = st.recordingBytes();
+            double rate = agentBytes < 0 ? 0 : transfer.sampleAgentRate(now, agentBytes);
             recordingText = ControlTexts.recordingText(st.recordingId(), now - st.recordingStartEpochMs(),
                     transfer.transferredBytes(), agentBytes, rate);
         } else if (transfer.deferred() != null) {
@@ -382,10 +384,10 @@ public final class ControlPresenter {
                 countText, recordingText, startPending, stopPending, transferring);
     }
 
-    void search(final String query) {
+    void search(String query) {
         searchGeneration++;
-        final int gen = searchGeneration;
-        final String q = query.trim();
+        int gen = searchGeneration;
+        String q = query.trim();
         if (q.length() < 2 || agent == null || !searchSupported) {
             view.rootCandidates(new String[0]);
             return;
@@ -397,8 +399,8 @@ public final class ControlPresenter {
         });
     }
 
-    private void runSearch(final int gen, final String query) {
-        final Agent c = agent;
+    private void runSearch(int gen, String query) {
+        Agent c = agent;
         if (c == null) {
             return;
         }
@@ -415,20 +417,20 @@ public final class ControlPresenter {
         });
     }
 
-    void addRoot(final String spec) {
-        final String[] arr = RootSpecs.with(appliedRoots, spec);
+    void addRoot(String spec) {
+        String[] arr = RootSpecs.with(appliedRoots, spec);
         replaceRoots(arr, true, "Applied " + Formats.plural(arr.length, "root"), "Failed to apply roots: ",
                 view::rootAccepted);
     }
 
-    void removeRoot(final String spec) {
-        final String[] arr = RootSpecs.without(appliedRoots, spec);
+    void removeRoot(String spec) {
+        String[] arr = RootSpecs.without(appliedRoots, spec);
         replaceRoots(arr, true, "Applied " + Formats.plural(arr.length, "root"), "Failed to apply roots: ", () -> {
         });
     }
 
     private void reapplySavedRoots() {
-        final String[] arr = savedRoots.lines().map(String::trim).filter(s -> !s.isEmpty()).toArray(String[]::new);
+        String[] arr = savedRoots.lines().map(String::trim).filter(s -> !s.isEmpty()).toArray(String[]::new);
         if (arr.length == 0) {
             return;
         }
@@ -437,9 +439,9 @@ public final class ControlPresenter {
                 });
     }
 
-    private void replaceRoots(final String[] arr, final boolean remember, final String okMessage,
-            final String failPrefix, final Runnable onSuccess) {
-        final Agent c = agent;
+    private void replaceRoots(String[] arr, boolean remember, String okMessage,
+            String failPrefix, Runnable onSuccess) {
+        Agent c = agent;
         if (c == null) {
             return;
         }
@@ -458,7 +460,7 @@ public final class ControlPresenter {
     }
 
     void startRecording() {
-        final Agent c = agent;
+        Agent c = agent;
         if (c == null || startPending) {
             return;
         }
@@ -472,7 +474,7 @@ public final class ControlPresenter {
     }
 
     void stopRecording() {
-        final Agent c = agent;
+        Agent c = agent;
         if (c == null || stopPending) {
             return;
         }
@@ -493,17 +495,17 @@ public final class ControlPresenter {
         view.render(lastState);
     }
 
-    private void resumeUndelivered(final AgentStatus st) {
-        final long rid = st.lastRecordingId();
+    private void resumeUndelivered(AgentStatus st) {
+        long rid = st.lastRecordingId();
         if (transfer.transferringId() > 0 || rid <= 0 || rid == resumeTriedId || st.lastRecordingStartEpochMs() <= 0
                 || st.lastRecordingBytes() < 0) {
             return;
         }
-        final Path local = localFor(rid, st.lastRecordingName(), Long.toString(st.lastRecordingStartEpochMs()));
-        final long have;
+        Path local = localFor(rid, st.lastRecordingName(), Long.toString(st.lastRecordingStartEpochMs()));
+        long have;
         try {
             have = Files.exists(local) ? Files.size(local) : 0;
-        } catch (final IOException e) {
+        } catch (IOException e) {
             resumeTriedId = rid;
             view.message("Cannot check the local copy of recording #" + rid + ": " + e);
             return;
@@ -515,20 +517,20 @@ public final class ControlPresenter {
         transferRecording(rid, local);
     }
 
-    private Path localFor(final long recordingId, final String recordingName, final String startEpochMs) {
+    private Path localFor(long recordingId, String recordingName, String startEpochMs) {
         return LocalRecordings.localFile(settings.recordingsDir(), connectionDir, recordingName, recordingId, startEpochMs);
     }
 
-    private void transferRecording(final long recordingId, final String recordingName, final String startEpochMs) {
+    private void transferRecording(long recordingId, String recordingName, String startEpochMs) {
         transferRecording(recordingId, localFor(recordingId, recordingName, startEpochMs));
     }
 
-    private void transferRecording(final long recordingId, final Path local) {
-        final Agent c = agent;
+    private void transferRecording(long recordingId, Path local) {
+        Agent c = agent;
         if (c == null) {
             return;
         }
-        final Transfer old = transfer.current();
+        Transfer old = transfer.current();
         if (old != null) {
             view.message("Transfer of " + old.file().getFileName() + " stopped at "
                     + Formats.fmtBytes(transfer.transferredBytes()) + ": recording #" + recordingId
@@ -545,29 +547,29 @@ public final class ControlPresenter {
         startTransfer(c, recordingId, local);
     }
 
-    private void startTransfer(final Agent c, final long recordingId, final Path local) {
-        final long offset;
+    private void startTransfer(Agent c, long recordingId, Path local) {
+        long offset;
         try {
             offset = LocalRecordings.prepareResume(local);
-        } catch (final IOException e) {
+        } catch (IOException e) {
             view.message("Cannot prepare the destination directory: " + e);
             return;
         }
         transfer.transferred(offset);
-        final Transfer[] self = new Transfer[1];
-        final Transfer p = new Transfer(c, recordingId, local, offset, new Transfer.Listener() {
+        Transfer[] self = new Transfer[1];
+        Transfer p = new Transfer(c, recordingId, local, offset, new Transfer.Listener() {
             @Override
-            public void progress(final long bytes) {
+            public void progress(long bytes) {
                 uiThread.post(() -> onTransferProgress(self[0], bytes));
             }
 
             @Override
-            public void finished(final long bytes) {
+            public void finished(long bytes) {
                 uiThread.post(() -> onTransferFinished(self[0], bytes));
             }
 
             @Override
-            public void failed(final String message) {
+            public void failed(String message) {
                 uiThread.post(() -> onTransferFailed(self[0], message));
             }
 
@@ -585,13 +587,13 @@ public final class ControlPresenter {
         if (disposed) {
             return;
         }
-        final TransferState.Deferred p = transfer.takeDeferred();
+        TransferState.Deferred p = transfer.takeDeferred();
         if (p != null) {
             transferRecording(p.recordingId(), p.file());
         }
     }
 
-    private void onTransferStopped(final Transfer p) {
+    private void onTransferStopped(Transfer p) {
         if (transfer.clearStopping(p)) {
             startDeferredTransfer();
             return;
@@ -604,27 +606,27 @@ public final class ControlPresenter {
         view.recordingsChanged();
     }
 
-    private void onTransferProgress(final Transfer p, final long bytes) {
+    private void onTransferProgress(Transfer p, long bytes) {
         if (disposed || !transfer.isCurrent(p)) {
             return;
         }
         transfer.transferred(bytes);
-        final EditorHandle editor = transfer.editor();
+        EditorHandle editor = transfer.editor();
         if (editor == null || !editor.isOpen()) {
             transfer.editorOpened(view.openEditor(p.file()), nowMs.getAsLong());
             view.recordingsChanged();
             return;
         }
-        final long now = nowMs.getAsLong();
+        long now = nowMs.getAsLong();
         if (transfer.reloadDue(now) && !editor.isLoading()) {
             transfer.reloaded(now);
             editor.reload(true);
         }
     }
 
-    private void onTransferFinished(final Transfer p, final long bytes) {
+    private void onTransferFinished(Transfer p, long bytes) {
         transfer.clearStopping(p);
-        final EditorHandle editor = transfer.editor();
+        EditorHandle editor = transfer.editor();
         if (transfer.clearCurrent(p)) {
             transfer.resetAgentRate();
             scheduleFinalReload(editor);
@@ -637,7 +639,7 @@ public final class ControlPresenter {
         startDeferredTransfer();
     }
 
-    private void scheduleFinalReload(final EditorHandle editor) {
+    private void scheduleFinalReload(EditorHandle editor) {
         if (disposed || editor == null || !editor.isOpen()) {
             return;
         }
@@ -648,14 +650,14 @@ public final class ControlPresenter {
         editor.reload(false);
     }
 
-    private void onTransferFailed(final Transfer p, final String msg) {
+    private void onTransferFailed(Transfer p, String msg) {
         transfer.clearStopping(p);
         transfer.clearCurrent(p);
         if (disposed) {
             return;
         }
         transfer.resetAgentRate();
-        final boolean superseded = msg != null
+        boolean superseded = msg != null
                 && (msg.contains("unknown stream id") || msg.contains("unknown recording id"));
         view.message(superseded
                 ? "Transfer of " + p.file().getFileName() + " stopped: a newer recording superseded it on the agent"
@@ -672,8 +674,8 @@ public final class ControlPresenter {
     }
 
     private void releaseClient() {
-        final Agent c = agent;
-        final ExecutorService bg = background;
+        Agent c = agent;
+        ExecutorService bg = background;
         agent = null;
         background = null;
         statusInFlight.set(null);
@@ -684,10 +686,10 @@ public final class ControlPresenter {
     }
 
     @SuppressWarnings("EmptyCatch")
-    private static void closeQuietly(final Agent c) {
+    private static void closeQuietly(Agent c) {
         try {
             c.close();
-        } catch (final IOException ignored) {
+        } catch (IOException ignored) {
         }
     }
 }

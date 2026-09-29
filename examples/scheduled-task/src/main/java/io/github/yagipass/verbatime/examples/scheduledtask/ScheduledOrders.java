@@ -16,13 +16,13 @@ public class ScheduledOrders {
 
     private final AtomicLong ticks = new AtomicLong();
 
-    ScheduledOrders(final OrderService orders) {
+    ScheduledOrders(OrderService orders) {
         this.orders = orders;
     }
 
     @Scheduled(fixedDelay = 1000, initialDelay = 2000)
     public void placeScheduledOrder() {
-        final long n = ticks.incrementAndGet();
+        long n = ticks.incrementAndGet();
         orders.placeOrder(SKUS[(int) (n % SKUS.length)], (int) (n % 5) + 1);
     }
 

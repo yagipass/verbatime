@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.errorprone.annotations.Var;
+
 public final class TraceSnapshot {
 
     public final Path path;
@@ -58,7 +60,7 @@ public final class TraceSnapshot {
 
     private final AtomicBoolean released = new AtomicBoolean();
 
-    private TraceSnapshot(final Builder b) {
+    private TraceSnapshot(Builder b) {
         path = b.path;
         buffer = b.buffer;
         buffer.retain();
@@ -75,8 +77,8 @@ public final class TraceSnapshot {
         methodNames = b.methodNames;
         totalMethods = b.totalMethods;
         threadNames = Collections.unmodifiableMap(new LinkedHashMap<>(b.threadNames));
-        final List<Session> ss = new ArrayList<>(b.sessions.size());
-        for (final SessionState s : b.sessions) {
+        List<Session> ss = new ArrayList<>(b.sessions.size());
+        for (SessionState s : b.sessions) {
             ss.add(s.freeze());
         }
         sessions = List.copyOf(ss);
@@ -93,31 +95,31 @@ public final class TraceSnapshot {
         }
     }
 
-    public String methodName(final int id) {
-        final String s = id >= 0 && id < methodNames.length ? methodNames[id] : null;
+    public String methodName(int id) {
+        String s = id >= 0 && id < methodNames.length ? methodNames[id] : null;
         return s != null ? s : "<unknown#" + id + ">";
     }
 
-    public String exceptionName(final int id) {
+    public String exceptionName(int id) {
         if (id == 0) {
             return "<unknown>";
         }
-        final String s = id > 0 && id < exceptionNames.length ? exceptionNames[id] : null;
+        String s = id > 0 && id < exceptionNames.length ? exceptionNames[id] : null;
         return s != null ? s : "<unknown#" + id + ">";
     }
 
-    public String threadName(final long tid) {
-        final String s = threadNames.get(tid);
+    public String threadName(long tid) {
+        String s = threadNames.get(tid);
         return s != null ? s : "tid-" + tid;
     }
 
-    public OffsetDateTime wallClock(final long ns) {
+    public OffsetDateTime wallClock(long ns) {
         return OffsetDateTime.ofInstant(Instant.ofEpochMilli(startEpochMs).plusNanos(ns),
                 ZoneOffset.ofTotalSeconds(utcOffsetSeconds));
     }
 
-    public ThreadIndex thread(final long tid) {
-        for (final ThreadIndex t : threads) {
+    public ThreadIndex thread(long tid) {
+        for (ThreadIndex t : threads) {
             if (t.tid == tid) {
                 return t;
             }
@@ -125,8 +127,8 @@ public final class TraceSnapshot {
         return null;
     }
 
-    public Session sessionAt(final long tid, final long ns) {
-        for (final Session s : sessions) {
+    public Session sessionAt(long tid, long ns) {
+        for (Session s : sessions) {
             if (s.tid == tid && ns >= s.startNs && ns <= s.startNs + s.durNs()) {
                 return s;
             }
@@ -179,7 +181,7 @@ public final class TraceSnapshot {
         final GcPauses.Builder gc = new GcPauses.Builder();
 
         Builder copy() {
-            final Builder c = new Builder();
+            Builder c = new Builder();
             c.path = path;
             c.buffer = buffer;
             c.truncated = truncated;
@@ -195,7 +197,7 @@ public final class TraceSnapshot {
             c.methodNames = methodNames.clone();
             c.totalMethods = totalMethods;
             c.threadNames.putAll(threadNames);
-            for (final SessionState s : sessions) {
+            for (SessionState s : sessions) {
                 c.sessions.add(new SessionState(s));
             }
             c.callsByMethod = callsByMethod.clone();
@@ -229,7 +231,7 @@ public final class TraceSnapshot {
         public record Overlap(long ns, int pauses) {
         }
 
-        private GcPauses(final Builder b) {
+        private GcPauses(Builder b) {
             count = b.count;
             startNs = b.startNs;
             durNs = b.durNs;
@@ -239,13 +241,13 @@ public final class TraceSnapshot {
             totalNs = b.totalNs;
         }
 
-        public Overlap overlap(final long frameStartNs, final long frameDurNs) {
-            final long frameEnd = frameStartNs + frameDurNs;
-            long ns = 0;
-            int n = 0;
+        public Overlap overlap(long frameStartNs, long frameDurNs) {
+            long frameEnd = frameStartNs + frameDurNs;
+            @Var long ns = 0;
+            @Var int n = 0;
             for (int i = 0; i < count; i++) {
-                final long a = Math.max(startNs[i], frameStartNs);
-                final long b = Math.min(startNs[i] + durNs[i], frameEnd);
+                long a = Math.max(startNs[i], frameStartNs);
+                long b = Math.min(startNs[i] + durNs[i], frameEnd);
                 if (b > a) {
                     ns += b - a;
                     n++;
@@ -273,9 +275,9 @@ public final class TraceSnapshot {
             private Builder() {
             }
 
-            void append(final long start, final long dur, final int act, final String collector, final String why) {
+            void append(long start, long dur, int act, String collector, String why) {
                 if (count == startNs.length) {
-                    final int cap = count * 2;
+                    int cap = count * 2;
                     startNs = Arrays.copyOf(startNs, cap);
                     durNs = Arrays.copyOf(durNs, cap);
                     action = Arrays.copyOf(action, cap);
@@ -291,10 +293,10 @@ public final class TraceSnapshot {
                 totalNs += dur;
             }
 
-            private void copyFrom(final Builder src) {
+            private void copyFrom(Builder src) {
                 count = src.count;
                 totalNs = src.totalNs;
-                final int cap = Math.max(count, 16);
+                int cap = Math.max(count, 16);
                 startNs = Arrays.copyOf(src.startNs, cap);
                 durNs = Arrays.copyOf(src.durNs, cap);
                 action = Arrays.copyOf(src.action, cap);
@@ -328,13 +330,13 @@ public final class TraceSnapshot {
 
         int lastChunk = -1;
 
-        SessionState(final int seq, final long tid, final long startNs) {
+        SessionState(int seq, long tid, long startNs) {
             this.seq = seq;
             this.tid = tid;
             this.startNs = startNs;
         }
 
-        private SessionState(final SessionState src) {
+        private SessionState(SessionState src) {
             this(src.seq, src.tid, src.startNs);
             rootMethodId = src.rootMethodId;
             endNs = src.endNs;
@@ -369,7 +371,7 @@ public final class TraceSnapshot {
 
         public final int lastChunk;
 
-        private Session(final SessionState s) {
+        private Session(SessionState s) {
             seq = s.seq;
             tid = s.tid;
             rootMethodId = s.rootMethodId;
@@ -398,8 +400,8 @@ public final class TraceSnapshot {
 
         public final Calls overview;
 
-        ThreadIndex(final long tid, final int maxDepth, final long totalCalls, final ChunkTable chunks,
-                final Calls overview) {
+        ThreadIndex(long tid, int maxDepth, long totalCalls, ChunkTable chunks,
+                Calls overview) {
             this.tid = tid;
             this.maxDepth = maxDepth;
             this.totalCalls = totalCalls;

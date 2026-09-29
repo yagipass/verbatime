@@ -10,8 +10,8 @@ final class Clipboards {
     private Clipboards() {
     }
 
-    static void copyText(final Display display, final String text) {
-        final Clipboard clipboard = new Clipboard(display);
+    static void copyText(Display display, String text) {
+        Clipboard clipboard = new Clipboard(display);
         try {
             clipboard.setContents(new Object[] { text }, new Transfer[] { TextTransfer.getInstance() });
         } finally {

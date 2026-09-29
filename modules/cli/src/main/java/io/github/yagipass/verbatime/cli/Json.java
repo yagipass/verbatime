@@ -4,11 +4,11 @@ final class Json {
 
     private final StringBuilder sb = new StringBuilder("{");
 
-    Json(final String type) {
+    Json(String type) {
         put("type", type);
     }
 
-    Json put(final String key, final String value) {
+    Json put(String key, String value) {
         key(key);
         if (value == null) {
             sb.append("null");
@@ -18,25 +18,25 @@ final class Json {
         return this;
     }
 
-    Json put(final String key, final long value) {
+    Json put(String key, long value) {
         key(key);
         sb.append(value);
         return this;
     }
 
-    Json put(final String key, final boolean value) {
+    Json put(String key, boolean value) {
         key(key);
         sb.append(value);
         return this;
     }
 
-    Json ms(final String key, final long ticks) {
+    Json ms(String key, long ticks) {
         key(key);
         sb.append(Formats.ms(ticks));
         return this;
     }
 
-    Json raw(final String key, final String json) {
+    Json raw(String key, String json) {
         key(key);
         sb.append(json);
         return this;
@@ -47,13 +47,13 @@ final class Json {
         return sb + "}";
     }
 
-    static String quote(final String s) {
-        final StringBuilder b = new StringBuilder(s.length() + 16);
+    static String quote(String s) {
+        StringBuilder b = new StringBuilder(s.length() + 16);
         appendQuoted(b, s);
         return b.toString();
     }
 
-    private void key(final String key) {
+    private void key(String key) {
         if (sb.length() > 1) {
             sb.append(',');
         }
@@ -61,10 +61,10 @@ final class Json {
         sb.append(':');
     }
 
-    private static void appendQuoted(final StringBuilder b, final String s) {
+    private static void appendQuoted(StringBuilder b, String s) {
         b.append('"');
         for (int i = 0; i < s.length(); i++) {
-            final char c = s.charAt(i);
+            char c = s.charAt(i);
             switch (c) {
                 case '"' -> b.append("\\\"");
                 case '\\' -> b.append("\\\\");
