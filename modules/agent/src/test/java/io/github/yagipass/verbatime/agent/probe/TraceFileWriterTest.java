@@ -326,7 +326,7 @@ public final class TraceFileWriterTest {
         Check.eq(before, w.committedBytes(), "writes after disable are no-ops, so nothing reaches the broken file");
         w.writeException(1, "test.bin.Late");
         Check.eq(before, w.committedBytes(), "an EXCEPTION record after disable is dropped like a chunk, so no dangling reference can be written either");
-        w.writeGc(w.uptimeAtOriginMs + 5, 3, Vbtm.GC_ACTION_MINOR, "Copy", "Allocation Failure");
+        w.writeGc(w.gcClockAtOriginMs + 5, 3, Vbtm.GC_ACTION_MINOR, "Copy", "Allocation Failure");
         Check.eq(before, w.committedBytes(), "a GC notification after disable is dropped too");
         w.close();
         DecodedTrace d = DecodedTrace.decode(w.path());
@@ -484,7 +484,7 @@ public final class TraceFileWriterTest {
 
     private static void gcRecord(Path tmp) throws Exception {
         TraceFileWriter w = TraceFileWriter.open(tmp.resolve("bw-gc.vbtm"));
-        long u = w.uptimeAtOriginMs;
+        long u = w.gcClockAtOriginMs;
         w.writeGc(u + 250, 120, Vbtm.GC_ACTION_MAJOR, "MarkSweepCompact", "System.gc()");
         w.writeGc(u + 12, 3, Vbtm.GC_ACTION_MINOR, "Copy", "Allocation Failure");
         w.writeGc(u + 400, 0, Vbtm.GC_ACTION_UNKNOWN, "ZGC Pauses", "Ünknown cause");
@@ -497,7 +497,7 @@ public final class TraceFileWriterTest {
         DecodedTrace d = DecodedTrace.decode(w.path());
         Check.eq(3, d.gcPauses.size(), "every pause after the origin is on file");
         DecodedTrace.GcPause major = d.gcPauses.get(0);
-        Check.eq(250 * Vbtm.TICKS_PER_MS, major.startTicks(), "start is uptime relative to the origin, on the 100 ns tick axis the chunks use");
+        Check.eq(250 * Vbtm.TICKS_PER_MS, major.startTicks(), "start is the GC clock relative to the origin, on the 100 ns tick axis the chunks use");
         Check.eq(120 * Vbtm.TICKS_PER_MS, major.durTicks(), "duration in ticks");
         Check.eq(Vbtm.GC_ACTION_MAJOR, major.action(), "major/minor survives as a small int");
         Check.eq("MarkSweepCompact", major.collector(), "collector name inline");

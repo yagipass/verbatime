@@ -3,6 +3,7 @@ package io.github.yagipass.verbatime.agent.probe;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -24,7 +25,7 @@ public final class TraceFileWriter {
 
     final long originNanos;
 
-    final long uptimeAtOriginMs;
+    final long gcClockAtOriginMs;
 
     private final long startEpochMs;
 
@@ -42,10 +43,10 @@ public final class TraceFileWriter {
 
     private volatile long committedBytes;
 
-    private TraceFileWriter(Path path, FileOutputStream out) {
+    private TraceFileWriter(Path path, FileOutputStream out, long vmInitUptimeMs) {
         this.path = path;
         this.out = out;
-        this.uptimeAtOriginMs = ManagementFactory.getRuntimeMXBean().getUptime();
+        this.gcClockAtOriginMs = ManagementFactory.getRuntimeMXBean().getUptime() - vmInitUptimeMs;
         this.originNanos = System.nanoTime();
         this.startEpochMs = System.currentTimeMillis();
         this.utcOffsetSeconds = ZoneId.systemDefault().getRules().getOffset(Instant.ofEpochMilli(startEpochMs))
@@ -54,11 +55,20 @@ public final class TraceFileWriter {
     }
 
     public static TraceFileWriter open(Path path) throws IOException {
+        return open(path, vmInitUptimeMs());
+    }
+
+    public static TraceFileWriter open(Path path, long vmInitUptimeMs) throws IOException {
         FileOutputStream out = new FileOutputStream(path.toFile());
-        TraceFileWriter w = new TraceFileWriter(path.toAbsolutePath(), out);
+        TraceFileWriter w = new TraceFileWriter(path.toAbsolutePath(), out, vmInitUptimeMs);
         out.write(RecordEncoder.header(w.startEpochMs, w.utcOffsetSeconds));
         w.committedBytes = Vbtm.HEADER_BYTES;
         return w;
+    }
+
+    public static long vmInitUptimeMs() {
+        RuntimeMXBean rt = ManagementFactory.getRuntimeMXBean();
+        return rt.getUptime() - (System.currentTimeMillis() - rt.getStartTime());
     }
 
     public Path path() {
@@ -104,7 +114,7 @@ public final class TraceFileWriter {
         if (stopped) {
             return;
         }
-        long[] ticks = toTicks(startMs, durMs, uptimeAtOriginMs);
+        long[] ticks = toTicks(startMs, durMs, gcClockAtOriginMs);
         if (ticks == null) {
             return;
         }
@@ -130,13 +140,13 @@ public final class TraceFileWriter {
         }
     }
 
-    static long[] toTicks(long startMs, long durMs, long uptimeAtOriginMs) {
+    static long[] toTicks(long startMs, long durMs, long gcClockAtOriginMs) {
         long endMs = startMs + Math.max(durMs, 0);
-        if (endMs <= uptimeAtOriginMs) {
+        if (endMs <= gcClockAtOriginMs) {
             return null;
         }
-        long s = Math.max(startMs - uptimeAtOriginMs, 0);
-        long e = endMs - uptimeAtOriginMs;
+        long s = Math.max(startMs - gcClockAtOriginMs, 0);
+        long e = endMs - gcClockAtOriginMs;
         return new long[] { s * Vbtm.TICKS_PER_MS, (e - s) * Vbtm.TICKS_PER_MS };
     }
 

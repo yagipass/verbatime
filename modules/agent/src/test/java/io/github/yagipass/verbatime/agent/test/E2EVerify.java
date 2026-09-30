@@ -1,12 +1,15 @@
 package io.github.yagipass.verbatime.agent.test;
 
 import java.nio.file.Path;
+import java.util.List;
 
 import com.google.errorprone.annotations.Var;
 
 import io.github.yagipass.verbatime.format.Vbtm;
 
 public final class E2EVerify {
+
+    private static final long GC_SLACK_TICKS = 3 * Vbtm.TICKS_PER_MS;
 
     private E2EVerify() {
     }
@@ -37,12 +40,16 @@ public final class E2EVerify {
         DecodedTrace.DecodedSession s3 = d.sessions.get(3);
         if (s3 != null && !s3.events.isEmpty()) {
             failures += check(s3.ended, "session 3 ended");
-            long from = s3.events.get(0).ticks();
-            long to = s3.events.get(s3.events.size() - 1).ticks();
-            long inside = d.gcPauses.stream().filter(p -> p.startTicks() <= to && p.endTicks() >= from).count();
-            failures += check(inside >= 1, "a GC pause overlaps the rootAllocates session, with " + d.gcPauses.size() + " on file and " + inside + " inside");
-            failures += check(d.gcPauses.stream().anyMatch(p -> p.startTicks() <= to && p.endTicks() >= from && p.action() == Vbtm.GC_ACTION_MAJOR && p.durTicks() > 0),
-                    "the explicit collection is a major pause with a measurable duration: " + d.gcPauses);
+            long[] collect = span(d, s3, "io.github.yagipass.verbatime.fixtures.Fixture.collect()V");
+            if (collect != null) {
+                long from = collect[0] - GC_SLACK_TICKS;
+                long to = collect[1] + GC_SLACK_TICKS;
+                failures += check(d.gcPauses.stream().anyMatch(p -> p.startTicks() >= from && p.startTicks() <= to && p.action() == Vbtm.GC_ACTION_MAJOR && p.durTicks() > 0),
+                        "the major pause of System.gc() starts inside collect() at ticks " + collect[0] + ".." + collect[1]
+                                + ", so the pause is charged to the call it stopped rather than to one that ran earlier: " + d.gcPauses);
+            } else {
+                failures += check(false, "collect() recorded in session 3");
+            }
             failures += check(d.gcPauses.stream().allMatch(p -> !p.collector().isEmpty()), "every GC record names its collector");
         } else {
             failures++;
@@ -52,6 +59,27 @@ public final class E2EVerify {
             System.exit(1);
         }
         System.err.println("[e2e] verify OK");
+    }
+
+    private static long[] span(DecodedTrace d, DecodedTrace.DecodedSession s, String method) {
+        List<DecodedTrace.Event> ev = s.events;
+        for (int i = 0; i < ev.size(); i++) {
+            DecodedTrace.Event enter = ev.get(i);
+            if (enter.tag() != DecodedTrace.TAG_ENTER || !method.equals(d.methodNames.get(enter.methodId()))) {
+                continue;
+            }
+            @Var int open = 0;
+            for (int j = i + 1; j < ev.size(); j++) {
+                if (ev.get(j).tag() == DecodedTrace.TAG_ENTER) {
+                    open++;
+                } else if (open == 0) {
+                    return new long[] { enter.ticks(), ev.get(j).ticks() };
+                } else {
+                    open--;
+                }
+            }
+        }
+        return null;
     }
 
     private static int check(boolean cond, String msg) {
