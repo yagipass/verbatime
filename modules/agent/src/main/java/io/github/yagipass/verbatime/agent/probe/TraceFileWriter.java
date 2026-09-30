@@ -172,7 +172,8 @@ public final class TraceFileWriter {
     }
 
     private void appendChunkLocked(Session r, boolean sessionEnd) {
-        int words = r.pos;
+        long[] buf = r.buf;
+        int words = Math.min(r.pos, buf.length);
         if (stopped || (words == 0 && (r.firstChunkPending || !sessionEnd))) {
             return;
         }
@@ -186,7 +187,7 @@ public final class TraceFileWriter {
         }
         ensureScratch((words / 2) * EventEncoder.MAX_BYTES + CHUNK_HEADER_ROOM);
         byte[] b = scratch;
-        ChunkEncoder.Encoded e = encoder.encode(r.buf, words, r.lastTicks, MethodRegistry.size(), b, CHUNK_HEADER_ROOM);
+        ChunkEncoder.Encoded e = encoder.encode(buf, words, r.lastTicks, MethodRegistry.size(), b, CHUNK_HEADER_ROOM);
         int payloadLen = e.endOffset() - CHUNK_HEADER_ROOM;
         byte[] head = new byte[CHUNK_HEADER_ROOM];
         int h = RecordEncoder.chunkHeader(head, 0, r.tid, e.baseTicks(), payloadLen, sessionEnd);
