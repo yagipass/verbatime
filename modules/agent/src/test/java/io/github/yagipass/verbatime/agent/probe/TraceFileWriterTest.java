@@ -28,13 +28,15 @@ public final class TraceFileWriterTest {
         int idB = MethodRegistry.reserveIds("test.bin.B", List.of("b()V"));
 
         roundtrip(tmp, idA, idB);
-        defaultChunkStaysBelowHumongous(tmp, idA);
+        defaultChunkStartsSmallAndStaysBelowHumongous(tmp, idA);
+        growingBufferFlushesOnlyAtTheChunkSize(tmp, idA, idB);
         quantization(tmp, idA);
         rollover(tmp, idA, idB);
         threadRename(tmp, idA);
         concurrentThreads(tmp, idA, idB);
         unclosedFlush(tmp, idA, idB);
         stopDuringPushDoesNotRewriteFlushedEvents(tmp, idA, idB);
+        stopReadingTheBufferFromBeforeItGrewKeepsTheRecording(tmp, idA, idB);
         emptyEndChunkCarriesTheLastTick(tmp, idA, idB);
         backwardFirstEventIsClampedToTheLastTick(tmp, idA);
         ioFailure(tmp, idA);
@@ -87,12 +89,51 @@ public final class TraceFileWriterTest {
         Check.eq(0, d.danglingExceptionRefs, "the EXCEPTION record was on file before the chunk");
     }
 
-    private static void defaultChunkStaysBelowHumongous(Path tmp, int idA) throws Exception {
+    private static void defaultChunkStartsSmallAndStaysBelowHumongous(Path tmp, int idA) throws Exception {
         TraceFileWriter w = TraceFileWriter.open(tmp.resolve("bw-default-chunk.vbtm"));
         Session r = new Session(w, idA, 1);
+        Check.that(r.buf.length * 8L <= 4 * 1024, "a root execution starts with a small buffer, because one is allocated on every root execution, and a full chunk for a root of a few calls set off a young GC every few thousand executions. See #88");
+        r.enter(idA);
+        for (int i = 0; i < 20_000; i++) {
+            r.enter(idA);
+            r.exit(idA, Session.EXIT);
+        }
+        r.exit(idA, Session.EXIT);
+        long grown = r.buf.length * 8L;
+        r.finish();
         w.close();
 
-        Check.that(r.buf.length * 8L <= 256 * 1024, "the per-session buffer is allocated on every root execution, so it must stay below G1's humongous threshold, which is half of the smallest 1 MiB region. See review A-3");
+        Check.that(grown <= 256 * 1024, "the buffer grows with a long root execution but stays below G1's humongous threshold, which is half of the smallest 1 MiB region. See review A-3");
+    }
+
+    private static void growingBufferFlushesOnlyAtTheChunkSize(Path tmp, int idA, int idB) throws Exception {
+        TraceFileWriter w = TraceFileWriter.open(tmp.resolve("bw-grow.vbtm"));
+        Session shortRoot = new Session(w, idA, 1, 2, 8);
+        shortRoot.enter(idA);
+        for (int i = 0; i < 2; i++) {
+            shortRoot.enter(idB);
+            shortRoot.exit(idB, Session.EXIT);
+        }
+        shortRoot.exit(idA, Session.EXIT);
+        shortRoot.finish();
+        Session longRoot = new Session(w, idA, 2, 2, 8);
+        longRoot.enter(idA);
+        for (int i = 0; i < 4; i++) {
+            longRoot.enter(idB);
+            longRoot.exit(idB, Session.EXIT);
+        }
+        longRoot.exit(idA, Session.EXIT);
+        longRoot.finish();
+        w.close();
+
+        DecodedTrace d = DecodedTrace.decode(w.path());
+        DecodedTrace.DecodedSession s1 = d.sessions.get(1);
+        Check.eq(6, s1.events.size(), "the events written before each growth are carried into the larger buffer");
+        Check.eq(1, s1.chunks, "growing the buffer does not flush it, because every chunk takes the writer's lock and adds a chunk header");
+        DecodedTrace.DecodedSession s2 = d.sessions.get(2);
+        Check.eq(10, s2.events.size(), "no event is lost where the buffer stops growing and starts flushing");
+        Check.eq(2, s2.chunks, "once the buffer reaches the chunk size it flushes, so a long root execution still writes full chunks");
+        Check.that(s2.ended && DecodedTrace.toPreorder(s2).stream().noneMatch(DecodedTrace.Node::unclosed), "frames stay paired across the growth and the flush");
     }
 
     private static void quantization(Path tmp, int idA) throws Exception {
@@ -238,6 +279,28 @@ public final class TraceFileWriterTest {
         Check.eq(3, s.events.size(), "the events flushed by the stop appear once, not duplicated in the call tree");
         Check.that(!s.ended, "the session reads as cut by the stop");
         Check.eq(0, r.pos, "the owner still resets its own position so the buffer cannot overflow");
+    }
+
+    private static void stopReadingTheBufferFromBeforeItGrewKeepsTheRecording(Path tmp, int idA, int idB) throws Exception {
+        TraceFileWriter w = TraceFileWriter.open(tmp.resolve("bw-grow-stop.vbtm"));
+        Session r = new Session(w, idA, 1, 2, 8);
+        r.enter(idA);
+        long[] beforeGrowth = r.buf;
+        r.enter(idB);
+        r.exit(idB, Session.EXIT);
+        Check.that(r.buf.length > beforeGrowth.length && r.pos > beforeGrowth.length, "the owner grew the buffer and wrote past the old one's end");
+        r.buf = beforeGrowth;
+        Thread stopper = new Thread(r::flushTruncated, "stopper");
+        stopper.start();
+        stopper.join();
+        w.close();
+
+        Check.that(!w.hasFailed(), "a stop that sees the buffer from before the owner grew it, with the position from after, still writes the recording, because an index past the old buffer would fail the whole recording and lose every other session still open");
+        byte[] all = Files.readAllBytes(w.path());
+        Check.eq(Vbtm.RECORD_END, all[all.length - 1] & 0xFF, "the recording keeps its end-of-recording footer");
+        DecodedTrace.DecodedSession s = DecodedTrace.decode(w.path()).sessions.get(1);
+        Check.eq(2, s.events.size(), "the stop writes the events held by the buffer it saw");
+        Check.that(!s.ended, "the session reads as cut by the stop");
     }
 
     private static void emptyEndChunkCarriesTheLastTick(Path tmp, int idA, int idB) throws Exception {

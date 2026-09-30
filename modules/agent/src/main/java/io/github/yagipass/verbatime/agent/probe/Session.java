@@ -1,5 +1,7 @@
 package io.github.yagipass.verbatime.agent.probe;
 
+import java.util.Arrays;
+
 import io.github.yagipass.verbatime.format.EventEncoder;
 
 final class Session {
@@ -8,13 +10,17 @@ final class Session {
 
     static final long THROW = EventEncoder.THROW_BIT;
 
+    private static final int FIRST_CHUNK_EVENTS = 1 << 8;
+
     private static final int CHUNK_EVENTS = 1 << 14;
 
     private static final long FLUSH_INTERVAL_NANOS = 1_000_000_000L;
 
     private final TraceFileWriter writer;
 
-    final long[] buf;
+    long[] buf;
+
+    private final int maxWords;
 
     final Thread owner;
 
@@ -41,14 +47,19 @@ final class Session {
     private long nextFlushNanos;
 
     Session(TraceFileWriter writer, int rootId, int seq) {
-        this(writer, rootId, seq, CHUNK_EVENTS);
+        this(writer, rootId, seq, FIRST_CHUNK_EVENTS, CHUNK_EVENTS);
     }
 
     Session(TraceFileWriter writer, int rootId, int seq, int chunkEvents) {
+        this(writer, rootId, seq, chunkEvents, chunkEvents);
+    }
+
+    Session(TraceFileWriter writer, int rootId, int seq, int firstChunkEvents, int chunkEvents) {
         this.writer = writer;
         this.rootId = rootId;
         this.seq = seq;
-        this.buf = new long[chunkEvents * 2];
+        this.buf = new long[firstChunkEvents * 2];
+        this.maxWords = chunkEvents * 2;
         this.owner = Thread.currentThread();
         this.tid = owner.threadId();
         this.nextFlushNanos = System.nanoTime() + FLUSH_INTERVAL_NANOS;
@@ -75,7 +86,9 @@ final class Session {
         b[p] = nanos;
         b[p + 1] = packed;
         pos = p + 2;
-        if (pos == b.length || nanos >= nextFlushNanos) {
+        if (pos == b.length && b.length < maxWords) {
+            buf = Arrays.copyOf(b, Math.min(b.length * 2, maxWords));
+        } else if (pos == b.length || nanos >= nextFlushNanos) {
             writer.appendChunk(this, false);
             nextFlushNanos = nanos + FLUSH_INTERVAL_NANOS;
         }
