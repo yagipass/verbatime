@@ -12,6 +12,8 @@ import io.github.yagipass.verbatime.agent.probe.Tracing;
 
 public final class Recorder {
 
+    private final long vmInitUptimeMs = TraceFileWriter.vmInitUptimeMs();
+
     private long nextRecordingId = 1;
 
     private Recording currentRecording;
@@ -31,7 +33,7 @@ public final class Recorder {
         Path path = pathForId.apply(nextRecordingId);
         TraceFileWriter w;
         try {
-            w = TraceFileWriter.open(path);
+            w = TraceFileWriter.open(path, vmInitUptimeMs);
         } catch (IOException e) {
             throw new UncheckedIOException("cannot open the trace file " + path, e);
         }
