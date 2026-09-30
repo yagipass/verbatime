@@ -37,6 +37,7 @@ public final class TraceFileWriterTest {
         unclosedFlush(tmp, idA, idB);
         stopDuringPushDoesNotRewriteFlushedEvents(tmp, idA, idB);
         stopReadingTheBufferFromBeforeItGrewKeepsTheRecording(tmp, idA, idB);
+        stopReleasesTheBufferOfTheSessionLeftOnItsThread(tmp, idA, idB);
         emptyEndChunkCarriesTheLastTick(tmp, idA, idB);
         backwardFirstEventIsClampedToTheLastTick(tmp, idA);
         ioFailure(tmp, idA);
@@ -257,11 +258,13 @@ public final class TraceFileWriterTest {
         long o = w.originNanos;
         fill(r, o + 1000, (long) idA << 2, o + 2000, (long) idB << 2, o + 3000, ((long) idB << 2) | Session.EXIT);
         int stale = r.pos;
+        long[] held = r.buf;
         Thread stopper = new Thread(r::flushTruncated, "stopper");
         stopper.start();
         stopper.join();
-        r.pos = stale;
-        fill(r, o + 4000, ((long) idA << 2) | Session.EXIT);
+        held[stale] = o + 4000;
+        held[stale + 1] = ((long) idA << 2) | Session.EXIT;
+        r.pos = stale + 2;
         r.finish();
         w.close();
 
@@ -300,6 +303,25 @@ public final class TraceFileWriterTest {
         Check.eq(Vbtm.RECORD_END, all[all.length - 1] & 0xFF, "the recording keeps its end-of-recording footer");
         DecodedTrace.DecodedSession s = DecodedTrace.decode(w.path()).sessions.get(1);
         Check.eq(2, s.events.size(), "the stop writes the events held by the buffer it saw");
+        Check.that(!s.ended, "the session reads as cut by the stop");
+    }
+
+    private static void stopReleasesTheBufferOfTheSessionLeftOnItsThread(Path tmp, int idA, int idB) throws Exception {
+        TraceFileWriter w = TraceFileWriter.open(tmp.resolve("bw-stop-release.vbtm"));
+        Session r = new Session(w, idA, 1, 2, 8);
+        r.enter(idA);
+        for (int i = 0; i < 3; i++) {
+            r.enter(idB);
+            r.exit(idB, Session.EXIT);
+        }
+        Thread stopper = new Thread(r::flushTruncated, "stopper");
+        stopper.start();
+        stopper.join();
+        w.close();
+
+        Check.eq(0, r.buf.length, "the stop releases the buffer, because the session stays bound to its thread until that thread runs a root in a later recording, and a pool thread that was waiting inside a root may never do so. See #90");
+        DecodedTrace.DecodedSession s = DecodedTrace.decode(w.path()).sessions.get(1);
+        Check.eq(7, s.events.size(), "the stop writes the buffered events before it releases the buffer");
         Check.that(!s.ended, "the session reads as cut by the stop");
     }
 

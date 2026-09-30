@@ -16,6 +16,8 @@ final class Session {
 
     private static final long FLUSH_INTERVAL_NANOS = 1_000_000_000L;
 
+    private static final long[] NO_EVENTS = new long[0];
+
     private final TraceFileWriter writer;
 
     long[] buf;
@@ -101,5 +103,6 @@ final class Session {
     void flushTruncated() {
         closed = true;
         writer.flushTruncated(this);
+        buf = NO_EVENTS;
     }
 }
