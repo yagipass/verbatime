@@ -109,7 +109,7 @@ export default defineConfig({
               text: "Tools",
               items: [
                 { text: "JMC plugin", link: "/jmc.md" },
-                { text: "vbtm CLI", link: "/cli.md" },
+                { text: "CLI", link: "/cli.md" },
               ],
             },
             {
