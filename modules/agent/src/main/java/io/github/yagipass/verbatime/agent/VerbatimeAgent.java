@@ -45,7 +45,7 @@ public final class VerbatimeAgent {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             closeAtShutdown.run();
             warnAboutUnresolvedRoots(cfg, roots);
-            Log.info("shutdown: instrumented " + transformer.instrumentedClasses() + " classes / " + transformer.instrumentedMethods() + " methods, " + transformer.failedClasses() + " classes failed to transform, " + transformer.idLimitSkippedClasses() + " classes skipped at the method id limit, " + Log.plural(Probe.endedSessions(), "session") + " completed");
+            Log.info("shutdown: instrumented " + transformer.instrumentedClasses() + " classes / " + transformer.instrumentedMethods() + " methods, " + transformer.failedClasses() + " classes failed to transform, " + transformer.idLimitSkippedClasses() + " classes skipped at the method id limit, " + Log.plural(Probe.completedSessions(), "session") + " completed");
         }, "verbatime-shutdown"));
 
         Log.info("loaded: " + cfg.describe());
