@@ -8,7 +8,7 @@ services:
       - "127.0.0.1:7091:7091"
     environment:
       JAVA_OPTS: >-
-        -javaagent:/opt/jboss/wildfly/verbatime-agent.jar=waitstart=60s,roots=org.jboss.as.server.Main::main+io.undertow.servlet.handlers.ServletInitialHandler::dispatchRequest,exclude=org.jboss.modules+org.jboss.marshalling,${VERBATIME_EXTRA:-}
+        -javaagent:/opt/jboss/wildfly/verbatime-agent.jar=waitstart=60s,roots=org.jboss.as.server.Main::main+io.undertow.servlet.handlers.ServletInitialHandler::dispatchRequest,exclude=org.jboss.modules,${VERBATIME_EXTRA:-}
         -Dcom.sun.management.jmxremote.port=7091
         -Dcom.sun.management.jmxremote.rmi.port=7091
         -Dcom.sun.management.jmxremote.authenticate=false

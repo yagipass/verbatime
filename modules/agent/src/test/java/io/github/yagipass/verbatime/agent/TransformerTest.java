@@ -2,18 +2,28 @@ package io.github.yagipass.verbatime.agent;
 
 import java.io.ObjectStreamClass;
 import java.lang.classfile.Attributes;
+import java.lang.classfile.ClassBuilder;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassFileVersion;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.CodeElement;
+import java.lang.classfile.Label;
 import java.lang.classfile.MethodModel;
+import java.lang.classfile.attribute.CodeAttribute;
 import java.lang.classfile.instruction.InvokeInstruction;
+import java.lang.classfile.instruction.StoreInstruction;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -53,18 +63,11 @@ public final class TransformerTest {
         Check.that(tr.instrumentedClasses() >= 3, "Fixture, FixtureInterface and Fixture$Inner instrumented");
 
         Method rootM = fx.getMethod("root");
-        Check.eq(1, rootM.getAnnotations().length, "method annotation kept on the wrapper");
+        Check.eq(1, rootM.getAnnotations().length, "method annotation kept, because frameworks read it by reflection");
         Check.eq("io.github.yagipass.verbatime.fixtures.Marker", rootM.getAnnotations()[0].annotationType().getName(), "annotation type");
         Method ap = fx.getDeclaredMethod("annotatedParam", String.class);
-        Check.eq(1, ap.getParameterAnnotations()[0].length, "parameter annotation kept on the wrapper");
-        Method sync = fx.getDeclaredMethod("sync", int.class);
-        Check.that(Modifier.isSynchronized(sync.getModifiers()), "wrapper keeps synchronized so reflection and the default serialVersionUID match the original class");
-        Method syncBody = fx.getDeclaredMethod("sync$trace", int.class);
-        Check.that(!Modifier.isSynchronized(syncBody.getModifiers()), "body runs under the wrapper's monitor and needs no lock of its own");
-        Check.that(Modifier.isPrivate(syncBody.getModifiers()), "body is private");
-        Check.that(syncBody.isSynthetic(), "body is synthetic");
-        Check.that(Modifier.isPublic(fx.getDeclaredMethod("stat", int.class, long.class).getModifiers()), "public static wrapper stays public");
-        Check.that(Modifier.isStatic(fx.getDeclaredMethod("stat$trace", int.class, long.class).getModifiers()), "static body stays static");
+        Check.eq(1, ap.getParameterAnnotations()[0].length, "parameter annotation kept, because frameworks read it by reflection");
+        Check.that(Modifier.isSynchronized(fx.getDeclaredMethod("sync", int.class).getModifiers()), "synchronized kept, so the method still locks and reflection and the default serialVersionUID match the original class");
         Check.eq(1, fx.getDeclaredConstructors().length, "constructor untouched");
         for (int i = 0; i < MethodRegistry.size(); i++) {
             if (MethodRegistry.methodName(i).startsWith("<")) {
@@ -74,28 +77,46 @@ public final class TransformerTest {
 
         Class<?> serial = loader.loadClass("io.github.yagipass.verbatime.fixtures.SerializableFixture");
         Check.that(serial.getClassLoader() == loader, "SerializableFixture defined by the child-first loader");
-        Check.that(Modifier.isPrivate(serial.getDeclaredMethod("increment$trace").getModifiers()), "SerializableFixture.increment instrumented");
         Check.eq(ObjectStreamClass.lookup(io.github.yagipass.verbatime.fixtures.SerializableFixture.class).getSerialVersionUID(), ObjectStreamClass.lookup(serial).getSerialVersionUID(),
                 "instrumentation must not change the default serialVersionUID, or sessions and caches written without the agent fail to deserialize");
         Object so = serial.getConstructor().newInstance();
-        Check.eq(true, serial.getMethod("holdsOwnMonitor").invoke(so), "instance body runs while the wrapper holds this");
-        Check.eq(true, serial.getMethod("holdsClassMonitor").invoke(null), "static body runs while the wrapper holds the Class monitor");
+        Check.eq(true, serial.getMethod("holdsOwnMonitor").invoke(so), "an instrumented synchronized method still runs while holding this");
+        Check.eq(true, serial.getMethod("holdsClassMonitor").invoke(null), "an instrumented static synchronized method still runs while holding the Class monitor");
 
         Class<?> iface = loader.loadClass("io.github.yagipass.verbatime.fixtures.FixtureInterface");
         Check.that(iface.getClassLoader() == loader, "FixtureInterface defined by the child-first loader");
-        List<String> ifaceMethods = new ArrayList<>();
-        for (Method m : iface.getDeclaredMethods()) {
-            ifaceMethods.add(m.getName());
+
+        for (Class<?> c : new Class<?>[] { fx, serial, iface, loader.loadClass("io.github.yagipass.verbatime.fixtures.Fixture$Inner") }) {
+            Check.eq(declaredMethods(Class.forName(c.getName())), declaredMethods(c),
+                    c.getSimpleName() + " declares the same methods, with the same modifiers, as without the agent, because frameworks scan declared methods and Gradle's worker rejected the extra name$trace methods of the old wrapper scheme");
         }
-        Check.that(ifaceMethods.contains("greet$trace"), "default method got a body: " + ifaceMethods);
-        Check.that(ifaceMethods.contains("istatic$trace"), "interface static method got a body");
-        Check.that(!ifaceMethods.contains("abstractMethod$trace"), "abstract method not instrumented");
+
+        Transformer inspector = new Transformer(cfg, new Roots(), null);
+        byte[] fxBytes = inspect(inspector, "Fixture");
+        List<String> probeLifecycle = List.of("enter", "exit", "exitThrow");
+        Check.eq(probeLifecycle, probeCalls(fxBytes, "root"), "root() enters, exits on its one return, and reports a throw from inside itself, so its time and exceptions are on record");
+        Check.eq(List.of("enter", "exit", "exit", "exitThrow"), probeCalls(fxBytes, "caught"), "every return gets its own exit, or a call that leaves through the second return stays open in the tree");
+        Check.eq(probeLifecycle, probeCalls(inspect(inspector, "SerializableFixture"), "increment"), "synchronized SerializableFixture.increment is instrumented");
+        byte[] ifaceBytes = inspect(inspector, "FixtureInterface");
+        Check.eq(probeLifecycle, probeCalls(ifaceBytes, "greet"), "interface default method is instrumented");
+        Check.eq(probeLifecycle, probeCalls(ifaceBytes, "istatic"), "interface static method is instrumented");
+        Check.eq(List.of(), probeCalls(ifaceBytes, "abstractMethod"), "abstract method has no code to instrument");
+        int failedBeforeSecondPass = inspector.failedClasses();
+        Check.that(inspector.transform(null, TransformerTest.class.getClassLoader(), "io/github/yagipass/verbatime/fixtures/Fixture", null, null, fxBytes) == null,
+                "a class that already calls the probe is left alone, so a second copy of the agent cannot record every call twice");
+        Check.eq(failedBeforeSecondPass, inspector.failedClasses(), "leaving an instrumented class alone is not a failure");
 
         try {
             fx.getMethod("rootThrows").invoke(o);
             Check.fail("rootThrows should throw");
         } catch (InvocationTargetException e) {
             Check.that(e.getCause() instanceof IllegalStateException, "original exception propagates");
+            try {
+                new io.github.yagipass.verbatime.fixtures.Fixture().rootThrows();
+                Check.fail("uninstrumented rootThrows should throw");
+            } catch (IllegalStateException plain) {
+                Check.eq(fixtureFrames(plain), fixtureFrames(e.getCause()), "stack traces through instrumented methods show the same methods and lines as without the agent, because users paste them and error trackers group by them");
+            }
         }
 
         DecodedTrace d = DecodedTrace.decode(out.path());
@@ -153,21 +174,8 @@ public final class TransformerTest {
             }
         }
 
-        Class<?> collide = loader.loadClass("io.github.yagipass.verbatime.fixtures.BodyNameCollision");
-        Object co = collide.getConstructor().newInstance();
-        Check.eq(3, collide.getMethod("bar").invoke(co), "BodyNameCollision.bar() result");
-        @Var int fooTrace = 0;
-        @Var boolean barTrace = false;
-        for (Method m : collide.getDeclaredMethods()) {
-            if (m.getName().equals("foo$trace")) {
-                fooTrace++;
-            }
-            if (m.getName().equals("bar$trace")) {
-                barTrace = true;
-            }
-        }
-        Check.eq(1, fooTrace, "colliding foo not instrumented");
-        Check.that(barTrace, "bar instrumented despite the collision");
+        jitLimit(cfg);
+        spareLocals(cfg);
 
         int failedBefore = tr.failedClasses();
         byte[] garbage = tr.transform(null, loader, "io/github/yagipass/verbatime/fixtures/Garbage", null, null, new byte[] { (byte) 0xCA, 1 });
@@ -177,7 +185,7 @@ public final class TransformerTest {
         Path fix8 = Path.of(System.getProperty("io.github.yagipass.verbatime.agent.test.fixtures8"));
         byte[] oldBytes = Files.readAllBytes(fix8.resolve("io/github/yagipass/verbatime/fixtures8/LegacyClassFile.class"));
         @Var int sessionsSoFar = 2;
-        for (int major : new int[] { 51, 50 }) {
+        for (int major : new int[] { 51, 50, 49 }) {
             byte[] versioned = withVersion(oldBytes, major);
             Config cfg8 = Config.parse("include=io.github.yagipass.verbatime.fixtures8");
             Roots roots8 = new Roots();
@@ -193,13 +201,13 @@ public final class TransformerTest {
             byte[] t8 = tr8.transform(null, l8, "io/github/yagipass/verbatime/fixtures8/LegacyClassFile", null, null, versioned);
             ClassModel cm8 = ClassFile.of().parse(t8);
             Check.eq(major, cm8.majorVersion(), "class-file version preserved");
-            @Var boolean wrapperHasStackMap = false;
-            for (MethodModel mm : cm8.methods()) {
-                if (mm.methodName().equalsString("root") && mm.code().isPresent()) {
-                    wrapperHasStackMap = mm.code().get().findAttribute(Attributes.stackMapTable()).isPresent();
-                }
+            if (major >= ClassFile.JAVA_6_VERSION) {
+                Check.eq(1, stackMapFrames(cm8, "root"), "v" + major + " root() has no branches of its own, so its StackMapTable holds just the frame of the probe's catch-all");
+                Check.eq(2, stackMapFrames(cm8, "caught"), "v" + major + " caught() keeps the frame of its own catch and adds the probe's, so the verifier accepts it without the agent computing frames");
+            } else {
+                Check.eq(-1, stackMapFrames(cm8, "root"), "v" + major + " classes get no StackMapTable, because the JVM verifies them by type inference");
+                Check.eq(-1, stackMapFrames(cm8, "caught"), "v" + major + " caught() carries no StackMapTable either, even though the source class had one");
             }
-            Check.that(wrapperHasStackMap, "v" + major + " wrapper got a StackMapTable");
         }
         Tracing.stop();
         out.close();
@@ -223,15 +231,14 @@ public final class TransformerTest {
         byte[] full = inScope.transform(null, cl, "io/github/yagipass/verbatime/fixtures/DemoMain", null, null, demoBytes);
         Check.that(full != null, "gate class inside include scope is transformed");
         ClassModel fullCm = ClassFile.of().parse(full);
-        Check.that(hasMethod(fullCm, "main$trace"), "in-scope gate class keeps the wrapper scheme");
-        Check.eq(List.of("await", "enter"), agentInvokes(fullCm, MAIN_ARGS, 2), "gate call precedes Probe.enter in the wrapper");
+        Check.eq(List.of("await", "enter", "exit", "exitThrow"), agentInvokes(fullCm, MAIN_ARGS, Integer.MAX_VALUE),
+                "in-scope main is instrumented in place with the gate before Probe.enter, or a recording started during the wait would miss main's own session");
 
         Transformer outOfScope = new Transformer(Config.parse("include=com.example"), new Roots(), "io/github/yagipass/verbatime/fixtures/DemoMain");
         byte[] minimal = outOfScope.transform(null, cl, "io/github/yagipass/verbatime/fixtures/DemoMain", null, null, demoBytes);
         Check.that(minimal != null, "gate class outside include scope still gets the gate");
         ClassModel minCm = ClassFile.of().parse(minimal);
-        Check.that(!hasMethod(minCm, "main$trace"), "out-of-scope gate class is not instrumented");
-        Check.eq(List.of("await"), agentInvokes(minCm, MAIN_ARGS, Integer.MAX_VALUE), "only the gate call is injected");
+        Check.eq(List.of("await"), agentInvokes(minCm, MAIN_ARGS, Integer.MAX_VALUE), "out-of-scope gate class gets only the gate call and no probe calls");
         byte[] other = outOfScope.transform(null, cl, "io/github/yagipass/verbatime/fixtures/Fixture", null, null, TransformingLoader.classpathBytes("io.github.yagipass.verbatime.fixtures.Fixture"));
         Check.that(other == null, "other out-of-scope classes stay untouched");
 
@@ -252,20 +259,14 @@ public final class TransformerTest {
         Transformer privScope = new Transformer(Config.parse("include=com.example"), new Roots(), "io/github/yagipass/verbatime/fixtures/PrivateMain");
         byte[] privMin = privScope.transform(null, cl, "io/github/yagipass/verbatime/fixtures/PrivateMain", null, null, TransformingLoader.classpathBytes("io.github.yagipass.verbatime.fixtures.PrivateMain"));
         Check.that(privMin == null, "out-of-scope PrivateMain has nothing to gate and loads unchanged");
-
-        ClassModel collide = transformGateClass("MainBodyNameCollision", true);
-        Check.eq(List.of("await"), agentInvokes(collide, MAIN_ARGS, Integer.MAX_VALUE), "unwrappable main still receives the gate and nothing else");
-        Check.eq(1, gateCount(collide), "MainBodyNameCollision carries exactly one gate");
     }
 
     private static void gateOnLauncherMain(String simpleName, String desc) {
         ClassModel full = transformGateClass(simpleName, true);
-        Check.that(hasMethod(full, "main$trace"), "in-scope " + simpleName + " keeps the wrapper scheme");
         Check.eq(List.of("await", "enter"), agentInvokes(full, desc, 2), "in-scope " + simpleName + " gates its main before Probe.enter");
         Check.eq(1, gateCount(full), "in-scope " + simpleName + " carries exactly one gate");
         ClassModel minimal = transformGateClass(simpleName, false);
-        Check.that(!hasMethod(minimal, "main$trace"), "out-of-scope " + simpleName + " is not instrumented");
-        Check.eq(List.of("await"), agentInvokes(minimal, desc, Integer.MAX_VALUE), "out-of-scope " + simpleName + " gets only the gate");
+        Check.eq(List.of("await"), agentInvokes(minimal, desc, Integer.MAX_VALUE), "out-of-scope " + simpleName + " gets only the gate and no probe calls");
         Check.eq(1, gateCount(minimal), "out-of-scope " + simpleName + " carries exactly one gate");
     }
 
@@ -293,13 +294,159 @@ public final class TransformerTest {
         return count;
     }
 
-    private static boolean hasMethod(ClassModel cm, String name) {
-        for (MethodModel mm : cm.methods()) {
-            if (mm.methodName().equalsString(name)) {
-                return true;
+    private static void jitLimit(Config cfg) {
+        String internal = "io/github/yagipass/verbatime/fixtures/HugeMethods";
+        int limit = TracingPlan.JIT_HUGE_METHOD_LIMIT;
+        byte[] bytes = ClassFile.of().build(ClassDesc.ofInternalName(internal), clb -> {
+            clb.withFlags(ClassFile.ACC_PUBLIC);
+            nopMethod(clb, "small", 1);
+            nopMethod(clb, "roomForProbes", limit - 100);
+            nopMethod(clb, "nearLimit", limit - 10);
+            nopMethod(clb, "alreadyHuge", limit + 1000);
+        });
+        byte[] out = new Transformer(cfg, new Roots(), null).transform(null, TransformerTest.class.getClassLoader(), internal, null, null, bytes);
+        List<String> probeLifecycle = List.of("enter", "exit", "exitThrow");
+        Check.eq(probeLifecycle, probeCalls(out, "small"), "a small method is instrumented");
+        Check.eq(probeLifecycle, probeCalls(out, "roomForProbes"), "a method with room for the probe calls under the JIT's size limit is instrumented");
+        Check.that(codeLength(out, "roomForProbes") <= limit, "the probe calls keep that method within the limit, so the JIT still compiles it: " + codeLength(out, "roomForProbes") + " bytes");
+        Check.eq(List.of(), probeCalls(out, "nearLimit"), "a method the probe calls would push past the JIT's size limit is left alone, because the JIT never compiles it after that and it would run far slower than the probes cost");
+        Check.eq(probeLifecycle, probeCalls(out, "alreadyHuge"), "a method already past the limit is never compiled anyway, so it is instrumented");
+    }
+
+    private static void spareLocals(Config cfg) throws Exception {
+        String name = "io.github.yagipass.verbatime.fixtures.SpareLocals";
+        byte[] built = ClassFile.of().build(ClassDesc.of(name), clb -> {
+            clb.withFlags(ClassFile.ACC_PUBLIC);
+            clb.withMethodBody("spare", MethodTypeDesc.of(ConstantDescs.CD_int, ConstantDescs.CD_int), ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC, cob -> {
+                Label start = cob.newBoundLabel();
+                cob.iload(0);
+                cob.ireturn();
+                Label end = cob.newBoundLabel();
+                cob.localVariable(0, "x", ConstantDescs.CD_int, start, end);
+                cob.localVariable(2, "unused", ConstantDescs.CD_int, start, end);
+            });
+        });
+        byte[] original = withMaxLocals(built, "spare", 3);
+        Class<?> plain = new TransformingLoader(new Transformer(Config.parse("include=com.example"), new Roots(), null), name, n -> original).loadClass(name);
+        Check.eq(7, plain.getMethod("spare", int.class).invoke(null, 7), "SpareLocals loads unchanged, like the Clojure classes that declare local slots their code never touches");
+
+        byte[] instrumented = inspectBytes(new Transformer(cfg, new Roots(), null), name, original);
+        Check.eq(3, ((CodeAttribute) method(instrumented, "spare").code().orElseThrow()).maxLocals(),
+                "an instrumented method keeps the max_locals it declared, or HotSpot rejects a LocalVariableTable entry past it with ClassFormatError and the class fails to load");
+        Class<?> traced = new TransformingLoader(new Transformer(cfg, new Roots(), null), name, n -> original).loadClass(name);
+        Check.eq(7, traced.getMethod("spare", int.class).invoke(null, 7), "instrumented SpareLocals loads and runs");
+
+        byte[] fxOriginal = TransformingLoader.classpathBytes("io.github.yagipass.verbatime.fixtures.Fixture");
+        byte[] fxInstrumented = inspectBytes(new Transformer(cfg, new Roots(), null), "io.github.yagipass.verbatime.fixtures.Fixture", fxOriginal);
+        Check.eq(stores(fxOriginal, "root"), stores(fxInstrumented, "root"), "javac code touches every slot it declares, so it gets no extra store and grows only by the probe calls");
+    }
+
+    private static int stores(byte[] classBytes, String name) {
+        @Var int n = 0;
+        for (CodeElement e : method(classBytes, name).code().orElseThrow()) {
+            if (e instanceof StoreInstruction) {
+                n++;
             }
         }
-        return false;
+        return n;
+    }
+
+    private static byte[] inspectBytes(Transformer t, String binaryName, byte[] bytes) {
+        byte[] out = t.transform(null, TransformerTest.class.getClassLoader(), binaryName.replace('.', '/'), null, null, bytes);
+        if (out == null) {
+            throw new AssertionError(binaryName + " was not transformed");
+        }
+        return out;
+    }
+
+    private static byte[] withMaxLocals(byte[] bytes, String name, int maxLocals) {
+        CodeAttribute code = (CodeAttribute) method(bytes, name).code().orElseThrow();
+        byte[] codeBytes = code.codeArray();
+        byte[] needle = ByteBuffer.allocate(8 + codeBytes.length).putShort((short) code.maxStack()).putShort((short) code.maxLocals()).putInt(codeBytes.length).put(codeBytes).array();
+        @Var int at = -1;
+        for (int i = 0; i + needle.length <= bytes.length; i++) {
+            if (Arrays.equals(bytes, i, i + needle.length, needle, 0, needle.length)) {
+                if (at >= 0) {
+                    throw new AssertionError("Code attribute of " + name + " is not unique in the class bytes");
+                }
+                at = i;
+            }
+        }
+        if (at < 0) {
+            throw new AssertionError("Code attribute of " + name + " not found");
+        }
+        byte[] patched = bytes.clone();
+        patched[at + 2] = (byte) (maxLocals >>> 8);
+        patched[at + 3] = (byte) maxLocals;
+        return patched;
+    }
+
+    private static void nopMethod(ClassBuilder clb, String name, int codeLength) {
+        clb.withMethodBody(name, MethodTypeDesc.of(ConstantDescs.CD_void), ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC, cob -> {
+            for (int i = 1; i < codeLength; i++) {
+                cob.nop();
+            }
+            cob.return_();
+        });
+    }
+
+    private static byte[] inspect(Transformer t, String simpleName) {
+        String name = "io.github.yagipass.verbatime.fixtures." + simpleName;
+        return inspectBytes(t, name, TransformingLoader.classpathBytes(name));
+    }
+
+    private static MethodModel method(byte[] classBytes, String name) {
+        for (MethodModel mm : ClassFile.of().parse(classBytes).methods()) {
+            if (mm.methodName().equalsString(name)) {
+                return mm;
+            }
+        }
+        throw new AssertionError("no method " + name);
+    }
+
+    private static List<String> probeCalls(byte[] classBytes, String name) {
+        List<String> found = new ArrayList<>();
+        MethodModel mm = method(classBytes, name);
+        if (mm.code().isPresent()) {
+            for (CodeElement e : mm.code().get()) {
+                if (e instanceof InvokeInstruction ii && ii.owner().name().equalsString("io/github/yagipass/verbatime/agent/probe/Probe")) {
+                    found.add(ii.name().stringValue());
+                }
+            }
+        }
+        return found;
+    }
+
+    private static int codeLength(byte[] classBytes, String name) {
+        return ((CodeAttribute) method(classBytes, name).code().orElseThrow()).codeLength();
+    }
+
+    private static int stackMapFrames(ClassModel cm, String name) {
+        for (MethodModel mm : cm.methods()) {
+            if (mm.methodName().equalsString(name) && mm.code().isPresent()) {
+                return mm.code().get().findAttribute(Attributes.stackMapTable()).map(smt -> smt.entries().size()).orElse(-1);
+            }
+        }
+        throw new AssertionError("no method " + name);
+    }
+
+    private static List<String> declaredMethods(Class<?> c) {
+        List<String> out = new ArrayList<>();
+        for (Method m : c.getDeclaredMethods()) {
+            out.add(Modifier.toString(m.getModifiers()) + (m.isSynthetic() ? " synthetic " : " ") + m.getReturnType().getName() + " " + m.getName() + Arrays.toString(m.getParameterTypes()));
+        }
+        Collections.sort(out);
+        return out;
+    }
+
+    private static List<String> fixtureFrames(Throwable t) {
+        List<String> out = new ArrayList<>();
+        for (StackTraceElement e : t.getStackTrace()) {
+            if (e.getClassName().startsWith("io.github.yagipass.verbatime.fixtures.")) {
+                out.add(e.getClassName() + "." + e.getMethodName() + ":" + e.getLineNumber());
+            }
+        }
+        return out;
     }
 
     private static List<String> agentInvokes(ClassModel cm, String desc, int limit) {

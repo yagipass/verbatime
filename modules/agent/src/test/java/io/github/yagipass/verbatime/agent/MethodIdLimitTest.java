@@ -5,7 +5,6 @@ import java.lang.classfile.ClassModel;
 import java.lang.classfile.CodeElement;
 import java.lang.classfile.MethodModel;
 import java.lang.classfile.instruction.InvokeInstruction;
-import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -63,7 +62,8 @@ final class MethodIdLimitTest {
 
         String expected = new io.github.yagipass.verbatime.fixtures.Fixture().root();
         Check.eq(expected, fx.getMethod("root").invoke(fx.getConstructor().newInstance()), "a skipped class still loads and runs, because the application must not break when tracing gives up");
-        Check.that(!hasBodyMethod(fx), "a skipped class is loaded unchanged, so its bytecode never refers to an id past the limit");
+        Check.that(tr.transform(null, loader, "io/github/yagipass/verbatime/fixtures/Fixture", null, null, TransformingLoader.classpathBytes("io.github.yagipass.verbatime.fixtures.Fixture")) == null,
+                "a skipped class is loaded unchanged, so its bytecode never refers to an id past the limit");
         Check.eq(0, tr.instrumentedClasses(), "nothing is instrumented once the registry is full");
         Check.eq(0, tr.failedClasses(), "hitting the limit is not a transform failure");
         Check.that(tr.idLimitSkippedClasses() >= 3, "Fixture, Fixture$Inner and GateMain are counted as skipped, got " + tr.idLimitSkippedClasses());
@@ -72,7 +72,7 @@ final class MethodIdLimitTest {
         Check.that(gated[0] != null, "the startup gate is still injected into a skipped main class, so waitstart keeps holding the JVM");
         ClassModel gm = ClassFile.of().parse(gated[0]);
         Check.that(callsGateAwait(gm), "GateMain.main calls StartupGate.await");
-        Check.that(gm.methods().stream().noneMatch(m -> m.methodName().stringValue().endsWith(Transformer.BODY_SUFFIX)), "the gated main class carries no instrumented wrappers");
+        Check.that(!callsProbe(gm), "the gated main class carries no probe calls, since it got no ids");
 
         VerbatimeControl ctl = new VerbatimeControl(cfg, tr, roots, new Recorder());
         Check.that(List.of(ctl.status()).contains("idLimitSkippedClasses=" + tr.idLimitSkippedClasses()), "status reports skipped classes, so a JMX client can see why methods are missing without reading stderr");
@@ -86,10 +86,15 @@ final class MethodIdLimitTest {
         Check.eq("test.limit.Exact.y()V", d.methodNames.get(MAX - 1), "the last valid id is replayed into the recording");
     }
 
-    private static boolean hasBodyMethod(Class<?> c) {
-        for (Method m : c.getDeclaredMethods()) {
-            if (m.getName().endsWith(Transformer.BODY_SUFFIX)) {
-                return true;
+    private static boolean callsProbe(ClassModel cm) {
+        for (MethodModel mm : cm.methods()) {
+            if (mm.code().isEmpty()) {
+                continue;
+            }
+            for (CodeElement ce : mm.code().get()) {
+                if (ce instanceof InvokeInstruction ii && ii.owner().asInternalName().equals("io/github/yagipass/verbatime/agent/probe/Probe")) {
+                    return true;
+                }
             }
         }
         return false;

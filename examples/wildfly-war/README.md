@@ -26,14 +26,14 @@ curl 'http://localhost:8080/orders?sku=widget&qty=3'
 Set in [`compose.yaml`](compose.yaml) through `JAVA_OPTS`, alongside the shared JMX flags:
 
 ```text
--javaagent:/opt/jboss/wildfly/verbatime-agent.jar=waitstart=60s,roots=org.jboss.as.server.Main::main+io.undertow.servlet.handlers.ServletInitialHandler::dispatchRequest,exclude=org.jboss.modules+org.jboss.marshalling
+-javaagent:/opt/jboss/wildfly/verbatime-agent.jar=waitstart=60s,roots=org.jboss.as.server.Main::main+io.undertow.servlet.handlers.ServletInitialHandler::dispatchRequest,exclude=org.jboss.modules
 -Djboss.modules.system.pkgs=org.jboss.byteman,org.jboss.logmanager,org.wildfly.common,io.smallrye.common,io.github.yagipass.verbatime.agent.probe
 -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true -Xms64m -Xmx512m
 ```
 
 | Setting | Value |
 |---|---|
-| Instrumented classes | Everything except the JDK, JBoss Modules, and JBoss Marshalling, which `exclude=org.jboss.modules+org.jboss.marshalling` leaves out. That covers WildFly's subsystems, Undertow, Infinispan, and the WAR. Instrumented JBoss Modules class loaders define classes twice and fail with `LinkageError: attempted duplicate class definition`. JBoss Marshalling's `FieldSetter.get` inspects the calling class on the stack and only allows the field's own class. With the agent it sees the wrapper method in `FieldSetter` itself, throws `SecurityException: Cannot get field from someone else's class`, and the Infinispan cache container for Hibernate fails to start |
+| Instrumented classes | Everything except the JDK and JBoss Modules, which `exclude=org.jboss.modules` leaves out. That covers WildFly's subsystems, Undertow, Infinispan, JBoss Marshalling, and the WAR. Instrumented JBoss Modules class loaders define classes twice and fail with `LinkageError: attempted duplicate class definition` |
 | `waitstart=60s` | Pauses at `org.jboss.modules.Main.main`, the main class of `jboss-modules.jar`, for up to 60 seconds until JMC starts a recording. The gate works on an excluded class, because only instrumentation is skipped |
 | `roots=` | Sets the roots below. You can change them in JMC |
 | `jboss.modules.system.pkgs` | Packages that module class loaders resolve from the boot class path. Instrumented code calls the agent's `probe` classes, which the agent puts on the boot class path, so that package must be listed, or every instrumented class fails with `NoClassDefFoundError` |

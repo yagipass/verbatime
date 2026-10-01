@@ -31,7 +31,7 @@ final class StartupGateTransform {
     private static final CodeTransform PREPEND_AWAIT = new CodeTransform() {
         @Override
         public void atStart(CodeBuilder cob) {
-            cob.invokestatic(GATE, "await", VOID_NOARG);
+            emitAwait(cob);
         }
 
         @Override
@@ -41,6 +41,10 @@ final class StartupGateTransform {
     };
 
     private StartupGateTransform() {
+    }
+
+    static void emitAwait(CodeBuilder cob) {
+        cob.invokestatic(GATE, "await", VOID_NOARG);
     }
 
     static String launcherMainSig(ClassModel cm) {

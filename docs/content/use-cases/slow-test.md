@@ -37,7 +37,6 @@ A test JVM exits as soon as the tests are done, so record with the
        jvmArgs(
            "-javaagent:/path/to/verbatime-agent.jar=record=startup," +
                "roots=org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor::execute," +
-               "exclude=org.gradle+worker.org.gradle," +
                "out=/path/to/tests.vbtm",
        )
    }
@@ -47,7 +46,6 @@ A test JVM exits as soon as the tests are done, so record with the
 
    - Run the tests in one forked JVM. Several JVMs would write the same file over each other.
    - Give `out=` an absolute path, because the test JVM may run in another directory.
-   - With Gradle, `exclude=` leaves out Gradle's own classes, which reject being instrumented.
 
 2. Run the tests. When the test JVM exits, `tests.vbtm` is complete.
 

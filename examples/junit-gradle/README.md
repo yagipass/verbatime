@@ -30,12 +30,12 @@ removes the `gradle-home` volume that caches Gradle's home directory.
 Set in [`build.gradle.kts`](build.gradle.kts) as `tasks.test.jvmArgs`:
 
 ```text
--javaagent:/work/verbatime-agent.jar=record=startup,roots=org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor::execute,exclude=org.gradle+worker.org.gradle,out=/work/recordings/junit-gradle.vbtm
+-javaagent:/work/verbatime-agent.jar=record=startup,roots=org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor::execute,out=/work/recordings/junit-gradle.vbtm
 ```
 
 | Setting | Value |
 |---|---|
-| Instrumented classes | Everything except the JDK and Gradle's own packages, which `exclude=org.gradle+worker.org.gradle` leaves out. That covers the JUnit Platform and Jupiter engine, the workload, and the test class. Gradle's worker validates its internal service methods by annotation and rejects the `name$trace` method bodies the agent creates, so Gradle itself is left uninstrumented |
+| Instrumented classes | Gradle's test worker, the JUnit Platform and Jupiter engine, the workload, and the test class |
 | `record=startup` | Records from the agent's `premain` until the worker exits, with no JMX control registered. `roots=` and `out=` are required in this mode |
 | `roots=…TestMethodTestDescriptor::execute` | One tree per test method. The root is resolved when the Jupiter engine class is loaded, which is well after `premain` |
 | `out=/work/recordings/junit-gradle.vbtm` | Writes the recording to `./recordings/` on the host through a bind mount. The default spool would be deleted when the worker exits |
