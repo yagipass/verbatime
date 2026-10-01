@@ -34,6 +34,7 @@ public final class ProbeFailureTest {
     private static void enterFailure(Path tmp, int root, int child) throws Exception {
         TraceFileWriter w = start(tmp.resolve("pf-enter.vbtm"));
         int activeBefore = Probe.liveSessions();
+        int completedBefore = Probe.completedSessions();
         String err = Check.captureStderr(() -> {
             app(() -> {
                 Probe.enter(root);
@@ -50,6 +51,7 @@ public final class ProbeFailureTest {
             }, "the next enter ends the broken session, and the root execution it starts records normally");
         });
         Check.eq(activeBefore, Probe.liveSessions(), "the broken session is detached, so status does not count it as active until the recording stops");
+        Check.eq(completedBefore + 1, Probe.completedSessions(), "only the root run after the failure counts as completed; the broken session gets an END chunk but its root never returned");
         stop(w);
 
         DecodedTrace d = DecodedTrace.decode(w.path());

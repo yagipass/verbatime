@@ -102,7 +102,7 @@ public final class VerbatimeControlTest {
         Probe.enter(base);
         Check.eq(0, Probe.liveSessions(), "root enter before a recording starts no session");
 
-        int completedBefore = Probe.endedSessions();
+        int completedBefore = Probe.completedSessions();
         long id1 = ctl.startRecording("first");
         st = statusMap(ctl);
         Check.eq("recording", st.get("state"), "state after start");
@@ -119,7 +119,7 @@ public final class VerbatimeControlTest {
         Probe.enter(base + 1);
         Probe.exit(base + 1);
         Probe.exit(base);
-        Check.eq(completedBefore + 1, Probe.endedSessions(), "session completed while recording");
+        Check.eq(completedBefore + 1, Probe.completedSessions(), "session completed while recording");
 
         byte[] live = drainAvailable(ctl, id1);
         Check.eq(Files.size(file1), (long) live.length, "live stream drains exactly the committed bytes");
@@ -167,20 +167,22 @@ public final class VerbatimeControlTest {
         Check.that(d2.sessions.get(1).ended, "second session ended");
         Check.that(!statusMap(ctl).containsKey("recording.id"), "no recording.* keys while idle");
 
+        int completedBeforeCut = Probe.completedSessions();
         ctl.startRecording("open-session");
         Probe.enter(base);
         Probe.enter(base + 1);
         ctl.stopRecording();
         Check.eq(0, Probe.liveSessions(), "stop reclaims live sessions");
+        Check.eq(completedBeforeCut, Probe.completedSessions(), "a session cut by stop is not counted as completed, so the shutdown log does not call a root finished right after reporting it unclosed");
         Path fileOpen = spool.resolve(statusMap(ctl).get("lastRecording.file"));
         DecodedTrace dOpen = DecodedTrace.decode(fileOpen);
         Check.that(dOpen.cleanEnd, "stop with a live session still writes the footer");
         Check.that(!dOpen.sessions.get(1).ended, "the live session is flushed unclosed");
-        int completedAfterStop = Probe.endedSessions();
+        int completedAfterStop = Probe.completedSessions();
         ctl.startRecording("after-open");
         Probe.enter(base);
         Probe.exit(base);
-        Check.eq(completedAfterStop + 1, Probe.endedSessions(), "the thread sheds its stale session and rejoins the next recording");
+        Check.eq(completedAfterStop + 1, Probe.completedSessions(), "the thread sheds its stale session and rejoins the next recording");
         ctl.stopRecording();
 
         long id3 = ctl.startRecording("third");

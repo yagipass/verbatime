@@ -20,7 +20,7 @@ COPY examples/tomcat-war examples/tomcat-war
 RUN --mount=type=cache,id=verbatime-m2,target=/root/.m2/repository,sharing=locked \
     mvn -B -f examples/tomcat-war/pom.xml package -DskipTests
 
-FROM tomcat:11.0.25-jdk25-temurin-noble
+FROM tomcat:11.0.26-jdk25-temurin-noble
 COPY --from=agent /src/modules/agent/target/verbatime-agent.jar /usr/local/tomcat/verbatime-agent.jar
 COPY --from=app /src/examples/tomcat-war/target/ROOT.war /usr/local/tomcat/webapps/ROOT.war
 EXPOSE 8080 7091

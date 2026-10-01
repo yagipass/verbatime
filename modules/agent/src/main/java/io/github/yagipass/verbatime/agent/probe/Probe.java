@@ -17,6 +17,8 @@ public final class Probe {
 
     private static final AtomicInteger STARTED = new AtomicInteger();
 
+    private static final AtomicInteger COMPLETED = new AtomicInteger();
+
     private static final Object ROOTS_LOCK = new Object();
 
     private static volatile TraceFileWriter sink;
@@ -170,6 +172,7 @@ public final class Probe {
         session.finish();
         session.closed = true;
         unbind(session);
+        COMPLETED.incrementAndGet();
     }
 
     private static void dropClosed(Session session) {
@@ -212,7 +215,7 @@ public final class Probe {
         return LIVE_COUNT.get();
     }
 
-    public static int endedSessions() {
-        return STARTED.get() - LIVE_COUNT.get();
+    public static int completedSessions() {
+        return COMPLETED.get();
     }
 }
