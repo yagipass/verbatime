@@ -36,7 +36,6 @@ tasks.test {
         jvmArgs(
             "-javaagent:/work/verbatime-agent.jar=record=startup," +
                 "roots=org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor::execute," +
-                "exclude=org.gradle+worker.org.gradle," +
                 "out=/work/recordings/junit-gradle.vbtm",
         )
     }

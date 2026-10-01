@@ -26,6 +26,11 @@
     <e2e.include>include=io.github.yagipass.verbatime.fixtures</e2e.include>
     <e2e.gate.jar>${project.build.directory}/test-tmp/dir with space/gate-main.jar</e2e.gate.jar>
     <test.classpath>${project.build.testOutputDirectory}${path.separator}${project.build.outputDirectory}${path.separator}${io.github.yagipass:verbatime-format:jar}</test.classpath>
+    <corpus.dir>${project.build.directory}/corpus</corpus.dir>
+    <corpus.full.dir>${project.build.directory}/corpus-full</corpus.full.dir>
+    <corpus.dirs>${corpus.dir}</corpus.dirs>
+    <corpus.fixtures.classes>${project.build.directory}/corpus-fixtures-classes</corpus.fixtures.classes>
+    <corpus.threads></corpus.threads>
   </properties>
 
   <dependencies>
@@ -61,6 +66,77 @@
             <goals>
               <goal>properties</goal>
             </goals>
+          </execution>
+          <execution>
+            <id>corpus-jars</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <skip>${skipTests}</skip>
+              <outputDirectory>${corpus.dir}</outputDirectory>
+              <artifactItems>
+                <artifactItem><groupId>org.apache.logging.log4j</groupId><artifactId>log4j-api</artifactId><version>2.25.5</version></artifactItem>
+                <artifactItem><groupId>org.jboss.marshalling</groupId><artifactId>jboss-marshalling</artifactId><version>2.2.3.Final</version></artifactItem>
+                <artifactItem><groupId>org.jboss.marshalling</groupId><artifactId>jboss-marshalling-river</artifactId><version>2.2.3.Final</version></artifactItem>
+
+                <artifactItem><groupId>junit</groupId><artifactId>junit</artifactId><version>3.8.1</version></artifactItem>
+                <artifactItem><groupId>ant</groupId><artifactId>ant</artifactId><version>1.6.5</version></artifactItem>
+                <artifactItem><groupId>commons-collections</groupId><artifactId>commons-collections</artifactId><version>3.2.2</version></artifactItem>
+                <artifactItem><groupId>commons-lang</groupId><artifactId>commons-lang</artifactId><version>2.6</version></artifactItem>
+                <artifactItem><groupId>log4j</groupId><artifactId>log4j</artifactId><version>1.2.17</version></artifactItem>
+                <artifactItem><groupId>javax.mail</groupId><artifactId>mail</artifactId><version>1.4.7</version></artifactItem>
+                <artifactItem><groupId>net.bytebuddy</groupId><artifactId>byte-buddy</artifactId><version>1.14.19</version></artifactItem>
+
+                <artifactItem><groupId>org.jetbrains.kotlin</groupId><artifactId>kotlin-reflect</artifactId><version>2.4.20</version></artifactItem>
+                <artifactItem><groupId>io.netty</groupId><artifactId>netty-common</artifactId><version>4.1.138.Final</version></artifactItem>
+                <artifactItem><groupId>io.netty</groupId><artifactId>netty-buffer</artifactId><version>4.1.138.Final</version></artifactItem>
+                <artifactItem><groupId>io.netty</groupId><artifactId>netty-resolver</artifactId><version>4.1.138.Final</version></artifactItem>
+                <artifactItem><groupId>io.netty</groupId><artifactId>netty-transport</artifactId><version>4.1.138.Final</version></artifactItem>
+                <artifactItem><groupId>io.netty</groupId><artifactId>netty-transport-native-unix-common</artifactId><version>4.1.138.Final</version></artifactItem>
+                <artifactItem><groupId>io.netty</groupId><artifactId>netty-codec</artifactId><version>4.1.138.Final</version></artifactItem>
+                <artifactItem><groupId>io.netty</groupId><artifactId>netty-codec-http</artifactId><version>4.1.138.Final</version></artifactItem>
+                <artifactItem><groupId>io.netty</groupId><artifactId>netty-handler</artifactId><version>4.1.138.Final</version></artifactItem>
+                <artifactItem><groupId>org.apache.httpcomponents</groupId><artifactId>httpclient</artifactId><version>4.5.14</version></artifactItem>
+                <artifactItem><groupId>org.apache.httpcomponents</groupId><artifactId>httpcore</artifactId><version>4.4.16</version></artifactItem>
+
+                <artifactItem><groupId>org.jetbrains.kotlin</groupId><artifactId>kotlin-stdlib</artifactId><version>2.4.20</version></artifactItem>
+                <artifactItem><groupId>org.jetbrains.kotlinx</groupId><artifactId>kotlinx-coroutines-core-jvm</artifactId><version>1.11.0</version></artifactItem>
+                <artifactItem><groupId>org.scala-lang</groupId><artifactId>scala-library</artifactId><version>2.13.18</version></artifactItem>
+                <artifactItem><groupId>org.scala-lang</groupId><artifactId>scala3-library_3</artifactId><version>3.7.4</version></artifactItem>
+                <artifactItem><groupId>org.apache.groovy</groupId><artifactId>groovy</artifactId><version>4.0.33</version></artifactItem>
+                <artifactItem><groupId>org.clojure</groupId><artifactId>clojure</artifactId><version>1.12.6</version></artifactItem>
+                <artifactItem><groupId>org.clojure</groupId><artifactId>spec.alpha</artifactId><version>0.5.238</version></artifactItem>
+                <artifactItem><groupId>org.clojure</groupId><artifactId>core.specs.alpha</artifactId><version>0.4.74</version></artifactItem>
+
+                <artifactItem><groupId>com.h2database</groupId><artifactId>h2</artifactId><version>2.3.232</version></artifactItem>
+                <artifactItem><groupId>org.eclipse.jdt</groupId><artifactId>ecj</artifactId><version>3.46.0</version></artifactItem>
+                <artifactItem><groupId>org.antlr</groupId><artifactId>antlr4-runtime</artifactId><version>4.13.2</version></artifactItem>
+                <artifactItem><groupId>org.apache.lucene</groupId><artifactId>lucene-core</artifactId><version>10.5.1</version></artifactItem>
+
+                <artifactItem><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-core</artifactId><version>2.22.2</version></artifactItem>
+                <artifactItem><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId><version>2.22.2</version></artifactItem>
+                <artifactItem><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-annotations</artifactId><version>2.22</version></artifactItem>
+                <artifactItem><groupId>com.google.guava</groupId><artifactId>guava</artifactId><version>33.6.0-jre</version></artifactItem>
+                <artifactItem><groupId>com.google.guava</groupId><artifactId>failureaccess</artifactId><version>1.0.3</version></artifactItem>
+                <artifactItem><groupId>org.springframework</groupId><artifactId>spring-core</artifactId><version>7.0.9</version></artifactItem>
+                <artifactItem><groupId>org.springframework</groupId><artifactId>spring-beans</artifactId><version>7.0.9</version></artifactItem>
+                <artifactItem><groupId>org.springframework</groupId><artifactId>spring-aop</artifactId><version>7.0.9</version></artifactItem>
+                <artifactItem><groupId>org.springframework</groupId><artifactId>spring-expression</artifactId><version>7.0.9</version></artifactItem>
+                <artifactItem><groupId>org.springframework</groupId><artifactId>spring-context</artifactId><version>7.0.9</version></artifactItem>
+                <artifactItem><groupId>commons-logging</groupId><artifactId>commons-logging</artifactId><version>1.3.5</version></artifactItem>
+                <artifactItem><groupId>io.micrometer</groupId><artifactId>micrometer-observation</artifactId><version>1.16.7</version></artifactItem>
+                <artifactItem><groupId>io.micrometer</groupId><artifactId>micrometer-commons</artifactId><version>1.16.7</version></artifactItem>
+                <artifactItem><groupId>org.hibernate.orm</groupId><artifactId>hibernate-core</artifactId><version>7.4.5.Final</version></artifactItem>
+                <artifactItem><groupId>org.hibernate.models</groupId><artifactId>hibernate-models</artifactId><version>1.1.1</version></artifactItem>
+                <artifactItem><groupId>jakarta.persistence</groupId><artifactId>jakarta.persistence-api</artifactId><version>3.2.0</version></artifactItem>
+                <artifactItem><groupId>jakarta.transaction</groupId><artifactId>jakarta.transaction-api</artifactId><version>2.0.1</version></artifactItem>
+                <artifactItem><groupId>jakarta.xml.bind</groupId><artifactId>jakarta.xml.bind-api</artifactId><version>4.0.4</version></artifactItem>
+                <artifactItem><groupId>jakarta.inject</groupId><artifactId>jakarta.inject-api</artifactId><version>2.0.1</version></artifactItem>
+                <artifactItem><groupId>org.jboss.logging</groupId><artifactId>jboss-logging</artifactId><version>3.6.1.Final</version></artifactItem>
+              </artifactItems>
+            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -102,6 +178,26 @@
               <target>
                 <mkdir dir="${fixtures8.classes}"/>
                 <javac srcdir="${project.basedir}/src/test/fixtures8" destdir="${fixtures8.classes}" release="8" encoding="UTF-8" includeantruntime="false" debug="true" debuglevel="lines,source" failonerror="true">
+                  <compilerarg value="-Xlint:all,-options"/>
+                  <compilerarg value="-Werror"/>
+                </javac>
+              </target>
+            </configuration>
+          </execution>
+          <execution>
+            <id>compile-corpus-fixtures</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <skip>${skipTests}</skip>
+              <target>
+                <mkdir dir="${corpus.fixtures.classes}"/>
+                <javac srcdir="${project.basedir}/src/test/corpus-fixtures" destdir="${corpus.fixtures.classes}" release="25" encoding="UTF-8" includeantruntime="false" debug="true" failonerror="true">
+                  <classpath>
+                    <fileset dir="${corpus.dir}" includes="*.jar"/>
+                  </classpath>
                   <compilerarg value="-Xlint:all,-options"/>
                   <compilerarg value="-Werror"/>
                 </javac>
@@ -164,6 +260,70 @@
                 <argument>${test.classpath}</argument>
                 <argument>-Dio.github.yagipass.verbatime.agent.test.tmp=${project.build.directory}/test-tmp</argument>
                 <argument>io.github.yagipass.verbatime.agent.MethodIdLimitTest</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>corpus-verify</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <arguments>
+                <argument>-cp</argument>
+                <argument>${test.classpath}</argument>
+                <argument>-Dio.github.yagipass.verbatime.agent.test.corpus=${corpus.dirs}</argument>
+                <argument>-Dio.github.yagipass.verbatime.agent.test.corpus.threads=${corpus.threads}</argument>
+                <argument>io.github.yagipass.verbatime.agent.CorpusVerifyTest</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>corpus-selftest</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <arguments>
+                <argument>-cp</argument>
+                <argument>${test.classpath}</argument>
+                <argument>-Dio.github.yagipass.verbatime.agent.test.corpus=${corpus.dir}</argument>
+                <argument>-Dio.github.yagipass.verbatime.agent.test.corpus.threads=${corpus.threads}</argument>
+                <argument>io.github.yagipass.verbatime.agent.CorpusSelfTest</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>corpus-roundtrip</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <arguments>
+                <argument>-cp</argument>
+                <argument>${test.classpath}</argument>
+                <argument>-Dio.github.yagipass.verbatime.agent.test.corpus=${corpus.dir}</argument>
+                <argument>-Dio.github.yagipass.verbatime.agent.test.corpus.fixtures=${corpus.fixtures.classes}</argument>
+                <argument>io.github.yagipass.verbatime.agent.CorpusRoundTripTest</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>corpus-callers</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <arguments>
+                <argument>-cp</argument>
+                <argument>${test.classpath}</argument>
+                <argument>-Dio.github.yagipass.verbatime.agent.test.corpus=${corpus.dir}</argument>
+                <argument>-Dio.github.yagipass.verbatime.agent.test.corpus.fixtures=${corpus.fixtures.classes}</argument>
+                <argument>io.github.yagipass.verbatime.agent.CorpusCallerTest</argument>
               </arguments>
             </configuration>
           </execution>
@@ -371,6 +531,7 @@
           <java>
             <includes combine.children="append">
               <include>src/test/fixtures8/**/*.java</include>
+              <include>src/test/corpus-fixtures/**/*.java</include>
             </includes>
           </java>
         </configuration>
@@ -379,6 +540,85 @@
   </build>
 
   <profiles>
+    <profile>
+      <id>corpus-full</id>
+      <properties>
+        <corpus.dirs>${corpus.dir}${path.separator}${corpus.full.dir}</corpus.dirs>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>corpus-full-jars</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <skip>${skipTests}</skip>
+                  <outputDirectory>${corpus.full.dir}</outputDirectory>
+                  <artifactItems>
+                    <artifactItem><groupId>org.jetbrains.kotlin</groupId><artifactId>kotlin-compiler-embeddable</artifactId><version>2.4.20</version></artifactItem>
+                    <artifactItem><groupId>org.jetbrains.kotlin</groupId><artifactId>kotlin-script-runtime</artifactId><version>2.4.20</version></artifactItem>
+                    <artifactItem><groupId>org.jetbrains.kotlin</groupId><artifactId>kotlin-daemon-embeddable</artifactId><version>2.4.20</version></artifactItem>
+                    <artifactItem><groupId>org.scala-lang</groupId><artifactId>scala-compiler</artifactId><version>2.13.18</version></artifactItem>
+                    <artifactItem><groupId>org.scala-lang</groupId><artifactId>scala-reflect</artifactId><version>2.13.18</version></artifactItem>
+                    <artifactItem><groupId>org.scala-lang</groupId><artifactId>scala3-compiler_3</artifactId><version>3.7.4</version></artifactItem>
+                    <artifactItem><groupId>org.scala-lang</groupId><artifactId>scala3-interfaces</artifactId><version>3.7.4</version></artifactItem>
+                    <artifactItem><groupId>org.scala-lang</groupId><artifactId>tasty-core_3</artifactId><version>3.7.4</version></artifactItem>
+                    <artifactItem><groupId>org.scala-lang.modules</groupId><artifactId>scala-asm</artifactId><version>9.8.0-scala-1</version></artifactItem>
+                    <artifactItem><groupId>org.scala-sbt</groupId><artifactId>compiler-interface</artifactId><version>1.10.7</version></artifactItem>
+
+                    <artifactItem><groupId>xalan</groupId><artifactId>xalan</artifactId><version>2.7.3</version></artifactItem>
+                    <artifactItem><groupId>xalan</groupId><artifactId>serializer</artifactId><version>2.7.3</version></artifactItem>
+                    <artifactItem><groupId>xerces</groupId><artifactId>xercesImpl</artifactId><version>2.12.2</version></artifactItem>
+                    <artifactItem><groupId>org.apache.commons</groupId><artifactId>commons-math3</artifactId><version>3.6.1</version></artifactItem>
+                    <artifactItem><groupId>org.mozilla</groupId><artifactId>rhino</artifactId><version>1.9.1</version></artifactItem>
+                    <artifactItem><groupId>org.aspectj</groupId><artifactId>aspectjweaver</artifactId><version>1.9.25</version></artifactItem>
+                    <artifactItem><groupId>com.oracle.database.jdbc</groupId><artifactId>ojdbc11</artifactId><version>23.9.0.25.07</version></artifactItem>
+                    <artifactItem><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><version>42.7.13</version></artifactItem>
+                    <artifactItem><groupId>com.ibm.icu</groupId><artifactId>icu4j</artifactId><version>78.3</version></artifactItem>
+                    <artifactItem><groupId>org.bouncycastle</groupId><artifactId>bcprov-jdk18on</artifactId><version>1.84</version></artifactItem>
+                    <artifactItem><groupId>net.sf.saxon</groupId><artifactId>Saxon-HE</artifactId><version>12.9</version></artifactItem>
+                    <artifactItem><groupId>org.apache.poi</groupId><artifactId>poi-ooxml-lite</artifactId><version>5.4.1</version></artifactItem>
+                    <artifactItem><groupId>org.apache.xmlbeans</groupId><artifactId>xmlbeans</artifactId><version>5.3.0</version></artifactItem>
+                    <artifactItem><groupId>com.google.protobuf</groupId><artifactId>protobuf-java</artifactId><version>4.36.2</version></artifactItem>
+                    <artifactItem><groupId>com.github.ben-manes.caffeine</groupId><artifactId>caffeine</artifactId><version>3.2.4</version></artifactItem>
+
+                    <artifactItem><groupId>org.apache.tomcat.embed</groupId><artifactId>tomcat-embed-core</artifactId><version>11.0.26</version></artifactItem>
+                    <artifactItem><groupId>org.eclipse.jetty</groupId><artifactId>jetty-server</artifactId><version>12.1.13</version></artifactItem>
+                    <artifactItem><groupId>org.eclipse.jetty</groupId><artifactId>jetty-http</artifactId><version>12.1.13</version></artifactItem>
+                    <artifactItem><groupId>org.eclipse.jetty</groupId><artifactId>jetty-io</artifactId><version>12.1.13</version></artifactItem>
+                    <artifactItem><groupId>org.eclipse.jetty</groupId><artifactId>jetty-util</artifactId><version>12.1.13</version></artifactItem>
+                    <artifactItem><groupId>io.undertow</groupId><artifactId>undertow-core</artifactId><version>2.3.26.Final</version></artifactItem>
+                    <artifactItem><groupId>org.jboss.xnio</groupId><artifactId>xnio-api</artifactId><version>3.8.17.Final</version></artifactItem>
+                    <artifactItem><groupId>org.jgroups</groupId><artifactId>jgroups</artifactId><version>5.5.7.Final</version></artifactItem>
+                    <artifactItem><groupId>org.apache.logging.log4j</groupId><artifactId>log4j-core</artifactId><version>2.25.5</version></artifactItem>
+                    <artifactItem><groupId>org.slf4j</groupId><artifactId>slf4j-api</artifactId><version>2.0.17</version></artifactItem>
+                    <artifactItem><groupId>ch.qos.logback</groupId><artifactId>logback-core</artifactId><version>1.5.38</version></artifactItem>
+                    <artifactItem><groupId>ch.qos.logback</groupId><artifactId>logback-classic</artifactId><version>1.5.38</version></artifactItem>
+                    <artifactItem><groupId>io.projectreactor</groupId><artifactId>reactor-core</artifactId><version>3.8.7</version></artifactItem>
+                    <artifactItem><groupId>org.reactivestreams</groupId><artifactId>reactive-streams</artifactId><version>1.0.4</version></artifactItem>
+                    <artifactItem><groupId>org.apache.kafka</groupId><artifactId>kafka-clients</artifactId><version>4.1.2</version></artifactItem>
+                    <artifactItem><groupId>org.springframework</groupId><artifactId>spring-web</artifactId><version>7.0.9</version></artifactItem>
+                    <artifactItem><groupId>org.springframework</groupId><artifactId>spring-webmvc</artifactId><version>7.0.9</version></artifactItem>
+                    <artifactItem><groupId>org.springframework</groupId><artifactId>spring-jdbc</artifactId><version>7.0.9</version></artifactItem>
+                    <artifactItem><groupId>org.springframework</groupId><artifactId>spring-tx</artifactId><version>7.0.9</version></artifactItem>
+                    <artifactItem><groupId>org.springframework</groupId><artifactId>spring-orm</artifactId><version>7.0.9</version></artifactItem>
+                    <artifactItem><groupId>org.springframework.boot</groupId><artifactId>spring-boot</artifactId><version>4.0.8</version></artifactItem>
+                    <artifactItem><groupId>org.springframework.boot</groupId><artifactId>spring-boot-autoconfigure</artifactId><version>4.0.8</version></artifactItem>
+                    <artifactItem><groupId>org.mockito</groupId><artifactId>mockito-core</artifactId><version>5.20.0</version></artifactItem>
+                  </artifactItems>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
     <profile>
       <id>release</id>
       <build>

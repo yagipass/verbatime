@@ -2,21 +2,16 @@ package io.github.yagipass.verbatime.agent;
 
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
-import java.lang.classfile.ClassTransform;
 import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.google.errorprone.annotations.Var;
 
 import io.github.yagipass.verbatime.agent.probe.Log;
 import io.github.yagipass.verbatime.agent.probe.MethodRegistry;
 import io.github.yagipass.verbatime.format.Vbtm;
 
 public final class Transformer implements ClassFileTransformer {
-
-    static final String BODY_SUFFIX = "$trace";
 
     private static final String[] NEVER_INSTRUMENTED = { "java/", "jdk/", "sun/", "com/sun/", "io/github/yagipass/verbatime/agent/", "io/github/yagipass/verbatime/format/" };
 
@@ -116,11 +111,7 @@ public final class Transformer implements ClassFileTransformer {
             return injectGate ? injectGateOnly(cf, cm, binaryName, gateSig) : null;
         }
 
-        @Var ClassTransform ct = tracing.transform(baseId);
-        if (gateSig != null) {
-            ct = ct.andThen(StartupGateTransform.prependAwait(gateSig));
-        }
-        byte[] out = cf.transformClass(cm, ct);
+        byte[] out = TracingPlan.INLINING.transformClass(cm, tracing.transform(baseId, gateSig));
         instrumentedClasses.incrementAndGet();
         instrumentedMethods.addAndGet(tracing.sigs().size());
 
