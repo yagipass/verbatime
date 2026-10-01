@@ -118,7 +118,7 @@ nix develop .#cli   --command mvn -B -pl modules/cli   -am verify
 ```
 
 ```sh
-nix develop .#docs --command sh -c 'cd docs && npm ci && npm run build'
+nix develop .#docs --command sh -c 'cd docs && pnpm install --frozen-lockfile && pnpm run build'
 ```
 
 ## License
