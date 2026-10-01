@@ -84,4 +84,4 @@ jobs:
         with:
           name: verbatime
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      - run: nix develop .#docs --command sh -c 'cd docs && npm ci --ignore-scripts && npm run build && npx wrangler deploy --dry-run'
+      - run: nix develop .#docs --command sh -c 'cd docs && pnpm install --frozen-lockfile && pnpm run build && pnpm exec wrangler deploy --dry-run'
