@@ -22,6 +22,19 @@
       url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    ajmx = {
+      url = "github:yagipass/ajmx";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-parts.follows = "flake-parts";
+        treefmt-nix.follows = "treefmt-nix";
+        git-hooks.follows = "git-hooks";
+      };
+    };
+    agent-skills = {
+      url = "github:Kyure-A/agent-skills-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -39,8 +52,47 @@
       ];
 
       perSystem =
-        { config, pkgs, ... }:
+        {
+          config,
+          pkgs,
+          inputs',
+          ...
+        }:
         let
+          agentLib = inputs.agent-skills.lib.agent-skills;
+          skillSources = {
+            ajmx = {
+              path = inputs.ajmx;
+              subdir = "skills";
+            };
+          };
+          skillCatalog = agentLib.discoverCatalog skillSources;
+          skillsHook = agentLib.mkShellHook {
+            inherit pkgs;
+            bundle = agentLib.mkBundle {
+              inherit pkgs;
+              selection = agentLib.selectSkills {
+                catalog = skillCatalog;
+                sources = skillSources;
+                allowlist = agentLib.allowlistFor {
+                  catalog = skillCatalog;
+                  sources = skillSources;
+                  enable = [ "ajmx" ];
+                };
+                skills = { };
+              };
+            };
+            targets = {
+              claude = agentLib.defaultLocalTargets.claude // {
+                enable = true;
+              };
+              agents = agentLib.defaultLocalTargets.agents // {
+                enable = true;
+              };
+            };
+            quiet = true;
+          };
+
           mkJavaShell =
             name: jdk:
             pkgs.mkShell {
@@ -48,6 +100,7 @@
                 jdk
                 (pkgs.maven.override { jdk_headless = jdk; })
                 pkgs.git
+                inputs'.ajmx.packages.ajmx
               ]
               ++ config.pre-commit.settings.enabledPackages;
 
@@ -55,6 +108,7 @@
 
               shellHook = ''
                 ${config.pre-commit.installationScript}
+                ${skillsHook}
                 echo "[verbatime-${name}] JAVA_HOME=$JAVA_HOME"
                 echo "[verbatime-${name}] $(java -version 2>&1 | head -n1)"
               '';

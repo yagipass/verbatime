@@ -1,5 +1,54 @@
 {
   "nodes": {
+    "agent-skills": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1790154098,
+        "narHash": "sha256-SviEpvFefXCPOmQ2b41c4ujE7BzWYJ/h8p/HZNxD2B8=",
+        "owner": "Kyure-A",
+        "repo": "agent-skills-nix",
+        "rev": "dc122af897ab9a685c20ae54c639021619dbbb52",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Kyure-A",
+        "repo": "agent-skills-nix",
+        "type": "github"
+      }
+    },
+    "ajmx": {
+      "inputs": {
+        "flake-parts": [
+          "flake-parts"
+        ],
+        "git-hooks": [
+          "git-hooks"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "treefmt-nix": [
+          "treefmt-nix"
+        ]
+      },
+      "locked": {
+        "lastModified": 1790935907,
+        "narHash": "sha256-wmesQwxK/+5L9PTVOvBHpP2ZnG3LfUMaB+Se+Wz2nkk=",
+        "owner": "yagipass",
+        "repo": "ajmx",
+        "rev": "2ee5c814d5436e74c05f1192af2ef39adc01f96a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "yagipass",
+        "repo": "ajmx",
+        "type": "github"
+      }
+    },
     "flake-compat": {
       "flake": false,
       "locked": {
@@ -75,6 +124,8 @@
     },
     "root": {
       "inputs": {
+        "agent-skills": "agent-skills",
+        "ajmx": "ajmx",
         "flake-parts": "flake-parts",
         "git-hooks": "git-hooks",
         "nixpkgs": "nixpkgs",
