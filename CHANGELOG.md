@@ -1,5 +1,39 @@
 # Changelog
 
+## [v0.8.2](https://github.com/yagipass/verbatime/compare/v0.8.1...v0.8.2) - 2026-10-03
+
+- docs: gather the download checks on a Verifying downloads page by @yagipass in https://github.com/yagipass/verbatime/pull/69
+- feat(release): publish the release only after every file is uploaded by @yagipass in https://github.com/yagipass/verbatime/pull/71
+- build(nix): check the GitHub Actions workflows with actionlint by @yagipass in https://github.com/yagipass/verbatime/pull/73
+- docs: introduce Verbatime as a Java method tracing profiler by @yagipass in https://github.com/yagipass/verbatime/pull/75
+- docs: note that class loading looks slower in a recording by @yagipass in https://github.com/yagipass/verbatime/pull/78
+- feat(github): add Checked so far and align issue form field names by @yagipass in https://github.com/yagipass/verbatime/pull/81
+- docs: show build, release, license, and Java badges in the README by @yagipass in https://github.com/yagipass/verbatime/pull/82
+- refactor: follow Error Prone's @Var style instead of final locals by @yagipass in https://github.com/yagipass/verbatime/pull/83
+- build(jmc): stop turning off Error Prone's StringConcatToTextBlock by @yagipass in https://github.com/yagipass/verbatime/pull/84
+- docs: show the commands that install the vbtm skill by @yagipass in https://github.com/yagipass/verbatime/pull/85
+- fix(agent): record GC pauses at the time they happened by @yagipass in https://github.com/yagipass/verbatime/pull/87
+- fix(agent): start each session with a small buffer that grows as needed by @yagipass in https://github.com/yagipass/verbatime/pull/89
+- fix(agent): release the event buffer when a stop cuts a session by @yagipass in https://github.com/yagipass/verbatime/pull/91
+- fix(agent): instrument methods in place so caller lookups still work by @yagipass in https://github.com/yagipass/verbatime/pull/99
+- fix(agent): count only sessions whose root returned as completed by @yagipass in https://github.com/yagipass/verbatime/pull/103
+- build(deps-dev): bump wrangler from 4.134.0 to 4.136.3 in /docs by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/94
+- build(deps): bump Songmu/tagpr from 1.20.3 to 1.21.0 in the actions group by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/96
+- build(deps): bump com.diffplug.spotless:spotless-maven-plugin from 3.10.2 to 3.10.3 by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/92
+- build(deps-dev): bump com.diffplug.spotless:spotless-maven-plugin from 3.10.2 to 3.10.3 in /examples by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/93
+- build(deps): bump the images group across 2 directories with 2 updates by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/97
+- build(deps): bump quarkus.platform.version from 3.39.4 to 3.39.5 in /examples by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/95
+- build(deps-dev): bump dompurify from 3.4.15 to 3.4.16 in /docs by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/100
+- build(deps): bump undici and wrangler in /docs by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/101
+- build(nix): load the docs dev shell when direnv enters docs/ by @yagipass in https://github.com/yagipass/verbatime/pull/106
+- build(docs): install the docs site dependencies with pnpm by @yagipass in https://github.com/yagipass/verbatime/pull/108
+- build(nix): update nixpkgs and git-hooks.nix by @yagipass in https://github.com/yagipass/verbatime/pull/110
+- build(nix): open a weekly PR that updates flake.lock by @yagipass in https://github.com/yagipass/verbatime/pull/111
+- feat(docs): match the docs site to the brand and add a landing page by @yagipass in https://github.com/yagipass/verbatime/pull/113
+- build(nix): add ajmx and its agent skill to the Java dev shells by @yagipass in https://github.com/yagipass/verbatime/pull/114
+- feat(github): show the release each pinned action SHA points to by @yagipass in https://github.com/yagipass/verbatime/pull/117
+- build(nix): update the vbtm mvnHash in the weekly flake.lock PR by @yagipass in https://github.com/yagipass/verbatime/pull/118
+
 ## [v0.8.1](https://github.com/yagipass/verbatime/compare/v0.8.0...v0.8.1) - 2026-09-27
 
 - feat(cli): add an install script that makes vbtm executable by @yagipass in https://github.com/yagipass/verbatime/pull/62
