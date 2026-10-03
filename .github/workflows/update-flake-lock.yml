@@ -25,6 +25,9 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           nix flake update --commit-lock-file --commit-lock-file-summary 'build(nix): update flake.lock inputs'
+      - run: nix run --inputs-from . nixpkgs#nix-update -- --flake vbtm --version skip
+      - run: |
+          git diff --quiet || git commit -am 'build(nix): update vbtm mvnHash'
       - id: pr
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
