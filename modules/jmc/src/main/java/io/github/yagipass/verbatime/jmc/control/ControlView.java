@@ -2,7 +2,6 @@ package io.github.yagipass.verbatime.jmc.control;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -74,9 +73,7 @@ public final class ControlView extends ViewPart {
 
     private Label countLabel;
 
-    private @Nullable Shell popup;
-
-    private @Nullable Table popupTable;
+    private @Nullable SearchPopup popup;
 
     private Label statusLabel;
 
@@ -200,7 +197,8 @@ public final class ControlView extends ViewPart {
         searchText.addListener(SWT.DefaultSelection, e -> onSearchEnter());
         searchText.addListener(SWT.KeyDown, this::onSearchKey);
         searchText.addListener(SWT.FocusOut, e -> ui.postAfter(POPUP_FOCUS_GRACE_MS, () -> {
-            if (popupVisible() && display.getFocusControl() != popupTable) {
+            SearchPopup p = visiblePopup();
+            if (p != null && display.getFocusControl() != p.table()) {
                 hidePopup();
             }
         }));
@@ -310,11 +308,11 @@ public final class ControlView extends ViewPart {
     }
 
     private void showCandidates(String[] items) {
-        if (popup == null || popup.isDisposed()) {
-            popup = new Shell(searchText.getShell(), SWT.NO_TRIM | SWT.ON_TOP | SWT.TOOL);
-            popup.setLayout(zeroMargin(new GridLayout(1, false)));
-            Table table = new Table(popup, SWT.SINGLE | SWT.FULL_SELECTION | SWT.NO_FOCUS);
-            popupTable = table;
+        @Var SearchPopup p = popup;
+        if (p == null || p.shell().isDisposed()) {
+            Shell shell = new Shell(searchText.getShell(), SWT.NO_TRIM | SWT.ON_TOP | SWT.TOOL);
+            shell.setLayout(zeroMargin(new GridLayout(1, false)));
+            Table table = new Table(shell, SWT.SINGLE | SWT.FULL_SELECTION | SWT.NO_FOCUS);
             table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
             table.addListener(SWT.MouseDown, e -> {
                 TableItem it = table.getItem(new Point(e.x, e.y));
@@ -322,37 +320,42 @@ public final class ControlView extends ViewPart {
                     addRoot(it.getText());
                 }
             });
+            p = new SearchPopup(shell, table);
+            popup = p;
         }
-        Objects.requireNonNull(popupTable).removeAll();
+        p.table().removeAll();
         for (String s : items) {
-            new TableItem(popupTable, SWT.NONE).setText(s);
+            new TableItem(p.table(), SWT.NONE).setText(s);
         }
-        popupTable.setSelection(0);
+        p.table().setSelection(0);
         Point loc = searchText.toDisplay(0, searchText.getBounds().height);
         int w = Math.max(searchText.getBounds().width, 200);
-        int h = Math.min(items.length, 10) * popupTable.getItemHeight() + 8;
-        popup.setBounds(loc.x, loc.y, w, h);
-        popup.setVisible(true);
+        int h = Math.min(items.length, 10) * p.table().getItemHeight() + 8;
+        p.shell().setBounds(loc.x, loc.y, w, h);
+        p.shell().setVisible(true);
     }
 
-    private boolean popupVisible() {
-        return popup != null && !popup.isDisposed() && popup.isVisible();
+    private @Nullable SearchPopup visiblePopup() {
+        SearchPopup p = popup;
+        return p != null && !p.shell().isDisposed() && p.shell().isVisible() ? p : null;
     }
 
     private void hidePopup() {
-        if (popup != null && !popup.isDisposed()) {
-            popup.setVisible(false);
+        SearchPopup p = popup;
+        if (p != null && !p.shell().isDisposed()) {
+            p.shell().setVisible(false);
         }
     }
 
     private void onSearchKey(org.eclipse.swt.widgets.Event e) {
-        if (!popupVisible()) {
+        SearchPopup p = visiblePopup();
+        if (p == null) {
             return;
         }
         if (e.keyCode == SWT.ARROW_DOWN || e.keyCode == SWT.ARROW_UP) {
-            int n = Objects.requireNonNull(popupTable).getItemCount();
-            int i = popupTable.getSelectionIndex() + (e.keyCode == SWT.ARROW_DOWN ? 1 : -1);
-            popupTable.setSelection(Math.max(0, Math.min(n - 1, i)));
+            int n = p.table().getItemCount();
+            int i = p.table().getSelectionIndex() + (e.keyCode == SWT.ARROW_DOWN ? 1 : -1);
+            p.table().setSelection(Math.max(0, Math.min(n - 1, i)));
             e.doit = false;
         } else if (e.keyCode == SWT.ESC) {
             hidePopup();
@@ -361,8 +364,9 @@ public final class ControlView extends ViewPart {
     }
 
     private void onSearchEnter() {
-        if (popupVisible() && Objects.requireNonNull(popupTable).getSelectionIndex() >= 0) {
-            addRoot(popupTable.getSelection()[0].getText());
+        SearchPopup p = visiblePopup();
+        if (p != null && p.table().getSelectionIndex() >= 0) {
+            addRoot(p.table().getSelection()[0].getText());
             return;
         }
         String t = searchText.getText().trim();
@@ -382,6 +386,9 @@ public final class ControlView extends ViewPart {
         if (!messageLabel.isDisposed()) {
             messageLabel.setText(text);
         }
+    }
+
+    private record SearchPopup(Shell shell, Table table) {
     }
 
     private final class PresenterView implements ControlPresenter.View {
@@ -462,8 +469,9 @@ public final class ControlView extends ViewPart {
         if (connection != null) {
             connection.dispose();
         }
-        if (popup != null && !popup.isDisposed()) {
-            popup.dispose();
+        SearchPopup p = popup;
+        if (p != null && !p.shell().isDisposed()) {
+            p.shell().dispose();
         }
         super.dispose();
     }

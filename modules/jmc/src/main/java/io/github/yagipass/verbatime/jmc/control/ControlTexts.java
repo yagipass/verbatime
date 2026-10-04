@@ -43,7 +43,7 @@ public final class ControlTexts {
         return sb.append("\n\nThis cannot be undone.").toString();
     }
 
-    static String connectionText(@Nullable String target, String pid) {
+    static String connectionText(String target, String pid) {
         return target + ", pid " + pid;
     }
 

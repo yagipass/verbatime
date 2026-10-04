@@ -174,7 +174,6 @@ public final class TraceIndexer {
     private TraceIndexer(TraceIndexer src) {
         path = src.path;
         overviewBudget = src.overviewBudget;
-        buf = src.buf;
         size = src.size;
         pos = src.pos;
         data = src.data.copy();
@@ -245,25 +244,24 @@ public final class TraceIndexer {
             long fileSize = Files.size(path);
             if (guard == null || fileSize != size) {
                 guard = remap(guard);
-                if (size < pos || headerChanged()) {
+                if (size < pos || headerChanged(guard)) {
                     reset();
                 }
-                data.buffer = buf;
             }
-            if (data.corruptOffset >= 0) {
+            if (data.corruption != null) {
                 return;
             }
             if (!magicChecked) {
-                checkMagic();
+                checkMagic(guard);
             }
-            if (!versionChecked && !checkVersion()) {
+            if (!versionChecked && !checkVersion(guard)) {
                 return;
             }
-            if (!anchorRead && !readAnchor()) {
+            if (!anchorRead && !readAnchor(guard)) {
                 return;
             }
             try {
-                scan(false, progress, pos);
+                scan(guard, false, progress, pos);
             } catch (CorruptException c) {
                 corrupt(c.offset, c.reason);
             }
@@ -303,20 +301,20 @@ public final class TraceIndexer {
         }
         try {
             TraceIndexer c = new TraceIndexer(this);
-            c.complete();
-            return c.data.build();
+            c.complete(guard);
+            return c.data.build(guard);
         } finally {
             guard.release();
         }
     }
 
-    private void checkMagic() throws NotTraceFormatException {
+    private void checkMagic(MappedTrace in) throws NotTraceFormatException {
         if (size < Vbtm.MAGIC_BYTES) {
             throw new NotTraceFormatException(path.getFileName() + ": file shorter than the " + Vbtm.MAGIC_BYTES
                     + "-byte magic \"" + Vbtm.MAGIC + "\"");
         }
         byte[] magic = new byte[Vbtm.MAGIC_BYTES];
-        Objects.requireNonNull(buf).copy(0, magic, magic.length);
+        in.copy(0, magic, magic.length);
         if (!Vbtm.hasMagic(magic, 0, magic.length)) {
             throw new NotTraceFormatException(
                     path.getFileName() + ": not a supported recording, expected the magic \"" + Vbtm.MAGIC + "\"");
@@ -325,11 +323,11 @@ public final class TraceIndexer {
         magicChecked = true;
     }
 
-    private boolean checkVersion() throws NotTraceFormatException {
+    private boolean checkVersion(MappedTrace in) throws NotTraceFormatException {
         if (size <= Vbtm.VERSION_OFFSET) {
             return false;
         }
-        int version = Objects.requireNonNull(buf).byteAt(Vbtm.VERSION_OFFSET);
+        int version = in.byteAt(Vbtm.VERSION_OFFSET);
         if (version != Vbtm.VERSION) {
             throw new NotTraceFormatException(path.getFileName() + ": format version " + version
                     + " is not supported, this plugin reads version " + Vbtm.VERSION);
@@ -339,12 +337,12 @@ public final class TraceIndexer {
         return true;
     }
 
-    private boolean readAnchor() {
+    private boolean readAnchor(MappedTrace in) {
         long at = Vbtm.ANCHOR_OFFSET;
         if (size <= at) {
             return false;
         }
-        if (Objects.requireNonNull(buf).byteAt(at) != Vbtm.RECORD_ANCHOR) {
+        if (in.byteAt(at) != Vbtm.RECORD_ANCHOR) {
             corrupt(at, "expected the anchor record at offset " + at);
             return false;
         }
@@ -352,7 +350,7 @@ public final class TraceIndexer {
             return false;
         }
         byte[] body = new byte[Vbtm.ANCHOR_BYTES - 1];
-        buf.copy(at + 1, body, body.length);
+        in.copy(at + 1, body, body.length);
         ByteBuffer b = ByteBuffer.wrap(body);
         long epochMs = b.getLong();
         int offsetSeconds = b.getInt();
@@ -363,28 +361,28 @@ public final class TraceIndexer {
         data.startEpochMs = epochMs;
         data.utcOffsetSeconds = offsetSeconds;
         header = new byte[Vbtm.HEADER_BYTES];
-        buf.copy(0, header, header.length);
+        in.copy(0, header, header.length);
         pos = Vbtm.HEADER_BYTES;
         anchorRead = true;
         return true;
     }
 
-    private boolean headerChanged() {
+    private boolean headerChanged(MappedTrace in) {
         if (!anchorRead) {
             return false;
         }
         byte[] now = new byte[Vbtm.HEADER_BYTES];
-        Objects.requireNonNull(buf).copy(0, now, now.length);
+        in.copy(0, now, now.length);
         return !Arrays.equals(header, now);
     }
 
-    private void complete() {
-        if (data.corruptOffset < 0 && !anchorRead) {
+    private void complete(MappedTrace in) {
+        if (data.corruption == null && !anchorRead) {
             data.truncated = true;
-        } else if (data.corruptOffset < 0) {
+        } else if (data.corruption == null) {
             try {
-                scan(true, ProgressListener.NONE, pos);
-                if (!endSeen && data.corruptOffset < 0) {
+                scan(in, true, ProgressListener.NONE, pos);
+                if (!endSeen && data.corruption == null) {
                     data.truncated = true;
                 }
             } catch (TruncatedException t) {
@@ -396,7 +394,7 @@ public final class TraceIndexer {
         finish();
     }
 
-    private void scan(boolean partialOk, ProgressListener progress, long start) {
+    private void scan(MappedTrace in, boolean partialOk, ProgressListener progress, long start) {
         while (pos < size) {
             if (endSeen) {
                 corrupt(endOffset, "data after the end-of-recording footer at offset " + endOffset);
@@ -406,16 +404,16 @@ public final class TraceIndexer {
                 throw new CancelledException();
             }
             long recStart = pos;
-            int type = Objects.requireNonNull(buf).byteAt(pos++);
+            int type = in.byteAt(pos++);
             try {
                 switch (type) {
                     case Vbtm.RECORD_THREAD -> {
-                        long tid = varint();
-                        String name = string(recStart, varint());
+                        long tid = varint(in);
+                        String name = string(in, recStart, varint(in));
                         data.threadNames.put(tid, name);
                     }
                     case Vbtm.RECORD_CHUNK, Vbtm.RECORD_CHUNK_END -> {
-                        if (!readChunk(recStart, type == Vbtm.RECORD_CHUNK_END, partialOk)) {
+                        if (!readChunk(in, recStart, type == Vbtm.RECORD_CHUNK_END, partialOk)) {
                             return;
                         }
                         if (progress.report(pos - start, size - start)) {
@@ -423,19 +421,19 @@ public final class TraceIndexer {
                         }
                     }
                     case Vbtm.RECORD_CLASS -> {
-                        long baseId = varint();
-                        long count = varint();
+                        long baseId = varint(in);
+                        long count = varint(in);
                         if (baseId < 0 || count < 0 || baseId > Vbtm.METHOD_ID_LIMIT
                                 || count > Vbtm.METHOD_ID_LIMIT - baseId) {
                             corrupt(recStart, "method ids exceed the 2^22 format limit");
                             return;
                         }
-                        String cls = string(recStart, varint());
+                        String cls = string(in, recStart, varint(in));
                         String[] sigs = new String[(int) Math.min(count, size - pos)];
                         @Var int parsed = 0;
                         try {
                             for (; parsed < count; parsed++) {
-                                sigs[parsed] = string(recStart, varint());
+                                sigs[parsed] = string(in, recStart, varint(in));
                             }
                         } catch (TruncatedException t) {
                             if (partialOk) {
@@ -446,13 +444,13 @@ public final class TraceIndexer {
                         registerMethods(baseId, count, cls, sigs, parsed);
                     }
                     case Vbtm.RECORD_EXCEPTION -> {
-                        long id = varint();
+                        long id = varint(in);
                         if (id <= 0 || id >= Vbtm.EXCEPTION_ID_LIMIT) {
                             corrupt(recStart, "exception id " + id + " outside 1.." + (Vbtm.EXCEPTION_ID_LIMIT - 1)
                                     + " at offset " + recStart);
                             return;
                         }
-                        String name = string(recStart, varint());
+                        String name = string(in, recStart, varint(in));
                         ensureExceptionNames((int) id + 1);
                         if (data.exceptionNames[(int) id] == null) {
                             data.totalExceptions++;
@@ -460,9 +458,9 @@ public final class TraceIndexer {
                         data.exceptionNames[(int) id] = name;
                     }
                     case Vbtm.RECORD_GC -> {
-                        long gcStart = varint();
-                        long durTicks = varint();
-                        long action = varint();
+                        long gcStart = varint(in);
+                        long durTicks = varint(in);
+                        long action = varint(in);
                         if (gcStart < 0 || gcStart > Vbtm.MAX_TICKS || durTicks < 0 || durTicks > Vbtm.MAX_TICKS - gcStart) {
                             corrupt(recStart, "GC pause ticks out of range at offset " + recStart);
                             return;
@@ -471,18 +469,18 @@ public final class TraceIndexer {
                             corrupt(recStart, "unknown GC action " + action + " at offset " + recStart);
                             return;
                         }
-                        long nameLen = varint();
+                        long nameLen = varint(in);
                         if (nameLen > Vbtm.MAX_GC_LABEL_BYTES) {
                             corrupt(recStart, "GC collector name of " + nameLen + " bytes at offset " + recStart);
                             return;
                         }
-                        String name = gcLabel(string(recStart, nameLen));
-                        long causeLen = varint();
+                        String name = gcLabel(string(in, recStart, nameLen));
+                        long causeLen = varint(in);
                         if (causeLen > Vbtm.MAX_GC_LABEL_BYTES) {
                             corrupt(recStart, "GC cause of " + causeLen + " bytes at offset " + recStart);
                             return;
                         }
-                        String cause = gcLabel(string(recStart, causeLen));
+                        String cause = gcLabel(string(in, recStart, causeLen));
                         data.gc.append(gcStart * Vbtm.NANOS_PER_TICK, durTicks * Vbtm.NANOS_PER_TICK, (int) action,
                                 name, cause);
                     }
@@ -505,10 +503,10 @@ public final class TraceIndexer {
         }
     }
 
-    private boolean readChunk(long recStart, boolean endsSession, boolean partialOk) {
-        long tid = varint();
-        long baseTicks = varint();
-        long payloadLen = varint();
+    private boolean readChunk(MappedTrace in, long recStart, boolean endsSession, boolean partialOk) {
+        long tid = varint(in);
+        long baseTicks = varint(in);
+        long payloadLen = varint(in);
         long payloadStart = pos;
         if (baseTicks < 0 || baseTicks > Vbtm.MAX_TICKS) {
             corrupt(recStart, "chunk base ticks out of range at offset " + recStart);
@@ -537,11 +535,11 @@ public final class TraceIndexer {
             s.firstChunk = st.chunks.count;
             st.lastTicks = base;
         }
-        long stop = decodePayload(st, s, payloadStart, (int) (limit - payloadStart), base);
+        long stop = decodePayload(in, st, s, payloadStart, (int) (limit - payloadStart), base);
         int ci = st.chunks.count - 1;
         s.lastChunk = ci;
         pos = stop;
-        if (data.corruptOffset >= 0) {
+        if (data.corruption != null) {
             return false;
         }
         if (partial) {
@@ -560,12 +558,12 @@ public final class TraceIndexer {
         return true;
     }
 
-    private long decodePayload(ThreadState st, SessionState s, long fileOffset, int len,
+    private long decodePayload(MappedTrace in, ThreadState st, SessionState s, long fileOffset, int len,
             long baseTicks) {
         if (scratch.length < len) {
             scratch = DecodeScratch.allocate(len);
         }
-        Objects.requireNonNull(buf).copy(fileOffset, scratch, len);
+        in.copy(fileOffset, scratch, len);
         int openDepthAtStart = st.stack.depth();
         EventCursor cur = eventCursor;
         cur.reset(scratch, 0, len, baseTicks);
@@ -714,14 +712,14 @@ public final class TraceIndexer {
         }
     }
 
-    private long varint() {
+    private long varint(MappedTrace in) {
         @Var long v = 0;
         @Var int shift = 0;
         while (true) {
             if (pos >= size) {
                 throw TruncatedException.INSTANCE;
             }
-            int b = Objects.requireNonNull(buf).byteAt(pos++);
+            int b = in.byteAt(pos++);
             v |= (long) (b & 0x7F) << shift;
             if ((b & 0x80) == 0) {
                 return v;
@@ -733,7 +731,7 @@ public final class TraceIndexer {
         }
     }
 
-    private String string(long recStart, long len) {
+    private String string(MappedTrace in, long recStart, long len) {
         if (len < 0) {
             throw new CorruptException(recStart, "negative string length " + len + " at offset " + recStart);
         }
@@ -741,7 +739,7 @@ public final class TraceIndexer {
             throw TruncatedException.INSTANCE;
         }
         byte[] b = new byte[(int) len];
-        Objects.requireNonNull(buf).copy(pos, b, (int) len);
+        in.copy(pos, b, (int) len);
         pos += len;
         return new String(b, StandardCharsets.UTF_8);
     }
@@ -783,9 +781,8 @@ public final class TraceIndexer {
     }
 
     private void corrupt(long offset, String reason) {
-        if (data.corruptOffset < 0) {
-            data.corruptOffset = offset;
-            data.corruptReason = reason;
+        if (data.corruption == null) {
+            data.corruption = new TraceSnapshot.Corruption(offset, reason);
         }
     }
 

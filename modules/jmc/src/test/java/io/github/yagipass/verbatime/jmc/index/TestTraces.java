@@ -54,8 +54,7 @@ public final class TestTraces {
     static void assertSameTraceData(TraceSnapshot e, TraceSnapshot a, String ctx) {
         assertEquals(e.buffer.size(), a.buffer.size(), ctx + " file size");
         assertEquals(e.truncated, a.truncated, ctx + " truncated");
-        assertEquals(e.corruptOffset, a.corruptOffset, ctx + " corruptOffset");
-        assertEquals(e.corruptReason, a.corruptReason, ctx + " corruptReason");
+        assertEquals(e.corruption, a.corruption, ctx + " corruption");
         assertEquals(e.startEpochMs, a.startEpochMs, ctx + " startEpochMs");
         assertEquals(e.utcOffsetSeconds, a.utcOffsetSeconds, ctx + " utcOffsetSeconds");
         assertEquals(e.minNs, a.minNs, ctx + " minNs");

@@ -153,7 +153,8 @@ final class ExportHead {
     }
 
     private void header(StringBuilder sb, int methodsUsed, int gcPauses, long gcTicks) {
-        String status = data.corruptOffset >= 0 ? "corrupt at offset " + data.corruptOffset
+        TraceSnapshot.Corruption corruption = data.corruption;
+        String status = corruption != null ? "corrupt at offset " + corruption.offset()
                 : data.truncated ? "truncated" : "complete";
         String root = session.rootMethodId >= 0 ? names.displayName(session.rootMethodId) : "<no enter>";
         String compact = SessionExporter.floorLabelCompact(floorNs);

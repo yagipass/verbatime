@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -126,8 +127,8 @@ final class TraceIndexerIncrementalTest {
         TestTraces.append(f, late, clean.length, late.length);
         ix.advance(ProgressListener.NONE);
         TraceSnapshot d = ix.snapshot();
-        assertEquals(footer, d.corruptOffset, "the same finding as TraceIndexerTest.dataAfterFooterIsCorrupt");
-        assertTrue(d.corruptReason.contains("footer"));
+        assertEquals(footer, d.corruption.offset(), "the same finding as TraceIndexerTest.dataAfterFooterIsCorrupt");
+        assertTrue(d.corruption.reason().contains("footer"));
         assertFalse(d.truncated);
         TestTraces.assertSameTraceData(fromScratch(f, 1 << 20), d, "late thread record");
     }
@@ -140,7 +141,7 @@ final class TraceIndexerIncrementalTest {
         TraceIndexer ix = TraceIndexer.open(f, 1 << 20);
         ix.advance(ProgressListener.NONE);
         TraceSnapshot d1 = ix.snapshot();
-        assertEquals(bad.length - 1, d1.corruptOffset);
+        assertEquals(bad.length - 1, d1.corruption.offset());
 
         TraceBuilder more = TestTraces.writer();
         more.chunk(3, 300, new TraceBuilder.Payload(300).enter(300, 1).exit(400).bytes(), true).end();
@@ -241,7 +242,7 @@ final class TraceIndexerIncrementalTest {
         TestTraces.append(f, bad, 0, bad.length);
         TraceIndexer ix = TraceIndexer.open(f, 1 << 20);
         ix.advance(ProgressListener.NONE);
-        assertEquals(bad.length - 1, ix.snapshot().corruptOffset);
+        assertEquals(bad.length - 1, ix.snapshot().corruption.offset());
 
         byte[] fresh = withAnchor(RandomTraces.random(3), TestTraces.DEFAULT_START_EPOCH_MS + 1,
                 TestTraces.DEFAULT_UTC_OFFSET_SECONDS);
@@ -249,7 +250,7 @@ final class TraceIndexerIncrementalTest {
         Files.write(f, fresh);
         ix.advance(ProgressListener.NONE);
         TraceSnapshot d = ix.snapshot();
-        assertEquals(-1, d.corruptOffset, "the corrupt file is gone, so a reload must not keep reporting it");
+        assertNull(d.corruption, "the corrupt file is gone, so a reload must not keep reporting it");
         TestTraces.assertSameTraceData(fromScratch(f, 1 << 20), d, "corrupt, then replaced");
     }
 
@@ -260,13 +261,13 @@ final class TraceIndexerIncrementalTest {
         TestTraces.append(f, bad, 0, bad.length);
         TraceIndexer ix = TraceIndexer.open(f, 1 << 20);
         ix.advance(ProgressListener.NONE);
-        assertEquals(bad.length - 1, ix.snapshot().corruptOffset);
+        assertEquals(bad.length - 1, ix.snapshot().corruption.offset());
 
         byte[] shorter = Arrays.copyOf(bad, bad.length - 1);
         Files.write(f, shorter);
         ix.advance(ProgressListener.NONE);
         TraceSnapshot d = ix.snapshot();
-        assertEquals(-1, d.corruptOffset, "a shorter file is a new file even while the old one was corrupt");
+        assertNull(d.corruption, "a shorter file is a new file even while the old one was corrupt");
         TestTraces.assertSameTraceData(fromScratch(f, 1 << 20), d, "corrupt, then shrunk");
     }
 }

@@ -10,7 +10,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jspecify.annotations.Nullable;
@@ -25,9 +24,7 @@ public final class TraceSnapshot {
 
     public final boolean truncated;
 
-    public final long corruptOffset;
-
-    public final @Nullable String corruptReason;
+    public final @Nullable Corruption corruption;
 
     public final long startEpochMs;
 
@@ -63,13 +60,12 @@ public final class TraceSnapshot {
 
     private final AtomicBoolean released = new AtomicBoolean();
 
-    private TraceSnapshot(Builder b) {
+    private TraceSnapshot(Builder b, MappedTrace buffer) {
         path = b.path;
-        buffer = Objects.requireNonNull(b.buffer);
+        this.buffer = buffer;
         buffer.retain();
         truncated = b.truncated;
-        corruptOffset = b.corruptOffset;
-        corruptReason = b.corruptReason;
+        corruption = b.corruption;
         startEpochMs = b.startEpochMs;
         utcOffsetSeconds = b.utcOffsetSeconds;
         minNs = b.minNs;
@@ -139,18 +135,16 @@ public final class TraceSnapshot {
         return null;
     }
 
+    public record Corruption(long offset, String reason) {
+    }
+
     static final class Builder {
 
         final Path path;
 
-        @Nullable
-        MappedTrace buffer;
-
         public boolean truncated;
 
-        public long corruptOffset = -1;
-
-        public @Nullable String corruptReason;
+        public @Nullable Corruption corruption;
 
         public long startEpochMs;
 
@@ -190,10 +184,8 @@ public final class TraceSnapshot {
 
         Builder copy() {
             Builder c = new Builder(path);
-            c.buffer = buffer;
             c.truncated = truncated;
-            c.corruptOffset = corruptOffset;
-            c.corruptReason = corruptReason;
+            c.corruption = corruption;
             c.startEpochMs = startEpochMs;
             c.utcOffsetSeconds = utcOffsetSeconds;
             c.minNs = minNs;
@@ -214,8 +206,8 @@ public final class TraceSnapshot {
             return c;
         }
 
-        TraceSnapshot build() {
-            return new TraceSnapshot(this);
+        TraceSnapshot build(MappedTrace buffer) {
+            return new TraceSnapshot(this, buffer);
         }
     }
 

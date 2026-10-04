@@ -78,7 +78,8 @@ final class MethodPattern {
     private static void rejectSeveral(TraceFile file, String pattern, BitSet ids) {
         Map<String, Integer> groups = new LinkedHashMap<>();
         for (int id = ids.nextSetBit(0); id >= 0; id = ids.nextSetBit(id + 1)) {
-            groups.merge(file.methodClass(id) + "." + Names.methodName(Objects.requireNonNull(file.methodSig(id))), 1, Integer::sum);
+            TraceFile.MethodRef m = Objects.requireNonNull(file.method(id));
+            groups.merge(m.className() + "." + Names.methodName(m.sig()), 1, Integer::sum);
         }
         if (groups.size() <= 1) {
             return;
@@ -120,8 +121,8 @@ final class MethodPattern {
             }
         }
         for (int id = 0; id < n; id++) {
-            String cls = file.methodClass(id);
-            if (cls != null && (cls + "." + Names.methodName(Objects.requireNonNull(file.methodSig(id)))).contains(pattern)) {
+            TraceFile.MethodRef m = file.method(id);
+            if (m != null && (m.className() + "." + Names.methodName(m.sig())).contains(pattern)) {
                 ids.set(id);
             }
         }
@@ -132,11 +133,11 @@ final class MethodPattern {
             BitSet ids) {
         boolean qualified = cls.indexOf('.') >= 0;
         for (int id = 0; id < file.methodCount; id++) {
-            String c = file.methodClass(id);
-            if (c == null || !method.equals(Names.methodName(Objects.requireNonNull(file.methodSig(id))))) {
+            TraceFile.MethodRef m = file.method(id);
+            if (m == null || !method.equals(Names.methodName(m.sig()))) {
                 continue;
             }
-            if (qualified ? c.equals(cls) : Names.simpleClass(c).equals(cls)) {
+            if (qualified ? m.className().equals(cls) : Names.simpleClass(m.className()).equals(cls)) {
                 ids.set(id);
             }
         }
