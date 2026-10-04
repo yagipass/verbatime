@@ -1,6 +1,7 @@
 package io.github.yagipass.verbatime.cli;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 import com.google.errorprone.annotations.Var;
 
@@ -88,7 +89,7 @@ final class SessionWalker {
                     exit(v, cursor.exceptionId(), false);
                 } else {
                     if (e == EventCursor.Event.CORRUPT) {
-                        file.markCorrupt(c.offset() + cursor.eventIndex(), fault(cursor.fault(), cursor.faultValue()));
+                        file.markCorrupt(c.offset() + cursor.eventIndex(), fault(Objects.requireNonNull(cursor.fault()), cursor.faultValue()));
                         stopped = true;
                     } else if (e == EventCursor.Event.INCOMPLETE && file.status == TraceFile.Status.COMPLETE) {
                         file.markCorrupt(c.offset() + cursor.eventIndex(), "chunk payload ends mid-event");

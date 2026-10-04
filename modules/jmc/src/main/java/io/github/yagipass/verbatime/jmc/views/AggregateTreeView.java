@@ -1,5 +1,6 @@
 package io.github.yagipass.verbatime.jmc.views;
 
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -10,6 +11,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.TreeColumn;
+import org.jspecify.annotations.Nullable;
 
 import io.github.yagipass.verbatime.jmc.SelectedCall;
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
@@ -30,7 +32,7 @@ abstract class AggregateTreeView<M extends AggregateTreeView.AggregateTreeModel<
 
     private TreeViewer viewer;
 
-    private M model;
+    private @Nullable M model;
 
     private HeaderWithCopyButton copyHead;
 
@@ -71,7 +73,7 @@ abstract class AggregateTreeView<M extends AggregateTreeView.AggregateTreeModel<
         return viewer;
     }
 
-    final M model() {
+    final @Nullable M model() {
         return model;
     }
 
@@ -88,7 +90,7 @@ abstract class AggregateTreeView<M extends AggregateTreeView.AggregateTreeModel<
 
     abstract M build(TraceSnapshot d, SubtreeAggregate agg);
 
-    abstract void setInput(M m);
+    abstract void setInput(@Nullable M m);
 
     abstract String describe(TraceSnapshot d, SelectedCall f, M m);
 
@@ -110,7 +112,7 @@ abstract class AggregateTreeView<M extends AggregateTreeView.AggregateTreeModel<
         setInput(model);
         String empty = emptyReason(d, f);
         setContentDescription(empty != null ? empty
-                : f.subtreeError() != null ? f.subtreeError() : model == null ? "Aggregating…" : describe(d, f, model));
+                : Objects.requireNonNull(f).subtreeError() != null ? f.subtreeError() : model == null ? "Aggregating…" : describe(Objects.requireNonNull(d), f, model));
     }
 
     @Override

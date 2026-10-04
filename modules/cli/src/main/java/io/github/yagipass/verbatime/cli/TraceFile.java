@@ -14,6 +14,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
 
 import com.google.errorprone.annotations.Var;
 
@@ -73,6 +76,7 @@ final class TraceFile {
 
     long corruptOffset = -1;
 
+    @Nullable
     String corruptReason;
 
     private final Map<Long, String> threads = new HashMap<>();
@@ -139,10 +143,12 @@ final class TraceFile {
         return sessions.get(number - 1);
     }
 
+    @Nullable
     String methodClass(int id) {
         return id >= 0 && id < classNames.length ? classNames[id] : null;
     }
 
+    @Nullable
     String methodSig(int id) {
         return id >= 0 && id < sigs.length ? sigs[id] : null;
     }
@@ -221,7 +227,7 @@ final class TraceFile {
         } catch (Truncated t) {
             status = Status.TRUNCATED;
         } catch (BadRecord e) {
-            markCorrupt(e.offset, e.getMessage());
+            markCorrupt(e.offset, Objects.requireNonNull(e.getMessage()));
         }
     }
 

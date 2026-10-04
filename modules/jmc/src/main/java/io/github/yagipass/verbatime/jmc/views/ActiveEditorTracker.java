@@ -6,6 +6,7 @@ import org.eclipse.ui.IPartListener2;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartReference;
+import org.jspecify.annotations.Nullable;
 
 import io.github.yagipass.verbatime.jmc.RecordingEditor;
 
@@ -13,11 +14,11 @@ final class ActiveEditorTracker implements IPartListener2 {
 
     private final IWorkbenchPage page;
 
-    private final Consumer<RecordingEditor> onBind;
+    private final Consumer<@Nullable RecordingEditor> onBind;
 
-    private RecordingEditor bound;
+    private @Nullable RecordingEditor bound;
 
-    ActiveEditorTracker(IWorkbenchPage page, Consumer<RecordingEditor> onBind) {
+    ActiveEditorTracker(IWorkbenchPage page, Consumer<@Nullable RecordingEditor> onBind) {
         this.page = page;
         this.onBind = onBind;
     }
@@ -35,7 +36,7 @@ final class ActiveEditorTracker implements IPartListener2 {
         }
     }
 
-    private void bind(RecordingEditor e) {
+    private void bind(@Nullable RecordingEditor e) {
         if (e == bound) {
             return;
         }

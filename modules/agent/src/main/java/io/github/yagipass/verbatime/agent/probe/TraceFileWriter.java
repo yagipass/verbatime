@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import io.github.yagipass.verbatime.format.EventEncoder;
 import io.github.yagipass.verbatime.format.RecordEncoder;
 import io.github.yagipass.verbatime.format.Vbtm;
@@ -140,7 +142,7 @@ public final class TraceFileWriter {
         }
     }
 
-    static long[] toTicks(long startMs, long durMs, long gcClockAtOriginMs) {
+    static long @Nullable [] toTicks(long startMs, long durMs, long gcClockAtOriginMs) {
         long endMs = startMs + Math.max(durMs, 0);
         if (endMs <= gcClockAtOriginMs) {
             return null;

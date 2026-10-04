@@ -18,6 +18,7 @@
 
   <properties>
     <maven.compiler.release>25</maven.compiler.release>
+    <errorprone.flags>-XepOpt:NullAway:KnownInitializers=java.lang.classfile.ClassFileTransform.atStart</errorprone.flags>
     <skipTests>false</skipTests>
 
     <java.bin>${java.home}/bin/java</java.bin>
@@ -42,6 +43,10 @@
     <dependency>
       <groupId>com.google.errorprone</groupId>
       <artifactId>error_prone_annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
     </dependency>
   </dependencies>
 

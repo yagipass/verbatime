@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.errorprone.annotations.Var;
 
 public final class LocalRecordings {
@@ -47,7 +49,7 @@ public final class LocalRecordings {
         return out;
     }
 
-    record DeleteResult(int failed, String firstError) {
+    record DeleteResult(int failed, @Nullable String firstError) {
     }
 
     public static long prepareResume(Path local) throws IOException {

@@ -18,6 +18,7 @@
 
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
+    <errorprone.flags>-XepOpt:NullAway:KnownInitializers=org.eclipse.ui.IWorkbenchPart.createPartControl,org.eclipse.ui.IEditorPart.init,org.eclipse.jface.dialogs.Dialog.createDialogArea,io.github.yagipass.verbatime.jmc.views.EditorBoundView.createContent</errorprone.flags>
   </properties>
 
   <dependencies>
@@ -28,6 +29,10 @@
     <dependency>
       <groupId>com.google.errorprone</groupId>
       <artifactId>error_prone_annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.platform</groupId>

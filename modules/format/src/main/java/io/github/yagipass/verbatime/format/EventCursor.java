@@ -1,5 +1,7 @@
 package io.github.yagipass.verbatime.format;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.errorprone.annotations.Var;
 
 public final class EventCursor {
@@ -38,9 +40,9 @@ public final class EventCursor {
 
     private int decodedEvents;
 
-    private Event terminal;
+    private @Nullable Event terminal;
 
-    private Fault fault;
+    private @Nullable Fault fault;
 
     private long faultValue;
 
@@ -139,7 +141,7 @@ public final class EventCursor {
         return decodedEvents;
     }
 
-    public Fault fault() {
+    public @Nullable Fault fault() {
         return fault;
     }
 

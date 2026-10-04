@@ -2,6 +2,8 @@ package io.github.yagipass.verbatime.cli;
 
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 final class Scope {
 
     final List<TraceFile.Session> sessions;
@@ -13,7 +15,7 @@ final class Scope {
         this.label = label;
     }
 
-    static Scope of(TraceFile file, String sessionRef) {
+    static Scope of(TraceFile file, @Nullable String sessionRef) {
         if (sessionRef == null) {
             int n = file.sessions.size();
             return new Scope(file.sessions, n == 1 ? "the only session" : "all " + Formats.grouped(n) + " sessions");

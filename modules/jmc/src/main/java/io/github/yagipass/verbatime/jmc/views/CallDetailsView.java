@@ -2,6 +2,7 @@ package io.github.yagipass.verbatime.jmc.views;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
@@ -100,7 +101,7 @@ public final class CallDetailsView extends EditorBoundView {
         highlight.addListener(SWT.Selection, e -> {
             SelectedCall f = selection();
             if (f != null) {
-                editor().searchFor(f.methodId());
+                Objects.requireNonNull(editor()).searchFor(f.methodId());
             }
         });
         Button export = new Button(actions, SWT.PUSH);
@@ -177,7 +178,7 @@ public final class CallDetailsView extends EditorBoundView {
             showEmpty(empty);
             return;
         }
-        String name = d.methodName(f.methodId());
+        String name = Objects.requireNonNull(d).methodName(Objects.requireNonNull(f).methodId());
         sigText.setText(Formats.signature(name));
         fullText.setText(name);
         row1Label.setText("total " + Formats.fmtDur(f.durNs()) + ", self " + Formats.fmtDur(f.effectiveSelfNs())

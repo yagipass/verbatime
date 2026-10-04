@@ -12,6 +12,7 @@ import org.eclipse.ui.IPathEditorInput;
 import org.eclipse.ui.IPersistableElement;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
+import org.jspecify.annotations.Nullable;
 
 public final class RecordingEditorInput implements IPathEditorInput {
 
@@ -23,7 +24,7 @@ public final class RecordingEditorInput implements IPathEditorInput {
         this.file = file.toAbsolutePath();
     }
 
-    public static RecordingEditor openOrReport(IWorkbenchPage page, Path file, Consumer<String> report) {
+    public static @Nullable RecordingEditor openOrReport(IWorkbenchPage page, Path file, Consumer<String> report) {
         try {
             IEditorPart part = page.openEditor(new RecordingEditorInput(file), EDITOR_ID);
             return part instanceof RecordingEditor e ? e : null;
@@ -54,7 +55,7 @@ public final class RecordingEditorInput implements IPathEditorInput {
     }
 
     @Override
-    public IPersistableElement getPersistable() {
+    public @Nullable IPersistableElement getPersistable() {
         return null;
     }
 
@@ -64,7 +65,7 @@ public final class RecordingEditorInput implements IPathEditorInput {
     }
 
     @Override
-    public <T> T getAdapter(Class<T> adapter) {
+    public <T> @Nullable T getAdapter(Class<T> adapter) {
         return adapter.isInstance(this) ? adapter.cast(this) : null;
     }
 

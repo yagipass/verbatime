@@ -3,6 +3,8 @@ package io.github.yagipass.verbatime.jmc.views;
 import java.util.Locale;
 import java.util.function.Predicate;
 
+import org.jspecify.annotations.Nullable;
+
 import io.github.yagipass.verbatime.jmc.Formats;
 import io.github.yagipass.verbatime.jmc.SelectedCall;
 import io.github.yagipass.verbatime.jmc.SessionExportTexts;
@@ -18,7 +20,7 @@ final class CopyTexts {
     private CopyTexts() {
     }
 
-    static String gcText(TraceSnapshot.GcPauses.Overlap o, long durNs) {
+    static @Nullable String gcText(TraceSnapshot.GcPauses.Overlap o, long durNs) {
         if (o.pauses() == 0) {
             return null;
         }

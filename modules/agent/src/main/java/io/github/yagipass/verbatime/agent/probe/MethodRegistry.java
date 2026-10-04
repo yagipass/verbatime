@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TreeSet;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.errorprone.annotations.Var;
 
 import io.github.yagipass.verbatime.format.Vbtm;
@@ -29,7 +31,7 @@ public final class MethodRegistry {
 
     private static final List<CommittedClass> committed = new ArrayList<>();
 
-    private static TraceFileWriter sink;
+    private static @Nullable TraceFileWriter sink;
 
     private MethodRegistry() {
     }

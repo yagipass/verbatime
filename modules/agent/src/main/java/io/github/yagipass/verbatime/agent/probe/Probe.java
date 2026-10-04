@@ -5,6 +5,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.errorprone.annotations.Var;
 
 public final class Probe {
@@ -21,7 +23,7 @@ public final class Probe {
 
     private static final Object ROOTS_LOCK = new Object();
 
-    private static volatile TraceFileWriter sink;
+    private static volatile @Nullable TraceFileWriter sink;
 
     private static volatile boolean enabled;
 

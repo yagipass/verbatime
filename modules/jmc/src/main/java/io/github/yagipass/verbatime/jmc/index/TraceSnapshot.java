@@ -10,7 +10,10 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.jspecify.annotations.Nullable;
 
 import com.google.errorprone.annotations.Var;
 
@@ -24,7 +27,7 @@ public final class TraceSnapshot {
 
     public final long corruptOffset;
 
-    public final String corruptReason;
+    public final @Nullable String corruptReason;
 
     public final long startEpochMs;
 
@@ -62,7 +65,7 @@ public final class TraceSnapshot {
 
     private TraceSnapshot(Builder b) {
         path = b.path;
-        buffer = b.buffer;
+        buffer = Objects.requireNonNull(b.buffer);
         buffer.retain();
         truncated = b.truncated;
         corruptOffset = b.corruptOffset;
@@ -118,7 +121,7 @@ public final class TraceSnapshot {
                 ZoneOffset.ofTotalSeconds(utcOffsetSeconds));
     }
 
-    public ThreadIndex thread(long tid) {
+    public @Nullable ThreadIndex thread(long tid) {
         for (ThreadIndex t : threads) {
             if (t.tid == tid) {
                 return t;
@@ -127,7 +130,7 @@ public final class TraceSnapshot {
         return null;
     }
 
-    public Session sessionAt(long tid, long ns) {
+    public @Nullable Session sessionAt(long tid, long ns) {
         for (Session s : sessions) {
             if (s.tid == tid && ns >= s.startNs && ns <= s.startNs + s.durNs()) {
                 return s;
@@ -138,15 +141,16 @@ public final class TraceSnapshot {
 
     static final class Builder {
 
-        Path path;
+        final Path path;
 
+        @Nullable
         MappedTrace buffer;
 
         public boolean truncated;
 
         public long corruptOffset = -1;
 
-        public String corruptReason;
+        public @Nullable String corruptReason;
 
         public long startEpochMs;
 
@@ -180,9 +184,12 @@ public final class TraceSnapshot {
 
         final GcPauses.Builder gc = new GcPauses.Builder();
 
+        Builder(Path path) {
+            this.path = path;
+        }
+
         Builder copy() {
-            Builder c = new Builder();
-            c.path = path;
+            Builder c = new Builder(path);
             c.buffer = buffer;
             c.truncated = truncated;
             c.corruptOffset = corruptOffset;

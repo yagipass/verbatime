@@ -2,6 +2,8 @@ package io.github.yagipass.verbatime.agent.probe;
 
 import java.util.Arrays;
 
+import org.jspecify.annotations.Nullable;
+
 import io.github.yagipass.verbatime.format.EventEncoder;
 
 final class Session {
@@ -38,6 +40,7 @@ final class Session {
 
     volatile boolean closed;
 
+    @Nullable
     Throwable failure;
 
     boolean firstChunkPending = true;

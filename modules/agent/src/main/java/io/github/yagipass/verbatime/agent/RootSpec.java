@@ -1,6 +1,8 @@
 package io.github.yagipass.verbatime.agent;
 
-public record RootSpec(String className, String methodName, String descriptor) {
+import org.jspecify.annotations.Nullable;
+
+public record RootSpec(String className, String methodName, @Nullable String descriptor) {
 
     public static RootSpec parse(String s) {
         int sep = s.indexOf("::");

@@ -2,12 +2,14 @@ package io.github.yagipass.verbatime.jmc.views;
 
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
+import org.jspecify.annotations.Nullable;
 
 import com.google.errorprone.annotations.Var;
 
@@ -32,12 +34,12 @@ public final class BottomUpView extends AggregateTreeView<BottomUpModel, Row> {
     protected void createColumns() {
         column(SortKey.SELF, "self", 100, SWT.RIGHT, r -> Formats.fmtDur(r.selfNs()), true);
         column(SortKey.TOTAL, "total", 100, SWT.RIGHT, r -> Formats.fmtDur(r.totalNs()), true);
-        column(null, "%", 60, SWT.RIGHT, r -> Formats.fmtPct(model().pct(r.selfNs())), true);
+        column(null, "%", 60, SWT.RIGHT, r -> Formats.fmtPct(Objects.requireNonNull(model()).pct(r.selfNs())), true);
         column(SortKey.CALLS, "calls", 90, SWT.RIGHT, r -> Formats.fmtInt(r.calls()), true);
         column(SortKey.METHOD, "Method", 600, SWT.LEFT, Row::name, false);
     }
 
-    private void column(SortKey key, String title, int width, int style,
+    private void column(@Nullable SortKey key, String title, int width, int style,
             Function<Row, String> text, boolean mono) {
         TreeColumn tc = column(title, width, style, text, mono);
         if (key != null) {
@@ -92,7 +94,7 @@ public final class BottomUpView extends AggregateTreeView<BottomUpModel, Row> {
     }
 
     @Override
-    protected void setInput(BottomUpModel m) {
+    protected void setInput(@Nullable BottomUpModel m) {
         viewer().setInput(m);
         if (m != null) {
             viewer().setChildCount(m, m.size());

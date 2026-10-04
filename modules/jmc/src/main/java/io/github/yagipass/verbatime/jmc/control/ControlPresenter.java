@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -12,6 +13,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+
+import org.jspecify.annotations.Nullable;
 
 import com.google.errorprone.annotations.Var;
 
@@ -25,7 +28,7 @@ public final class ControlPresenter {
         DISCONNECTED, CONNECTING, CONNECTED, LOST
     }
 
-    record ViewState(State state, String connectionText, boolean recording, List<RootEntry> roots,
+    record ViewState(State state, @Nullable String connectionText, boolean recording, List<RootEntry> roots,
             String instrumentedText, String statusText, boolean startPending, boolean stopPending, boolean transferring) {
 
         static ViewState disconnected(State state) {
@@ -76,6 +79,7 @@ public final class ControlPresenter {
 
         void rootAccepted();
 
+        @Nullable
         EditorHandle openEditor(Path file);
 
         void recordingsChanged();
@@ -127,15 +131,15 @@ public final class ControlPresenter {
 
     private ViewState lastState = ViewState.disconnected(State.DISCONNECTED);
 
-    private ExecutorService background;
+    private @Nullable ExecutorService background;
 
     private final AtomicInteger attempt = new AtomicInteger();
 
-    private volatile Agent agent;
+    private volatile @Nullable Agent agent;
 
-    private String target;
+    private @Nullable String target;
 
-    private String connectionDir;
+    private @Nullable String connectionDir;
 
     private String savedRoots;
 
@@ -155,7 +159,7 @@ public final class ControlPresenter {
 
     private final TransferState transfer = new TransferState();
 
-    private final AtomicReference<Agent> statusInFlight = new AtomicReference<>();
+    private final AtomicReference<@Nullable Agent> statusInFlight = new AtomicReference<>();
 
     private long pollStartedMs;
 
@@ -243,7 +247,7 @@ public final class ControlPresenter {
             return;
         }
         agent = c;
-        connectionDir = LocalRecordings.fileSafe(target);
+        connectionDir = LocalRecordings.fileSafe(Objects.requireNonNull(target));
         settings.save(target, savedRoots);
         state = State.CONNECTED;
         AgentStatus status = AgentStatus.parse(st);
@@ -375,7 +379,7 @@ public final class ControlPresenter {
         } else if (transfer.deferred() != null) {
             recordingText = ControlTexts.waitingText(transfer.deferred().recordingId());
         } else if (transferring) {
-            recordingText = ControlTexts.transferringText(transfer.current().recordingId(), transfer.transferredBytes(),
+            recordingText = ControlTexts.transferringText(Objects.requireNonNull(transfer.current()).recordingId(), transfer.transferredBytes(),
                     st.lastRecordingBytes());
         } else {
             recordingText = ControlTexts.idleText(!st.roots().isEmpty());
@@ -451,7 +455,7 @@ public final class ControlPresenter {
         }, st -> {
             if (remember) {
                 savedRoots = String.join("\n", arr);
-                settings.save(target, savedRoots);
+                settings.save(Objects.requireNonNull(target), savedRoots);
             }
             onSuccess.run();
             view.message(okMessage);
@@ -518,7 +522,7 @@ public final class ControlPresenter {
     }
 
     private Path localFor(long recordingId, String recordingName, String startEpochMs) {
-        return LocalRecordings.localFile(settings.recordingsDir(), connectionDir, recordingName, recordingId, startEpochMs);
+        return LocalRecordings.localFile(settings.recordingsDir(), Objects.requireNonNull(connectionDir), recordingName, recordingId, startEpochMs);
     }
 
     private void transferRecording(long recordingId, String recordingName, String startEpochMs) {
@@ -639,7 +643,7 @@ public final class ControlPresenter {
         startDeferredTransfer();
     }
 
-    private void scheduleFinalReload(EditorHandle editor) {
+    private void scheduleFinalReload(@Nullable EditorHandle editor) {
         if (disposed || editor == null || !editor.isOpen()) {
             return;
         }

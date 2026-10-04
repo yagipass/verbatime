@@ -31,6 +31,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.errorprone.annotations.Var;
 
 final class TracingPlan {
@@ -89,7 +91,7 @@ final class TracingPlan {
         return sigs.isEmpty();
     }
 
-    ClassTransform transform(int baseId, String gateSig) {
+    ClassTransform transform(int baseId, @Nullable String gateSig) {
         if (gateSig != null && !planned.containsKey(gateSig)) {
             throw new IllegalStateException("launcher main " + gateSig + " is not instrumentable, so the startup gate has nowhere to go");
         }
@@ -127,7 +129,7 @@ final class TracingPlan {
         return false;
     }
 
-    private static String unsupportedReason(MethodModel mm) {
+    private static @Nullable String unsupportedReason(MethodModel mm) {
         String name = mm.methodName().stringValue();
         if (name.startsWith("<")) {
             return "constructors/initializers are not instrumented";
@@ -174,7 +176,7 @@ final class TracingPlan {
 
         private final boolean gate;
 
-        private final List<StackMapFrameInfo> frames;
+        private final @Nullable List<StackMapFrameInfo> frames;
 
         private final int declaredLocals;
 
@@ -182,7 +184,7 @@ final class TracingPlan {
 
         private Label bodyStart;
 
-        ProbeCalls(int id, boolean gate, List<StackMapFrameInfo> frames, int declaredLocals, int parameterSlots) {
+        ProbeCalls(int id, boolean gate, @Nullable List<StackMapFrameInfo> frames, int declaredLocals, int parameterSlots) {
             this.id = id;
             this.gate = gate;
             this.frames = frames;

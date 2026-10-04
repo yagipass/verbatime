@@ -8,6 +8,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
+import org.jspecify.annotations.Nullable;
 
 import io.github.yagipass.verbatime.jmc.control.ControlPresenter;
 
@@ -23,7 +24,7 @@ public final class Preferences extends ScopedPreferenceStore implements ControlP
 
     private static final Path RECORDINGS_SUBDIR = Path.of("verbatime", "recordings");
 
-    private static Preferences instance;
+    private static @Nullable Preferences instance;
 
     public static synchronized Preferences get() {
         if (instance == null) {

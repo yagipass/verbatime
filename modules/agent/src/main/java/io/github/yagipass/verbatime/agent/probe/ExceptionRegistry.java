@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 public final class ExceptionRegistry {
 
     static final int UNKNOWN = 0;
@@ -15,7 +17,7 @@ public final class ExceptionRegistry {
 
     private static final List<String> names = new ArrayList<>();
 
-    private static TraceFileWriter sink;
+    private static @Nullable TraceFileWriter sink;
 
     private static final ClassValue<Integer> IDS = new ClassValue<>() {
         @Override

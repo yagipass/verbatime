@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.errorprone.annotations.Var;
 
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
@@ -32,16 +34,16 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
 
         private final long selfNs;
 
-        private final Row parent;
+        private final @Nullable Row parent;
 
         private final int[] sumNodes;
 
         private final int[] pathHeads;
 
-        private Row[] children;
+        private Row @Nullable [] children;
 
         private Row(BottomUpModel model, int methodId, String name, long calls, long totalNs,
-                long selfNs, Row parent, int[] sumNodes, int[] pathHeads) {
+                long selfNs, @Nullable Row parent, int[] sumNodes, int[] pathHeads) {
             this.model = model;
             this.methodId = methodId;
             this.name = name;
@@ -73,7 +75,7 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
             return selfNs;
         }
 
-        private Row parent() {
+        private @Nullable Row parent() {
             return parent;
         }
 
@@ -295,7 +297,7 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
     }
 
     @Override
-    public Row parent(Row r) {
+    public @Nullable Row parent(Row r) {
         return r.parent();
     }
 }

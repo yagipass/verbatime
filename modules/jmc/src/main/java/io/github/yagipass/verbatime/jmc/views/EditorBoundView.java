@@ -2,6 +2,7 @@ package io.github.yagipass.verbatime.jmc.views;
 
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.part.ViewPart;
+import org.jspecify.annotations.Nullable;
 
 import io.github.yagipass.verbatime.jmc.RecordingEditor;
 import io.github.yagipass.verbatime.jmc.SelectedCall;
@@ -11,7 +12,7 @@ abstract class EditorBoundView extends ViewPart implements RecordingEditor.Liste
 
     private ActiveEditorTracker tracker;
 
-    private RecordingEditor editor;
+    private @Nullable RecordingEditor editor;
 
     @Override
     public final void createPartControl(Composite parent) {
@@ -26,19 +27,19 @@ abstract class EditorBoundView extends ViewPart implements RecordingEditor.Liste
 
     abstract String selectHint();
 
-    final RecordingEditor editor() {
+    final @Nullable RecordingEditor editor() {
         return editor;
     }
 
-    final TraceSnapshot trace() {
+    final @Nullable TraceSnapshot trace() {
         return editor != null ? editor.trace() : null;
     }
 
-    final SelectedCall selection() {
+    final @Nullable SelectedCall selection() {
         return editor != null ? editor.selection() : null;
     }
 
-    final String emptyReason(TraceSnapshot d, SelectedCall f) {
+    final @Nullable String emptyReason(@Nullable TraceSnapshot d, @Nullable SelectedCall f) {
         if (editor == null) {
             return "No Verbatime recording editor is active";
         }
@@ -51,7 +52,7 @@ abstract class EditorBoundView extends ViewPart implements RecordingEditor.Liste
         return null;
     }
 
-    private void bind(RecordingEditor e) {
+    private void bind(@Nullable RecordingEditor e) {
         if (editor != null) {
             editor.removeListener(this);
         }

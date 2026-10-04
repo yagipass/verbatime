@@ -2,6 +2,8 @@ package io.github.yagipass.verbatime.cli;
 
 import java.util.TreeMap;
 
+import org.jspecify.annotations.Nullable;
+
 final class Throws {
 
     interface Listener {
@@ -15,7 +17,7 @@ final class Throws {
 
     final TreeMap<Integer, Long> countByException = new TreeMap<>();
 
-    private final Listener listener;
+    private final @Nullable Listener listener;
 
     private final CallStack stack = new CallStack();
 
@@ -31,7 +33,7 @@ final class Throws {
 
     private int lastDepth;
 
-    Throws(Listener listener) {
+    Throws(@Nullable Listener listener) {
         this.listener = listener;
     }
 

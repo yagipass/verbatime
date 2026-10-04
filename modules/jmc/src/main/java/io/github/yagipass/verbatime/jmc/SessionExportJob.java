@@ -6,6 +6,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Shell;
+import org.jspecify.annotations.Nullable;
 
 import io.github.yagipass.verbatime.jmc.export.SessionExporter;
 import io.github.yagipass.verbatime.jmc.index.TraceIndexer;
@@ -42,7 +43,7 @@ final class SessionExportJob {
         job.schedule();
     }
 
-    private static Shell shellOrNull(Shell s) {
+    private static @Nullable Shell shellOrNull(Shell s) {
         return s.isDisposed() ? null : s;
     }
 }

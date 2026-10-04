@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.errorprone.annotations.Var;
 
 import io.github.yagipass.verbatime.jmc.export.ExportNames;
@@ -100,7 +102,7 @@ public final class Formats {
         return shortName(full) + "(" + String.join(", ", args) + ")";
     }
 
-    private static List<String> parseTypes(String s) {
+    private static @Nullable List<String> parseTypes(String s) {
         List<String> out = new ArrayList<>();
         @Var int i = 0;
         while (i < s.length()) {
@@ -133,7 +135,7 @@ public final class Formats {
         return out;
     }
 
-    private static String primitive(char c) {
+    private static @Nullable String primitive(char c) {
         return switch (c) {
             case 'B' -> "byte";
             case 'C' -> "char";

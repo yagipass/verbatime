@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
 import io.github.yagipass.verbatime.jmc.query.SubtreeAggregate;
 
@@ -65,7 +67,7 @@ final class TopDownModel implements AggregateTreeView.AggregateTreeModel<TopDown
     }
 
     @Override
-    public Row parent(Row r) {
+    public @Nullable Row parent(Row r) {
         int p = agg.parent(r.node());
         return p < 0 ? null : rowFor(p);
     }

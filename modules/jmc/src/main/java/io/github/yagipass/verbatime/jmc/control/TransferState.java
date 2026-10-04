@@ -2,6 +2,8 @@ package io.github.yagipass.verbatime.jmc.control;
 
 import java.nio.file.Path;
 
+import org.jspecify.annotations.Nullable;
+
 import io.github.yagipass.verbatime.jmc.control.ControlPresenter.EditorHandle;
 
 public final class TransferState {
@@ -11,17 +13,17 @@ public final class TransferState {
     record Deferred(long recordingId, Path file) {
     }
 
-    private Transfer current;
+    private @Nullable Transfer current;
 
-    private Runnable cancel;
+    private @Nullable Runnable cancel;
 
-    private Transfer stopping;
+    private @Nullable Transfer stopping;
 
-    private Deferred deferred;
+    private @Nullable Deferred deferred;
 
     private long transferredBytes;
 
-    private EditorHandle editor;
+    private @Nullable EditorHandle editor;
 
     private long lastReloadMs;
 
@@ -31,6 +33,7 @@ public final class TransferState {
 
     private double agentBytesPerSec;
 
+    @Nullable
     Transfer current() {
         return current;
     }
@@ -39,6 +42,7 @@ public final class TransferState {
         return stopping != null;
     }
 
+    @Nullable
     Deferred deferred() {
         return deferred;
     }
@@ -83,6 +87,7 @@ public final class TransferState {
         deferred = new Deferred(recordingId, file);
     }
 
+    @Nullable
     Deferred takeDeferred() {
         if (stopping != null) {
             return null;
@@ -121,11 +126,12 @@ public final class TransferState {
         return true;
     }
 
+    @Nullable
     EditorHandle editor() {
         return editor;
     }
 
-    void editorOpened(EditorHandle e, long now) {
+    void editorOpened(@Nullable EditorHandle e, long now) {
         editor = e;
         lastReloadMs = now;
     }

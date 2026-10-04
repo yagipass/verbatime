@@ -3,6 +3,8 @@ package io.github.yagipass.verbatime.agent.probe;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.errorprone.annotations.Var;
 
 public final class StartupGate {
@@ -11,7 +13,7 @@ public final class StartupGate {
         UNARMED, ARMED, WAITING, RELEASED, EXPIRED
     }
 
-    private static volatile CountDownLatch latch;
+    private static volatile @Nullable CountDownLatch latch;
 
     private static volatile long timeoutMs;
 
@@ -56,7 +58,7 @@ public final class StartupGate {
         }
     }
 
-    public static String stateName() {
+    public static @Nullable String stateName() {
         return switch (state) {
             case UNARMED -> null;
             case ARMED -> "armed";

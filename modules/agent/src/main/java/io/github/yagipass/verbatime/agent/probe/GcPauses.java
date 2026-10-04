@@ -11,6 +11,8 @@ import javax.management.NotificationEmitter;
 import javax.management.NotificationListener;
 import javax.management.openmbean.CompositeData;
 
+import org.jspecify.annotations.Nullable;
+
 import com.sun.management.GarbageCollectionNotificationInfo;
 import com.sun.management.GcInfo;
 
@@ -22,9 +24,9 @@ final class GcPauses {
 
     private static final List<NotificationEmitter> subscribed = new ArrayList<>();
 
-    private static NotificationListener listener;
+    private static @Nullable NotificationListener listener;
 
-    private static volatile TraceFileWriter sink;
+    private static volatile @Nullable TraceFileWriter sink;
 
     private GcPauses() {
     }
@@ -75,7 +77,7 @@ final class GcPauses {
         return !beanName.contains("Cycles");
     }
 
-    static int actionCode(String gcAction) {
+    static int actionCode(@Nullable String gcAction) {
         if (gcAction == null) {
             return Vbtm.GC_ACTION_UNKNOWN;
         }
@@ -105,7 +107,7 @@ final class GcPauses {
         }
     }
 
-    private static String nonNull(String s) {
+    private static String nonNull(@Nullable String s) {
         return s == null ? "" : s;
     }
 }
