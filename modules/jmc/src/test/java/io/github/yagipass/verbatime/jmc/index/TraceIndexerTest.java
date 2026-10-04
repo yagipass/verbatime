@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -77,7 +78,7 @@ final class TraceIndexerTest {
         w.gc(100, 10, Vbtm.GC_ACTION_MINOR, "X".repeat(Vbtm.MAX_GC_LABEL_BYTES + 1), "cause");
         w.end();
         TraceSnapshot d = TestTraces.index(w);
-        assertEquals(offset, d.corruptOffset, "a label longer than any JVM emits marks the record, not the file end, as corrupt");
+        assertEquals(offset, d.corruption.offset(), "a label longer than any JVM emits marks the record, not the file end, as corrupt");
         assertEquals(0, d.gc.count);
     }
 
@@ -90,9 +91,9 @@ final class TraceIndexerTest {
         w.rawBytes(10, Vbtm.GC_ACTION_MINOR, 4, 'C', 'o', 'p', 'y', 5, 'c', 'a', 'u', 's', 'e');
         w.end();
         TraceSnapshot d = TestTraces.index(w);
-        assertEquals(offset, d.corruptOffset,
+        assertEquals(offset, d.corruption.offset(),
                 "a 10-byte varint decoding to a negative tick count must not reach the viewer as a pause before the epoch");
-        assertTrue(d.corruptReason.contains("GC pause ticks out of range"), d.corruptReason);
+        assertTrue(d.corruption.reason().contains("GC pause ticks out of range"), d.corruption.reason());
         assertEquals(0, d.gc.count);
     }
 
@@ -103,14 +104,14 @@ final class TraceIndexerTest {
         w.gc(100, 10, 3, "Copy", "Allocation Failure");
         w.end();
         TraceSnapshot d = TestTraces.index(w);
-        assertEquals(offset, d.corruptOffset, "an action the format does not define is rejected like an unknown record type");
+        assertEquals(offset, d.corruption.offset(), "an action the format does not define is rejected like an unknown record type");
     }
 
     @Test
     void simpleSession() throws IOException {
         TraceSnapshot d = TestTraces.index(simpleTrace(), 1 << 20);
         assertFalse(d.truncated);
-        assertEquals(-1, d.corruptOffset);
+        assertNull(d.corruption);
         assertEquals(4, d.totalCalls);
         assertEquals(1, d.sessions.size());
         Session s = d.sessions.get(0);
@@ -230,7 +231,7 @@ final class TraceIndexerTest {
         w.chunk(3, 100, p.bytes(), true);
         TraceSnapshot d = TestTraces.index(w);
         assertTrue(d.truncated);
-        assertEquals(-1, d.corruptOffset);
+        assertNull(d.corruption);
         assertEquals(1, d.totalCalls);
     }
 
@@ -243,8 +244,8 @@ final class TraceIndexerTest {
         long offset = w.bytes().length;
         w.end().thread(5, "late");
         TraceSnapshot d = TestTraces.index(w);
-        assertEquals(offset, d.corruptOffset);
-        assertTrue(d.corruptReason.contains("footer"));
+        assertEquals(offset, d.corruption.offset());
+        assertTrue(d.corruption.reason().contains("footer"));
         assertFalse(d.truncated);
         assertEquals(1, d.totalCalls);
     }
@@ -270,7 +271,7 @@ final class TraceIndexerTest {
         assertTrue(e.getMessage().contains("version " + Vbtm.VERSION), e.getMessage());
         TraceSnapshot d = TestTraces.index(Arrays.copyOf(full, Vbtm.VERSION_OFFSET), 1000);
         assertTrue(d.truncated, "a file cut before the version byte is truncated, not refused");
-        assertEquals(-1, d.corruptOffset);
+        assertNull(d.corruption);
     }
 
     @Test
@@ -281,7 +282,7 @@ final class TraceIndexerTest {
         TraceSnapshot d = TestTraces.index(w);
         assertEquals(epochMs, d.startEpochMs, "tick 0 maps to the recording's start time");
         assertEquals(-5 * 3600, d.utcOffsetSeconds, "the server's offset travels with the file, signed");
-        assertEquals(-1, d.corruptOffset);
+        assertNull(d.corruption);
         assertFalse(d.truncated);
         assertEquals("2027-01-15T03:00:00.123-05:00", d.wallClock(0).toString());
         assertEquals("2027-01-15T03:00:00.123000100-05:00", d.wallClock(100).toString(),
@@ -299,8 +300,8 @@ final class TraceIndexerTest {
         o.write('t');
         o.write(Vbtm.RECORD_END);
         TraceSnapshot d = TestTraces.index(o.toByteArray(), 1 << 20);
-        assertEquals(Vbtm.ANCHOR_OFFSET, d.corruptOffset);
-        assertTrue(d.corruptReason.contains("anchor"), d.corruptReason);
+        assertEquals(Vbtm.ANCHOR_OFFSET, d.corruption.offset());
+        assertTrue(d.corruption.reason().contains("anchor"), d.corruption.reason());
         assertEquals(0, d.threadNames.size(), "nothing past the missing anchor is read");
     }
 
@@ -311,7 +312,7 @@ final class TraceIndexerTest {
         long offset = w.bytes().length;
         w.rawBytes(Vbtm.RECORD_ANCHOR, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         TraceSnapshot d = TestTraces.index(w);
-        assertEquals(offset, d.corruptOffset);
+        assertEquals(offset, d.corruption.offset());
         assertEquals(TestTraces.DEFAULT_START_EPOCH_MS, d.startEpochMs, "the first anchor stays authoritative");
     }
 
@@ -320,8 +321,8 @@ final class TraceIndexerTest {
         TraceBuilder w = new TraceBuilder(TestTraces.DEFAULT_START_EPOCH_MS, 19 * 3600);
         w.thread(3, "t").end();
         TraceSnapshot d = TestTraces.index(w);
-        assertEquals(Vbtm.ANCHOR_OFFSET, d.corruptOffset);
-        assertTrue(d.corruptReason.contains("offset"), d.corruptReason);
+        assertEquals(Vbtm.ANCHOR_OFFSET, d.corruption.offset());
+        assertTrue(d.corruption.reason().contains("offset"), d.corruption.reason());
     }
 
     @Test
@@ -329,8 +330,8 @@ final class TraceIndexerTest {
         TraceBuilder w = new TraceBuilder(TestTraces.DEFAULT_START_EPOCH_MS, Integer.MIN_VALUE);
         w.thread(3, "t").end();
         TraceSnapshot d = TestTraces.index(w);
-        assertEquals(Vbtm.ANCHOR_OFFSET, d.corruptOffset);
-        assertTrue(d.corruptReason.contains("offset"), d.corruptReason);
+        assertEquals(Vbtm.ANCHOR_OFFSET, d.corruption.offset());
+        assertTrue(d.corruption.reason().contains("offset"), d.corruption.reason());
     }
 
     @Test
@@ -339,7 +340,7 @@ final class TraceIndexerTest {
         for (int cut = Vbtm.MAGIC_BYTES; cut < Vbtm.HEADER_BYTES; cut++) {
             TraceSnapshot d = TestTraces.index(Arrays.copyOf(full, cut), 1 << 20);
             assertTrue(d.truncated, "cut " + cut);
-            assertEquals(-1, d.corruptOffset, "cut " + cut);
+            assertNull(d.corruption, "cut " + cut);
             assertEquals(0, d.startEpochMs, "cut " + cut + ": no anchor yet, so no wall clock");
         }
     }
@@ -353,8 +354,8 @@ final class TraceIndexerTest {
         long offset = w.bytes().length;
         w.rawBytes(0x7F, 1, 2, 3);
         TraceSnapshot d = TestTraces.index(w);
-        assertEquals(offset, d.corruptOffset);
-        assertNotNull(d.corruptReason);
+        assertEquals(offset, d.corruption.offset());
+        assertNotNull(d.corruption);
         assertEquals(1, d.totalCalls);
         assertFalse(d.truncated);
     }
@@ -366,8 +367,8 @@ final class TraceIndexerTest {
         p.enter(100, 1).exit(200).exit(210);
         w.chunk(3, 100, p.bytes(), true);
         TraceSnapshot d = TestTraces.index(w);
-        assertTrue(d.corruptOffset > 0);
-        assertTrue(d.corruptReason.contains("exit with no open frame"));
+        assertTrue(d.corruption.offset() > 0);
+        assertTrue(d.corruption.reason().contains("exit with no open frame"));
         assertEquals(1, d.totalCalls);
         assertFalse(d.sessions.get(0).ended);
     }
@@ -380,8 +381,8 @@ final class TraceIndexerTest {
         p.enter(300, 1).exit(400);
         w.chunk(3, 300, p.bytes(), true);
         TraceSnapshot d = TestTraces.index(w);
-        assertTrue(d.corruptOffset > 0);
-        assertTrue(d.corruptReason.contains("mid-event"));
+        assertTrue(d.corruption.offset() > 0);
+        assertTrue(d.corruption.reason().contains("mid-event"));
         assertEquals(0, d.totalCalls);
     }
 
@@ -390,8 +391,8 @@ final class TraceIndexerTest {
         TraceBuilder w = TestTraces.writer();
         w.clazz((1 << 22) - 1, "pkg.X", "a()V", "b()V");
         TraceSnapshot d = TestTraces.index(w);
-        assertEquals(Vbtm.HEADER_BYTES, d.corruptOffset);
-        assertTrue(d.corruptReason.contains("2^22"));
+        assertEquals(Vbtm.HEADER_BYTES, d.corruption.offset());
+        assertTrue(d.corruption.reason().contains("2^22"));
     }
 
     @Test
@@ -399,8 +400,8 @@ final class TraceIndexerTest {
         TraceBuilder w = TestTraces.writer();
         w.clazz(Long.MAX_VALUE, "pkg.X", "a()V");
         TraceSnapshot d = TestTraces.index(w);
-        assertEquals(Vbtm.HEADER_BYTES, d.corruptOffset);
-        assertTrue(d.corruptReason.contains("2^22"), d.corruptReason);
+        assertEquals(Vbtm.HEADER_BYTES, d.corruption.offset());
+        assertTrue(d.corruption.reason().contains("2^22"), d.corruption.reason());
     }
 
     @Test
@@ -413,8 +414,8 @@ final class TraceIndexerTest {
         }
         w.rawBytes(1, 5, 'p', 'k', 'g', '.', 'X', 4, 'a', '(', ')', 'V');
         TraceSnapshot d = TestTraces.index(w);
-        assertEquals(Vbtm.HEADER_BYTES, d.corruptOffset);
-        assertTrue(d.corruptReason.contains("2^22"), d.corruptReason);
+        assertEquals(Vbtm.HEADER_BYTES, d.corruption.offset());
+        assertTrue(d.corruption.reason().contains("2^22"), d.corruption.reason());
     }
 
     @Test
@@ -422,8 +423,8 @@ final class TraceIndexerTest {
         TraceBuilder w = TestTraces.writer().rawBytes(Vbtm.RECORD_THREAD, 7);
         rawVarint(w, -1L);
         TraceSnapshot d = TestTraces.index(w);
-        assertEquals(Vbtm.HEADER_BYTES, d.corruptOffset);
-        assertTrue(d.corruptReason.contains("negative string length"), d.corruptReason);
+        assertEquals(Vbtm.HEADER_BYTES, d.corruption.offset());
+        assertTrue(d.corruption.reason().contains("negative string length"), d.corruption.reason());
         assertFalse(d.truncated, "no writer produces a negative length, so it is corruption, not a recording cut short");
     }
 
@@ -433,9 +434,9 @@ final class TraceIndexerTest {
         rawVarint(w, Vbtm.MAX_TICKS + 1);
         w.rawBytes(0);
         TraceSnapshot d = TestTraces.index(w);
-        assertEquals(Vbtm.HEADER_BYTES, d.corruptOffset,
+        assertEquals(Vbtm.HEADER_BYTES, d.corruption.offset(),
                 "base ticks past MAX_TICKS would overflow the session start into negative nanoseconds");
-        assertTrue(d.corruptReason.contains("ticks"), d.corruptReason);
+        assertTrue(d.corruption.reason().contains("ticks"), d.corruption.reason());
     }
 
     @Test
@@ -444,8 +445,8 @@ final class TraceIndexerTest {
         rawVarint(w, -1L);
         w.rawBytes(0);
         TraceSnapshot d = TestTraces.index(w);
-        assertEquals(Vbtm.HEADER_BYTES, d.corruptOffset);
-        assertTrue(d.corruptReason.contains("ticks"), d.corruptReason);
+        assertEquals(Vbtm.HEADER_BYTES, d.corruption.offset());
+        assertTrue(d.corruption.reason().contains("ticks"), d.corruption.reason());
     }
 
     @Test
@@ -461,8 +462,8 @@ final class TraceIndexerTest {
         w.chunk(1, 100, payload, true);
         int secondEvent = w.bytes().length - payload.length + first.length;
         TraceSnapshot d = TestTraces.index(w);
-        assertEquals(secondEvent, d.corruptOffset, "the exit whose delta leaves the format range marks the file");
-        assertTrue(d.corruptReason.contains("tick delta"), d.corruptReason);
+        assertEquals(secondEvent, d.corruption.offset(), "the exit whose delta leaves the format range marks the file");
+        assertTrue(d.corruption.reason().contains("tick delta"), d.corruption.reason());
     }
 
     @Test
@@ -471,7 +472,7 @@ final class TraceIndexerTest {
         w.chunk(1, Vbtm.MAX_TICKS, new byte[0], true);
         w.end();
         TraceSnapshot d = TestTraces.index(w);
-        assertEquals(-1, d.corruptOffset);
+        assertNull(d.corruption);
         assertEquals(Vbtm.MAX_TICKS * Vbtm.NANOS_PER_TICK, d.sessions.get(0).startNs);
         assertTrue(d.sessions.get(0).startNs > 0, "MAX_TICKS is the last value whose nanoseconds fit in a long");
     }
@@ -493,8 +494,8 @@ final class TraceIndexerTest {
         }
         w.rawBytes(0x01);
         TraceSnapshot d = TestTraces.index(w);
-        assertTrue(d.corruptOffset > 0);
-        assertTrue(d.corruptReason.contains("varint too long"));
+        assertTrue(d.corruption.offset() > 0);
+        assertTrue(d.corruption.reason().contains("varint too long"));
     }
 
     @Test
@@ -505,7 +506,7 @@ final class TraceIndexerTest {
             ReferenceDecoder.Result ref = ReferenceDecoder.decode(prefix);
             TraceSnapshot d = TestTraces.index(prefix, 1 << 30);
             assertEquals(-1, ref.corruptOffset, "prefix " + cut);
-            assertEquals(-1, d.corruptOffset, "prefix " + cut);
+            assertNull(d.corruption, "prefix " + cut);
             assertEquals(ref.truncated, d.truncated, "prefix " + cut);
             assertMatchesReference(ref, d, "prefix " + cut);
         }

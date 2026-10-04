@@ -99,6 +99,9 @@ public final class ControlPresenter {
         Runnable schedule(Transfer p);
     }
 
+    private record Connection(Agent agent, ExecutorService background, String target, String dir) {
+    }
+
     static final int POLL_MS = 1_000;
 
     static final int CONNECT_TIMEOUT_MS = 30_000;
@@ -131,15 +134,9 @@ public final class ControlPresenter {
 
     private ViewState lastState = ViewState.disconnected(State.DISCONNECTED);
 
-    private @Nullable ExecutorService background;
-
     private final AtomicInteger attempt = new AtomicInteger();
 
-    private volatile @Nullable Agent agent;
-
-    private @Nullable String target;
-
-    private @Nullable String connectionDir;
+    private volatile @Nullable Connection connection;
 
     private String savedRoots;
 
@@ -185,14 +182,12 @@ public final class ControlPresenter {
     }
 
     void connect(String target) {
-        if (agent != null || state == State.CONNECTING || target.isEmpty()) {
+        if (connection != null || state == State.CONNECTING || target.isEmpty()) {
             return;
         }
-        this.target = target;
         state = State.CONNECTING;
         int a = attempt.incrementAndGet();
         ExecutorService bg = newExecutor.get();
-        background = bg;
         view.render(ViewState.disconnected(State.CONNECTING));
         view.message("Connecting: " + target);
         uiThread.postAfter(CONNECT_TIMEOUT_MS, () -> {
@@ -211,7 +206,7 @@ public final class ControlPresenter {
                     return;
                 }
                 Agent ok = c;
-                uiThread.post(() -> connected(a, bg, ok, st));
+                uiThread.post(() -> connected(a, target, bg, ok, st));
             } catch (Exception e) {
                 if (c != null) {
                     closeQuietly(c);
@@ -235,50 +230,48 @@ public final class ControlPresenter {
 
     private void abandonAttempt(String message) {
         state = State.DISCONNECTED;
-        background = null;
         view.render(ViewState.disconnected(State.DISCONNECTED));
         view.message(message);
     }
 
-    private void connected(int a, ExecutorService bg, Agent c, Map<String, String> st) {
+    private void connected(int a, String target, ExecutorService bg, Agent c, Map<String, String> st) {
         if (!isAttempt(a)) {
             bg.execute(() -> closeQuietly(c));
             bg.shutdown();
             return;
         }
-        agent = c;
-        connectionDir = LocalRecordings.fileSafe(Objects.requireNonNull(target));
+        Connection conn = new Connection(c, bg, target, LocalRecordings.fileSafe(target));
+        connection = conn;
         settings.save(target, savedRoots);
         state = State.CONNECTED;
         AgentStatus status = AgentStatus.parse(st);
         searchSupported = status.protocol() >= SEARCH_MIN_PROTOCOL;
         view.message("Connected to agent pid " + status.pid());
-        apply(status);
+        apply(conn, status);
         startPolling();
     }
 
-    private <T> void call(Agent c, Callable<T> op, Consumer<T> onOk,
+    private <T> void call(Connection conn, Callable<T> op, Consumer<T> onOk,
             Consumer<String> onFail) {
-        ExecutorService bg = background;
-        if (bg == null || !isCurrent(c)) {
+        if (!isCurrent(conn)) {
             return;
         }
-        bg.execute(() -> {
+        conn.background().execute(() -> {
             T result;
             try {
                 result = op.call();
             } catch (Exception e) {
                 String msg = String.valueOf(e.getMessage());
-                uiThread.post(() -> isCurrent(c), () -> onFail.accept(msg));
+                uiThread.post(() -> isCurrent(conn), () -> onFail.accept(msg));
                 return;
             }
-            uiThread.post(() -> isCurrent(c), () -> onOk.accept(result));
+            uiThread.post(() -> isCurrent(conn), () -> onOk.accept(result));
         });
     }
 
     @SuppressWarnings("ReferenceEquality")
-    private boolean isCurrent(Agent c) {
-        return agent == c;
+    private boolean isCurrent(Connection conn) {
+        return connection == conn;
     }
 
     void disconnect() {
@@ -293,7 +286,6 @@ public final class ControlPresenter {
         transfer.cancelCurrent();
         transfer.dropDeferred();
         releaseClient();
-        connectionDir = null;
         state = next;
         appliedRoots = List.of();
         rootsReapplied = false;
@@ -314,11 +306,12 @@ public final class ControlPresenter {
 
     @SuppressWarnings("ReferenceEquality")
     private void pollTick() {
-        if (disposed || agent == null) {
+        Connection conn = connection;
+        if (disposed || conn == null) {
             pollChainActive = false;
             return;
         }
-        Agent c = agent;
+        Agent c = conn.agent();
         long now = nowMs.getAsLong();
         if (statusInFlight.get() == c && now - pollStartedMs >= STALL_TIMEOUT_MS) {
             lost("the agent has not answered for " + STALL_TIMEOUT_MS / 1000 + " s");
@@ -327,30 +320,30 @@ public final class ControlPresenter {
         }
         if (statusInFlight.compareAndSet(null, c)) {
             pollStartedMs = now;
-            call(c, () -> {
+            call(conn, () -> {
                 try {
                     return c.status();
                 } finally {
                     statusInFlight.compareAndSet(c, null);
                 }
-            }, st -> apply(AgentStatus.parse(st)), this::lost);
+            }, st -> apply(conn, AgentStatus.parse(st)), this::lost);
         }
         uiThread.postAfter(POLL_MS, this::pollTick);
     }
 
-    private void apply(AgentStatus st) {
+    private void apply(Connection conn, AgentStatus st) {
         appliedRoots = st.roots();
         if (st.recording()) {
             startPending = false;
             long rid = st.recordingId();
             if (rid > 0 && transfer.transferringId() != rid) {
-                transferRecording(rid, st.recordingName(), Long.toString(st.recordingStartEpochMs()));
+                transferRecording(rid, localFor(conn, rid, st.recordingName(), Long.toString(st.recordingStartEpochMs())));
             }
         } else {
             stopPending = false;
-            resumeUndelivered(st);
+            resumeUndelivered(conn, st);
         }
-        lastState = viewStateFor(st);
+        lastState = viewStateFor(conn, st);
         view.render(lastState);
 
         if (!rootsReapplied) {
@@ -366,7 +359,7 @@ public final class ControlPresenter {
         }
     }
 
-    private ViewState viewStateFor(AgentStatus st) {
+    private ViewState viewStateFor(Connection conn, AgentStatus st) {
         String countText = ControlTexts.countText(st.instrumentedClasses(), st.instrumentedMethods());
         boolean transferring = !st.recording() && transfer.isActive();
         String recordingText;
@@ -384,7 +377,7 @@ public final class ControlPresenter {
         } else {
             recordingText = ControlTexts.idleText(!st.roots().isEmpty());
         }
-        return ViewState.connected(ControlTexts.connectionText(target, st.pid()), st.recording(), st.roots(),
+        return ViewState.connected(ControlTexts.connectionText(conn.target(), st.pid()), st.recording(), st.roots(),
                 countText, recordingText, startPending, stopPending, transferring);
     }
 
@@ -392,7 +385,7 @@ public final class ControlPresenter {
         searchGeneration++;
         int gen = searchGeneration;
         String q = query.trim();
-        if (q.length() < 2 || agent == null || !searchSupported) {
+        if (q.length() < 2 || connection == null || !searchSupported) {
             view.rootCandidates(new String[0]);
             return;
         }
@@ -404,11 +397,11 @@ public final class ControlPresenter {
     }
 
     private void runSearch(int gen, String query) {
-        Agent c = agent;
-        if (c == null) {
+        Connection conn = connection;
+        if (conn == null) {
             return;
         }
-        call(c, () -> c.searchMethods(query, SEARCH_MAX_RESULTS), found -> {
+        call(conn, () -> conn.agent().searchMethods(query, SEARCH_MAX_RESULTS), found -> {
             if (gen == searchGeneration) {
                 view.rootCandidates(found == null ? new String[0] : found);
             }
@@ -445,32 +438,32 @@ public final class ControlPresenter {
 
     private void replaceRoots(String[] arr, boolean remember, String okMessage,
             String failPrefix, Runnable onSuccess) {
-        Agent c = agent;
-        if (c == null) {
+        Connection conn = connection;
+        if (conn == null) {
             return;
         }
-        call(c, () -> {
-            c.replaceRoots(arr);
-            return c.status();
+        call(conn, () -> {
+            conn.agent().replaceRoots(arr);
+            return conn.agent().status();
         }, st -> {
             if (remember) {
                 savedRoots = String.join("\n", arr);
-                settings.save(Objects.requireNonNull(target), savedRoots);
+                settings.save(conn.target(), savedRoots);
             }
             onSuccess.run();
             view.message(okMessage);
-            apply(AgentStatus.parse(st));
+            apply(conn, AgentStatus.parse(st));
         }, msg -> view.message(failPrefix + msg));
     }
 
     void startRecording() {
-        Agent c = agent;
-        if (c == null || startPending) {
+        Connection conn = connection;
+        if (conn == null || startPending) {
             return;
         }
         startPending = true;
         renderPending();
-        call(c, c::startRecording, id -> view.message("Started recording #" + id), msg -> {
+        call(conn, conn.agent()::startRecording, id -> view.message("Started recording #" + id), msg -> {
             startPending = false;
             renderPending();
             view.message("Failed to start: " + msg);
@@ -478,14 +471,14 @@ public final class ControlPresenter {
     }
 
     void stopRecording() {
-        Agent c = agent;
-        if (c == null || stopPending) {
+        Connection conn = connection;
+        if (conn == null || stopPending) {
             return;
         }
         stopPending = true;
         renderPending();
-        call(c, () -> {
-            c.stopRecording();
+        call(conn, () -> {
+            conn.agent().stopRecording();
             return null;
         }, v -> view.message("Stopped. Waiting for the transfer to complete…"), msg -> {
             stopPending = false;
@@ -499,13 +492,13 @@ public final class ControlPresenter {
         view.render(lastState);
     }
 
-    private void resumeUndelivered(AgentStatus st) {
+    private void resumeUndelivered(Connection conn, AgentStatus st) {
         long rid = st.lastRecordingId();
         if (transfer.transferringId() > 0 || rid <= 0 || rid == resumeTriedId || st.lastRecordingStartEpochMs() <= 0
                 || st.lastRecordingBytes() < 0) {
             return;
         }
-        Path local = localFor(rid, st.lastRecordingName(), Long.toString(st.lastRecordingStartEpochMs()));
+        Path local = localFor(conn, rid, st.lastRecordingName(), Long.toString(st.lastRecordingStartEpochMs()));
         long have;
         try {
             have = Files.exists(local) ? Files.size(local) : 0;
@@ -521,17 +514,13 @@ public final class ControlPresenter {
         transferRecording(rid, local);
     }
 
-    private Path localFor(long recordingId, String recordingName, String startEpochMs) {
-        return LocalRecordings.localFile(settings.recordingsDir(), Objects.requireNonNull(connectionDir), recordingName, recordingId, startEpochMs);
-    }
-
-    private void transferRecording(long recordingId, String recordingName, String startEpochMs) {
-        transferRecording(recordingId, localFor(recordingId, recordingName, startEpochMs));
+    private Path localFor(Connection conn, long recordingId, String recordingName, String startEpochMs) {
+        return LocalRecordings.localFile(settings.recordingsDir(), conn.dir(), recordingName, recordingId, startEpochMs);
     }
 
     private void transferRecording(long recordingId, Path local) {
-        Agent c = agent;
-        if (c == null) {
+        Connection conn = connection;
+        if (conn == null) {
             return;
         }
         Transfer old = transfer.current();
@@ -548,7 +537,7 @@ public final class ControlPresenter {
             view.message("Waiting for the previous transfer to stop before saving recording #" + recordingId);
             return;
         }
-        startTransfer(c, recordingId, local);
+        startTransfer(conn.agent(), recordingId, local);
     }
 
     private void startTransfer(Agent c, long recordingId, Path local) {
@@ -678,14 +667,12 @@ public final class ControlPresenter {
     }
 
     private void releaseClient() {
-        Agent c = agent;
-        ExecutorService bg = background;
-        agent = null;
-        background = null;
+        Connection conn = connection;
+        connection = null;
         statusInFlight.set(null);
-        if (c != null && bg != null) {
-            bg.execute(() -> closeQuietly(c));
-            bg.shutdown();
+        if (conn != null) {
+            conn.background().execute(() -> closeQuietly(conn.agent()));
+            conn.background().shutdown();
         }
     }
 

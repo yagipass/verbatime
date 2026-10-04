@@ -2,7 +2,6 @@ package io.github.yagipass.verbatime.cli;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 final class Names {
 
@@ -19,11 +18,11 @@ final class Names {
         collides = new boolean[n];
         Map<String, Integer> seen = new HashMap<>();
         for (int id = 0; id < n; id++) {
-            String cls = file.methodClass(id);
-            if (cls == null) {
+            TraceFile.MethodRef m = file.method(id);
+            if (m == null) {
                 continue;
             }
-            String base = simpleClass(cls) + "." + methodName(Objects.requireNonNull(file.methodSig(id)));
+            String base = simpleClass(m.className()) + "." + methodName(m.sig());
             int k = seen.merge(base, 1, Integer::sum);
             display[id] = k == 1 ? base : base + "#" + k;
         }
@@ -39,8 +38,8 @@ final class Names {
     }
 
     String fullName(int id) {
-        String cls = file.methodClass(id);
-        return cls == null ? displayName(id) : cls + "." + file.methodSig(id);
+        TraceFile.MethodRef m = file.method(id);
+        return m == null ? displayName(id) : m.className() + "." + m.sig();
     }
 
     boolean collides(int id) {

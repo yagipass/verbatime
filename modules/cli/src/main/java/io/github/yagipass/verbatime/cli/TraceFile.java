@@ -47,6 +47,12 @@ final class TraceFile {
         }
     }
 
+    record Corruption(long offset, String reason) {
+    }
+
+    record MethodRef(String className, String sig) {
+    }
+
     record GcPause(long startTicks, long durTicks, int action, String collector, String cause) {
 
         long endTicks() {
@@ -74,10 +80,8 @@ final class TraceFile {
 
     Status status = Status.COMPLETE;
 
-    long corruptOffset = -1;
-
     @Nullable
-    String corruptReason;
+    Corruption corruption;
 
     private final Map<Long, String> threads = new HashMap<>();
 
@@ -144,13 +148,12 @@ final class TraceFile {
     }
 
     @Nullable
-    String methodClass(int id) {
-        return id >= 0 && id < classNames.length ? classNames[id] : null;
-    }
-
-    @Nullable
-    String methodSig(int id) {
-        return id >= 0 && id < sigs.length ? sigs[id] : null;
+    MethodRef method(int id) {
+        if (id < 0 || id >= classNames.length) {
+            return null;
+        }
+        String cls = classNames[id];
+        return cls == null ? null : new MethodRef(cls, sigs[id]);
     }
 
     String exceptionName(int id) {
@@ -168,19 +171,19 @@ final class TraceFile {
     }
 
     void markCorrupt(long offset, String reason) {
-        if (status != Status.CORRUPT || offset < corruptOffset) {
+        Corruption c = corruption;
+        if (c == null || offset < c.offset()) {
             status = Status.CORRUPT;
-            corruptOffset = offset;
-            corruptReason = reason;
+            corruption = new Corruption(offset, reason);
         }
     }
 
     String statusText() {
-        return switch (status) {
-            case COMPLETE -> "complete";
-            case TRUNCATED -> "truncated";
-            case CORRUPT -> "corrupt at offset " + corruptOffset + ": " + corruptReason;
-        };
+        Corruption c = corruption;
+        if (c != null) {
+            return "corrupt at offset " + c.offset() + ": " + c.reason();
+        }
+        return status == Status.TRUNCATED ? "truncated" : "complete";
     }
 
     int exitCode() {
