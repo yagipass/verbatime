@@ -3,9 +3,12 @@ package io.github.yagipass.verbatime.jmc.control;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
-record AgentStatus(int protocol, String pid, boolean recording, List<RootEntry> roots, String instrumentedClasses,
-        String instrumentedMethods, long recordingId, String recordingName, long recordingStartEpochMs,
+import org.jspecify.annotations.Nullable;
+
+record AgentStatus(int protocol, String pid, boolean recording, List<RootEntry> roots, @Nullable String instrumentedClasses,
+        @Nullable String instrumentedMethods, long recordingId, String recordingName, long recordingStartEpochMs,
         long recordingBytes, boolean recordingTruncated, long lastRecordingId, String lastRecordingName,
         long lastRecordingStartEpochMs, long lastRecordingBytes, boolean lastRecordingTruncated) {
 
@@ -22,7 +25,7 @@ record AgentStatus(int protocol, String pid, boolean recording, List<RootEntry> 
     static List<RootEntry> rootEntries(Map<String, String> st) {
         List<RootEntry> out = new ArrayList<>();
         for (int i = 0; st.containsKey("root." + i); i++) {
-            String v = st.get("root." + i);
+            String v = Objects.requireNonNull(st.get("root." + i));
             int sp = v.indexOf(' ');
             String spec = sp < 0 ? v : v.substring(sp + 1);
             if (spec.isEmpty()) {

@@ -7,6 +7,8 @@ import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
+import org.jspecify.annotations.Nullable;
+
 import io.github.yagipass.verbatime.agent.probe.Log;
 import io.github.yagipass.verbatime.agent.probe.StartupGate;
 
@@ -24,7 +26,7 @@ final class StartupGateSetup {
         return internal;
     }
 
-    static String resolveMainClass(String javaCommand, String classPath, String mainModule, Function<String, Optional<String>> moduleMainClass) {
+    static String resolveMainClass(@Nullable String javaCommand, @Nullable String classPath, @Nullable String mainModule, Function<String, Optional<String>> moduleMainClass) {
         if (javaCommand == null || javaCommand.isBlank()) {
             throw new IllegalArgumentException("waitstart: cannot identify the main class because sun.java.command is not set. waitstart only works when the java launcher starts the JVM");
         }
@@ -81,7 +83,7 @@ final class StartupGateSetup {
         watchdog.start();
     }
 
-    static String neverReachedWarning(String gateState, String gateClass, long waitStartMs) {
+    static @Nullable String neverReachedWarning(@Nullable String gateState, String gateClass, long waitStartMs) {
         if (!"armed".equals(gateState)) {
             return null;
         }

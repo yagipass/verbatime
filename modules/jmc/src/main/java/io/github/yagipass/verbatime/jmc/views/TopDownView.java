@@ -1,8 +1,10 @@
 package io.github.yagipass.verbatime.jmc.views;
 
+import java.util.Objects;
 import java.util.function.Predicate;
 
 import org.eclipse.swt.SWT;
+import org.jspecify.annotations.Nullable;
 
 import com.google.errorprone.annotations.Var;
 
@@ -23,7 +25,7 @@ public final class TopDownView extends AggregateTreeView<TopDownModel, Row> {
     protected void createColumns() {
         column("self", 100, SWT.RIGHT, r -> Formats.fmtDur(r.selfNs()), true);
         column("total", 100, SWT.RIGHT, r -> Formats.fmtDur(r.totalNs()), true);
-        column("%", 60, SWT.RIGHT, r -> Formats.fmtPct(model().pct(r.totalNs())), true);
+        column("%", 60, SWT.RIGHT, r -> Formats.fmtPct(Objects.requireNonNull(model()).pct(r.totalNs())), true);
         column("calls", 90, SWT.RIGHT, r -> Formats.fmtInt(r.calls()), true);
         column("Method", 600, SWT.LEFT, Row::name, false);
     }
@@ -49,7 +51,7 @@ public final class TopDownView extends AggregateTreeView<TopDownModel, Row> {
     }
 
     @Override
-    protected void setInput(TopDownModel m) {
+    protected void setInput(@Nullable TopDownModel m) {
         viewer().setInput(m);
         if (m != null) {
             viewer().setChildCount(m, 1);

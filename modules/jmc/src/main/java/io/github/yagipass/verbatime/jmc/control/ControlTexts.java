@@ -2,6 +2,8 @@ package io.github.yagipass.verbatime.jmc.control;
 
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.errorprone.annotations.Var;
 
 import io.github.yagipass.verbatime.jmc.Formats;
@@ -41,11 +43,11 @@ public final class ControlTexts {
         return sb.append("\n\nThis cannot be undone.").toString();
     }
 
-    static String connectionText(String target, String pid) {
+    static String connectionText(@Nullable String target, String pid) {
         return target + ", pid " + pid;
     }
 
-    static String countText(String instrumentedClasses, String instrumentedMethods) {
+    static String countText(@Nullable String instrumentedClasses, @Nullable String instrumentedMethods) {
         return instrumentedClasses == null || instrumentedMethods == null ? ""
                 : instrumentedClasses + " classes, " + instrumentedMethods + " methods instrumented";
     }
@@ -76,7 +78,7 @@ public final class ControlTexts {
                 + "Stop the recording in the Verbatime Control view first.";
     }
 
-    public static String deleteFailedText(int failed, int total, String firstError) {
+    public static String deleteFailedText(int failed, int total, @Nullable String firstError) {
         return "Could not delete " + failed + " of " + Formats.plural(total, "recording") + ".\n\n" + firstError;
     }
 

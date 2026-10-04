@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 final class ThrowsCommand {
 
     static final String HELP = """
@@ -34,7 +36,7 @@ final class ThrowsCommand {
 
     private record Key(int exceptionId, int throwerId, int catcherId) {
 
-        static Key of(String by, int exceptionId, int throwerId, int catcherId) {
+        static Key of(@Nullable String by, int exceptionId, int throwerId, int catcherId) {
             if (by == null) {
                 return new Key(exceptionId, throwerId, catcherId);
             }
@@ -87,13 +89,13 @@ final class ThrowsCommand {
 
         final Set<Integer> exceptionIds = new HashSet<>();
 
-        final String by;
+        final @Nullable String by;
 
         int session;
 
         long totalTicks;
 
-        ThrowRows(String by) {
+        ThrowRows(@Nullable String by) {
             this.by = by;
         }
 
@@ -200,7 +202,7 @@ final class ThrowsCommand {
                 .thenComparing(byIds);
     }
 
-    private static Out.Table table(String by) {
+    private static Out.Table table(@Nullable String by) {
         if (by == null) {
             return new Out.Table(">calls", ">total_ms", ">slowest", "thrower", "catcher", "exception");
         }

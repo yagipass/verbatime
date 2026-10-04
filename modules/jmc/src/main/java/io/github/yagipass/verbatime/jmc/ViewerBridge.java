@@ -1,8 +1,11 @@
 package io.github.yagipass.verbatime.jmc;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+
+import org.jspecify.annotations.Nullable;
 
 final class ViewerBridge {
 
@@ -37,7 +40,7 @@ final class ViewerBridge {
 
         void reload();
 
-        void select(SelectedCall frame);
+        void select(@Nullable SelectedCall frame);
 
         void requestSearch(long reqId, String query);
 
@@ -52,7 +55,7 @@ final class ViewerBridge {
 
     private final AtomicLong generation = new AtomicLong();
 
-    private Page page;
+    private @Nullable Page page;
 
     ViewerBridge(UiThread ui, Host host) {
         this.ui = ui;
@@ -86,7 +89,7 @@ final class ViewerBridge {
     }
 
     boolean focus() {
-        return isOpen() && page.focus();
+        return isOpen() && Objects.requireNonNull(page).focus();
     }
 
     long generation() {
@@ -141,7 +144,7 @@ final class ViewerBridge {
 
     private void execute(String js) {
         if (isOpen()) {
-            page.execute(js);
+            Objects.requireNonNull(page).execute(js);
         }
     }
 

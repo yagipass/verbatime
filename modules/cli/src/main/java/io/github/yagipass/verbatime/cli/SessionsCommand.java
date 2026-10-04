@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 
 import com.google.errorprone.annotations.Var;
@@ -43,7 +44,7 @@ final class SessionsCommand {
         Names names = new Names(file);
         String sort = args.choice("sort", "start", "start", "dur", "calls");
         int limit = args.positiveInt("limit", 20);
-        MethodPattern root = args.has("root") ? MethodPattern.resolve(file, names, args.value("root"), true)
+        MethodPattern root = args.has("root") ? MethodPattern.resolve(file, names, Objects.requireNonNull(args.value("root")), true)
                 : null;
         String thread = args.value("thread");
 

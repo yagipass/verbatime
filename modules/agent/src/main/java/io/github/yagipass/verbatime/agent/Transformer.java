@@ -7,6 +7,8 @@ import java.security.ProtectionDomain;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jspecify.annotations.Nullable;
+
 import io.github.yagipass.verbatime.agent.probe.Log;
 import io.github.yagipass.verbatime.agent.probe.MethodRegistry;
 import io.github.yagipass.verbatime.format.Vbtm;
@@ -19,7 +21,7 @@ public final class Transformer implements ClassFileTransformer {
 
     private final Roots roots;
 
-    private final String gateClassInternal;
+    private final @Nullable String gateClassInternal;
 
     private final AtomicInteger instrumentedClasses = new AtomicInteger();
 
@@ -31,7 +33,7 @@ public final class Transformer implements ClassFileTransformer {
 
     private final AtomicBoolean idLimitWarned = new AtomicBoolean();
 
-    Transformer(Config config, Roots roots, String gateClassInternal) {
+    Transformer(Config config, Roots roots, @Nullable String gateClassInternal) {
         this.config = config;
         this.roots = roots;
         this.gateClassInternal = gateClassInternal;
@@ -41,7 +43,7 @@ public final class Transformer implements ClassFileTransformer {
         return neverInstrumentedPrefix(internalName) != null;
     }
 
-    static String neverInstrumentedPrefix(String internalName) {
+    static @Nullable String neverInstrumentedPrefix(String internalName) {
         for (String p : NEVER_INSTRUMENTED) {
             if (internalName.startsWith(p)) {
                 return p;
@@ -68,7 +70,7 @@ public final class Transformer implements ClassFileTransformer {
 
     @SuppressWarnings("ReferenceEquality")
     @Override
-    public byte[] transform(Module module, ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
+    public byte @Nullable [] transform(Module module, @Nullable ClassLoader loader, @Nullable String className, @Nullable Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
         if (loader == null || loader == ClassLoader.getPlatformClassLoader()) {
             return null;
         }
@@ -92,7 +94,7 @@ public final class Transformer implements ClassFileTransformer {
         }
     }
 
-    byte[] instrument(String internalName, byte[] bytes, boolean injectGate) {
+    byte @Nullable [] instrument(String internalName, byte[] bytes, boolean injectGate) {
         ClassFile cf = ClassFile.of();
         ClassModel cm = cf.parse(bytes);
         String binaryName = internalName.replace('/', '.');
@@ -123,13 +125,13 @@ public final class Transformer implements ClassFileTransformer {
         return out;
     }
 
-    private static byte[] injectGateOnly(String internalName, byte[] bytes) {
+    private static byte @Nullable [] injectGateOnly(String internalName, byte[] bytes) {
         ClassFile cf = ClassFile.of();
         ClassModel cm = cf.parse(bytes);
         return injectGateOnly(cf, cm, internalName.replace('/', '.'), StartupGateTransform.launcherMainSig(cm));
     }
 
-    private static byte[] injectGateOnly(ClassFile cf, ClassModel cm, String binaryName, String gateSig) {
+    private static byte @Nullable [] injectGateOnly(ClassFile cf, ClassModel cm, String binaryName, @Nullable String gateSig) {
         StartupGateTransform.logArmed(binaryName, gateSig);
         if (gateSig == null) {
             return null;

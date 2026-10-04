@@ -6,6 +6,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.browser.BrowserFunction;
 import org.eclipse.swt.widgets.Composite;
+import org.jspecify.annotations.Nullable;
 
 final class BrowserPage implements ViewerBridge.Page {
 
@@ -25,7 +26,7 @@ final class BrowserPage implements ViewerBridge.Page {
     public void define(String name, Consumer<Object[]> body) {
         new BrowserFunction(browser, name) {
             @Override
-            public Object function(Object[] args) {
+            public @Nullable Object function(Object[] args) {
                 body.accept(args);
                 return null;
             }

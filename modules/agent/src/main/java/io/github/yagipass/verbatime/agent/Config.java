@@ -4,17 +4,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.errorprone.annotations.Var;
 
 import io.github.yagipass.verbatime.agent.probe.Log;
 
-public record Config(List<String> includes, List<String> excludes, List<RootSpec> roots, String out, String spoolDir, long waitStartMs, RecordStart recordStart) {
+public record Config(List<String> includes, List<String> excludes, List<RootSpec> roots, @Nullable String out, @Nullable String spoolDir, long waitStartMs, RecordStart recordStart) {
 
-    static Config parse(String args) {
+    static Config parse(@Nullable String args) {
         return parse(args, Log::warn);
     }
 
-    static Config parse(String args, Consumer<String> warn) {
+    static Config parse(@Nullable String args, Consumer<String> warn) {
         List<String> includes = new ArrayList<>();
         List<String> excludes = new ArrayList<>();
         List<RootSpec> roots = new ArrayList<>();
@@ -87,7 +89,7 @@ public record Config(List<String> includes, List<String> excludes, List<RootSpec
         }
     }
 
-    private static void rejectStartupWithout(List<RootSpec> roots, String out, String spoolDir, long waitStartMs) {
+    private static void rejectStartupWithout(List<RootSpec> roots, @Nullable String out, @Nullable String spoolDir, long waitStartMs) {
         if (roots.isEmpty()) {
             throw new IllegalArgumentException("record=startup needs roots=, as in roots=pkg.Cls::method: no JMX client sets them in this mode");
         }

@@ -12,6 +12,8 @@ import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.errorprone.annotations.Var;
 
 import io.github.yagipass.verbatime.agent.probe.Log;
@@ -47,7 +49,7 @@ final class StartupGateTransform {
         cob.invokestatic(GATE, "await", VOID_NOARG);
     }
 
-    static String launcherMainSig(ClassModel cm) {
+    static @Nullable String launcherMainSig(ClassModel cm) {
         @Var String noArg = null;
         for (MethodModel mm : cm.methods()) {
             if (!mm.methodName().equalsString(MAIN_NAME) || mm.code().isEmpty() || (mm.flags().flagsMask() & ClassFile.ACC_PRIVATE) != 0) {
@@ -67,7 +69,7 @@ final class StartupGateTransform {
         return ClassTransform.transformingMethods(mm -> sig.equals(mm.methodName().stringValue() + mm.methodType().stringValue()), MethodTransform.transformingCode(PREPEND_AWAIT));
     }
 
-    static void logArmed(String binaryName, String sig) {
+    static void logArmed(String binaryName, @Nullable String sig) {
         if (sig != null) {
             Log.info("startup gate armed on " + binaryName + "::" + (sig.endsWith(MAIN_NOARG_DESC) ? "main()" : "main(String[])"));
         } else {

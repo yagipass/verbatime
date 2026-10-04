@@ -24,6 +24,7 @@ import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.jspecify.annotations.Nullable;
 
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot.Session;
@@ -37,7 +38,7 @@ final class SessionExportDialog extends Dialog {
 
     private final TraceSnapshot data;
 
-    private final Session preselected;
+    private final @Nullable Session preselected;
 
     private TableViewer viewer;
 
@@ -47,13 +48,13 @@ final class SessionExportDialog extends Dialog {
 
     private boolean scheduled;
 
-    private SessionExportDialog(Shell parent, TraceSnapshot data, Session preselected) {
+    private SessionExportDialog(Shell parent, TraceSnapshot data, @Nullable Session preselected) {
         super(parent);
         this.data = data;
         this.preselected = preselected;
     }
 
-    static boolean openAndSchedule(Shell parent, TraceSnapshot data, SelectedCall selection) {
+    static boolean openAndSchedule(Shell parent, TraceSnapshot data, @Nullable SelectedCall selection) {
         SessionExportDialog d = new SessionExportDialog(parent, data, SessionExportTexts.defaultSession(data, selection));
         d.open();
         return d.scheduled;
@@ -148,7 +149,7 @@ final class SessionExportDialog extends Dialog {
         Columns.addTable(viewer, title, width, style,
                 new Columns.ColumnLabels<>(Session.class, text, s -> SessionExportTexts.rootName(data, s), mono) {
                     @Override
-                    public Color getForeground(Object element) {
+                    public @Nullable Color getForeground(Object element) {
                         return element instanceof Session s && !SessionExportTexts.isExportable(s)
                                 ? viewer.getControl().getDisplay().getSystemColor(SWT.COLOR_WIDGET_DISABLED_FOREGROUND)
                                 : null;
@@ -163,7 +164,7 @@ final class SessionExportDialog extends Dialog {
         updateState();
     }
 
-    private Session selected() {
+    private @Nullable Session selected() {
         return viewer.getSelection() instanceof IStructuredSelection sel
                 && sel.getFirstElement() instanceof Session s ? s : null;
     }

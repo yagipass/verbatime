@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.errorprone.annotations.Var;
 
 import io.github.yagipass.verbatime.agent.probe.Log;
@@ -96,7 +98,7 @@ public final class Roots {
         Probe.replaceRootBits(bits);
     }
 
-    private RootSpec specMatching(String binaryName, String sig) {
+    private @Nullable RootSpec specMatching(String binaryName, String sig) {
         String name = MethodRegistry.methodNameOf(sig);
         String desc = sig.substring(name.length());
         for (RootSpec s : specs) {

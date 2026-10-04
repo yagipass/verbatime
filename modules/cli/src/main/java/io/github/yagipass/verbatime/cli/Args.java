@@ -9,6 +9,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.errorprone.annotations.Var;
 
 final class Args {
@@ -60,6 +62,7 @@ final class Args {
         return options.containsKey(name);
     }
 
+    @Nullable
     String value(String name) {
         return options.get(name);
     }
@@ -111,6 +114,7 @@ final class Args {
         return positionals.get(i);
     }
 
+    @Nullable
     String positionalOrNull(int i) {
         return i < positionals.size() ? positionals.get(i) : null;
     }
@@ -125,7 +129,7 @@ final class Args {
         return commandWith(name, String.valueOf(value));
     }
 
-    String commandWith(String... pairs) {
+    String commandWith(@Nullable String... pairs) {
         Map<String, String> o = new LinkedHashMap<>(options);
         for (int i = 0; i < pairs.length; i += 2) {
             if (pairs[i + 1] == null) {

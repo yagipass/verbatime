@@ -1,20 +1,22 @@
 package io.github.yagipass.verbatime.agent.jmx;
 
+import org.jspecify.annotations.Nullable;
+
 public interface VerbatimeControlMBean {
 
     String[] status();
 
-    String[] searchMethods(String query, int max);
+    String[] searchMethods(@Nullable String query, int max);
 
-    void replaceRoots(String[] specs);
+    void replaceRoots(@Nullable String @Nullable [] specs);
 
-    long startRecording(String name);
+    long startRecording(@Nullable String name);
 
     void stopRecording();
 
     long openStream(long recordingId, long fromOffset);
 
-    byte[] readStream(long streamId);
+    byte @Nullable [] readStream(long streamId);
 
     void closeStream(long streamId);
 }

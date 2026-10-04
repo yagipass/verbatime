@@ -8,7 +8,10 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.jspecify.annotations.Nullable;
 
 import com.google.errorprone.annotations.Var;
 
@@ -29,7 +32,7 @@ public final class MappedTrace {
 
     private final AtomicInteger refs = new AtomicInteger(1);
 
-    private MappedByteBuffer[] regions;
+    private MappedByteBuffer @Nullable [] regions;
 
     private final long size;
 
@@ -82,7 +85,7 @@ public final class MappedTrace {
     public void release() {
         int n = refs.decrementAndGet();
         if (n == 0) {
-            MappedByteBuffer[] r = regions;
+            MappedByteBuffer[] r = Objects.requireNonNull(regions);
             regions = null;
             unmapAll(r);
         } else if (n < 0) {
@@ -91,7 +94,7 @@ public final class MappedTrace {
     }
 
     int byteAt(long pos) {
-        return regions[(int) (pos >>> REGION_SHIFT)].get((int) (pos & (REGION_SIZE - 1))) & 0xFF;
+        return Objects.requireNonNull(regions)[(int) (pos >>> REGION_SHIFT)].get((int) (pos & (REGION_SIZE - 1))) & 0xFF;
     }
 
     void copy(long pos, byte[] dst, int len) {
@@ -101,7 +104,7 @@ public final class MappedTrace {
             int ri = (int) (p >>> REGION_SHIFT);
             int ro = (int) (p & (REGION_SIZE - 1));
             int take = (int) Math.min(len - done, REGION_SIZE - ro);
-            regions[ri].get(ro, dst, done, take);
+            Objects.requireNonNull(regions)[ri].get(ro, dst, done, take);
             done += take;
         }
     }
@@ -116,9 +119,9 @@ public final class MappedTrace {
 
     private static final class Unmapper {
 
-        private static final Object UNSAFE;
+        private static final @Nullable Object UNSAFE;
 
-        private static final Method INVOKE_CLEANER;
+        private static final @Nullable Method INVOKE_CLEANER;
 
         static {
             @Var Object unsafe = null;

@@ -3,6 +3,9 @@ package io.github.yagipass.verbatime.cli;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
 
 import com.google.errorprone.annotations.Var;
 
@@ -37,7 +40,7 @@ final class CallTree {
                 legend.add(l.methodId);
             } else {
                 printFold(l, sessionStart);
-                if (largestFold == null || l.fold.ticks > largestFold.fold.ticks) {
+                if (largestFold == null || l.fold.ticks > Objects.requireNonNull(largestFold.fold).ticks) {
                     largestFold = l;
                 }
             }
@@ -98,7 +101,7 @@ final class CallTree {
     }
 
     private void printFold(Line l, long sessionStart) {
-        Fold fold = l.fold;
+        Fold fold = Objects.requireNonNull(l.fold);
         String parent = tree.callId(l.ordinal);
         StringBuilder sb = new StringBuilder();
         sb.append("- ").append(Formats.ms(fold.firstStartTicks - sessionStart)).append(' ')
@@ -120,18 +123,19 @@ final class CallTree {
     }
 
     private void printLargestFold(Line l, long rootOrdinal, long floor) {
+        Fold fold = Objects.requireNonNull(l.fold);
         String parent = tree.callId(l.ordinal);
         String next;
         if (l.ordinal != rootOrdinal) {
             next = tree.args.commandWith("at", parent, "floor", null);
-        } else if (l.fold.byDepth) {
+        } else if (fold.byDepth) {
             next = tree.args.commandWith("depth", tree.maxDepth + 2L);
         } else {
             next = tree.args.commandWith("floor", Formats.duration(Formats.roundUpTicks(Math.max(floor / 4, 1))));
         }
-        out.text("# largest fold: " + Formats.ms(l.fold.ticks) + " ms in " + Formats.grouped(l.fold.count)
+        out.text("# largest fold: " + Formats.ms(fold.ticks) + " ms in " + Formats.grouped(fold.count)
                 + " calls under " + parent + ". next: " + next);
-        out.json(new Json("hint").put("fold_under", parent).ms("fold_ms", l.fold.ticks).put("next", next));
+        out.json(new Json("hint").put("fold_under", parent).ms("fold_ms", fold.ticks).put("next", next));
     }
 
     private static final class Line {
@@ -154,6 +158,7 @@ final class CallTree {
 
         boolean unclosed;
 
+        @Nullable
         Fold fold;
 
         long floorTicks;

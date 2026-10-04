@@ -11,6 +11,7 @@ import org.eclipse.jface.viewers.TreeViewerColumn;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TreeColumn;
+import org.jspecify.annotations.Nullable;
 
 public final class Columns {
 
@@ -59,12 +60,12 @@ public final class Columns {
         }
 
         @Override
-        public String getToolTipText(Object element) {
+        public @Nullable String getToolTipText(Object element) {
             return type.isInstance(element) ? tip.apply(type.cast(element)) : null;
         }
 
         @Override
-        public Font getFont(Object element) {
+        public @Nullable Font getFont(Object element) {
             return mono ? JFaceResources.getTextFont() : null;
         }
     }

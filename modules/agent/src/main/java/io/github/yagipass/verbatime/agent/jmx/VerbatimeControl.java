@@ -14,6 +14,8 @@ import java.util.Locale;
 
 import javax.management.ObjectName;
 
+import org.jspecify.annotations.Nullable;
+
 import io.github.yagipass.verbatime.agent.Config;
 import io.github.yagipass.verbatime.agent.Recorder;
 import io.github.yagipass.verbatime.agent.Recording;
@@ -42,17 +44,17 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
 
     private final Recorder recorder;
 
-    private final Path outPath;
+    private final @Nullable Path outPath;
 
-    private final Path configuredSpoolDir;
+    private final @Nullable Path configuredSpoolDir;
 
     private final RecordingStreams streams = new RecordingStreams(this::discardIfDelivered);
 
-    private Path spoolDir;
+    private @Nullable Path spoolDir;
 
     private boolean spoolDirIsTemp;
 
-    private Recording lastRecording;
+    private @Nullable Recording lastRecording;
 
     public VerbatimeControl(Config config, Transformer transformer, Roots roots, Recorder recorder) {
         this.config = config;
@@ -64,9 +66,10 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
     }
 
     @Override
-    public synchronized long startRecording(String name) {
-        if (recorder.isRecording()) {
-            throw new IllegalStateException("already recording #" + recorder.current().id());
+    public synchronized long startRecording(@Nullable String name) {
+        Recording current = recorder.current();
+        if (current != null) {
+            throw new IllegalStateException("already recording #" + current.id());
         }
         if (roots.specs().isEmpty()) {
             throw new IllegalStateException("no roots are set. Apply roots before starting a recording");
@@ -102,7 +105,7 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
     }
 
     @Override
-    public String[] searchMethods(String query, int max) {
+    public String[] searchMethods(@Nullable String query, int max) {
         String q = query == null ? "" : query.trim();
         if (q.isEmpty() || max <= 0) {
             return new String[0];
@@ -111,9 +114,10 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
     }
 
     @Override
-    public synchronized void replaceRoots(String[] specs) {
-        if (recorder.isRecording()) {
-            throw new IllegalStateException("cannot change roots while recording #" + recorder.current().id() + " is running");
+    public synchronized void replaceRoots(@Nullable String @Nullable [] specs) {
+        Recording current = recorder.current();
+        if (current != null) {
+            throw new IllegalStateException("cannot change roots while recording #" + current.id() + " is running");
         }
         List<RootSpec> parsed = new ArrayList<>();
         if (specs != null) {
@@ -242,7 +246,7 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
     }
 
     @Override
-    public byte[] readStream(long streamId) {
+    public byte @Nullable [] readStream(long streamId) {
         return streams.read(streamId);
     }
 

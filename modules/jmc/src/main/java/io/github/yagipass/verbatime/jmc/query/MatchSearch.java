@@ -2,6 +2,8 @@ package io.github.yagipass.verbatime.jmc.query;
 
 import java.util.BitSet;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.errorprone.annotations.Var;
 
 import io.github.yagipass.verbatime.jmc.index.ChunkWalker;
@@ -34,7 +36,7 @@ public final class MatchSearch {
         }
     }
 
-    public static Match nextMatch(TraceSnapshot data, BitSet methods, long afterNs) {
+    public static @Nullable Match nextMatch(TraceSnapshot data, BitSet methods, long afterNs) {
         @Var Match best = null;
         for (ThreadIndex m : data.threads) {
             @Var Match ovm = null;
@@ -58,7 +60,7 @@ public final class MatchSearch {
         return best;
     }
 
-    public static Match prevMatch(TraceSnapshot data, BitSet methods, long beforeNs) {
+    public static @Nullable Match prevMatch(TraceSnapshot data, BitSet methods, long beforeNs) {
         @Var Match best = null;
         for (ThreadIndex m : data.threads) {
             @Var Match ovm = null;
@@ -82,7 +84,7 @@ public final class MatchSearch {
         return best;
     }
 
-    private static Match fineNext(TraceSnapshot data, ThreadIndex m, BitSet methods,
+    private static @Nullable Match fineNext(TraceSnapshot data, ThreadIndex m, BitSet methods,
             long afterNs, long upperBoundNs) {
         long d = data.overviewThresholdNs;
         if (d <= 0) {
@@ -124,7 +126,7 @@ public final class MatchSearch {
         return out[0];
     }
 
-    private static Match finePrev(TraceSnapshot data, ThreadIndex m, BitSet methods,
+    private static @Nullable Match finePrev(TraceSnapshot data, ThreadIndex m, BitSet methods,
             long beforeNs, long lowerBoundNs) {
         long d = data.overviewThresholdNs;
         if (d <= 0) {

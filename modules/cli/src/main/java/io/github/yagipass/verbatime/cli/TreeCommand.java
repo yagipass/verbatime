@@ -4,6 +4,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.google.errorprone.annotations.Var;
@@ -81,7 +82,7 @@ final class TreeCommand {
         TraceFile.Session session;
         @Var long at = -1;
         if (args.has("at")) {
-            CallId id = CallId.parse(args.value("at"));
+            CallId id = CallId.parse(Objects.requireNonNull(args.value("at")));
             session = file.session(id.session());
             at = id.ordinal();
             String sessionRef = args.positionalOrNull(1);

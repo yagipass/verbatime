@@ -1,5 +1,7 @@
 package io.github.yagipass.verbatime.cli;
 
+import org.jspecify.annotations.Nullable;
+
 final class Json {
 
     private final StringBuilder sb = new StringBuilder("{");
@@ -8,7 +10,7 @@ final class Json {
         put("type", type);
     }
 
-    Json put(String key, String value) {
+    Json put(String key, @Nullable String value) {
         key(key);
         if (value == null) {
             sb.append("null");

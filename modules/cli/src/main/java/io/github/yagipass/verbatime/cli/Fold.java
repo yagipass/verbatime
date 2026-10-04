@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
 
 final class Fold {
 
@@ -19,6 +22,7 @@ final class Fold {
 
     boolean byDepth;
 
+    @Nullable
     Map<Integer, Long> countByMethod;
 
     void add(int methodId, long startTicks, long durTicks, long subtreeCalls,
@@ -59,7 +63,7 @@ final class Fold {
     }
 
     String methodsText(Names names, int max) {
-        return methodsText(countByMethod, names, max);
+        return methodsText(Objects.requireNonNull(countByMethod), names, max);
     }
 
     static String methodsText(Map<Integer, Long> countByMethod, Names names, int max) {

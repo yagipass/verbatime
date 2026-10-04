@@ -3,10 +3,12 @@ package io.github.yagipass.verbatime.jmc;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import io.github.yagipass.verbatime.jmc.query.SubtreeAggregate;
 
 public record SelectedCall(long tid, long startNs, long durNs, long selfNs, int depth, int methodId,
-        int exceptionId, boolean unclosed, List<Ancestor> ancestors, SubtreeAggregate subtree, String subtreeError) {
+        int exceptionId, boolean unclosed, List<Ancestor> ancestors, @Nullable SubtreeAggregate subtree, @Nullable String subtreeError) {
 
     static final String NOT_FOUND = "Selected call was not found in the recording";
 

@@ -4,6 +4,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.errorprone.annotations.Var;
 
 import io.github.yagipass.verbatime.jmc.export.SessionExporter;
@@ -27,7 +29,7 @@ public final class SessionExportTexts {
         return floorUs * 1_000L;
     }
 
-    static Session defaultSession(TraceSnapshot d, SelectedCall f) {
+    static @Nullable Session defaultSession(TraceSnapshot d, @Nullable SelectedCall f) {
         if (f != null) {
             Session s = d.sessionAt(f.tid(), f.startNs());
             if (s != null) {

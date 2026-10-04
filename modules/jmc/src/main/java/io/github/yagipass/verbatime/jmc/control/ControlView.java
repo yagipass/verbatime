@@ -2,6 +2,7 @@ package io.github.yagipass.verbatime.jmc.control;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -25,6 +26,7 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.part.ViewPart;
+import org.jspecify.annotations.Nullable;
 
 import com.google.errorprone.annotations.Var;
 
@@ -72,9 +74,9 @@ public final class ControlView extends ViewPart {
 
     private Label countLabel;
 
-    private Shell popup;
+    private @Nullable Shell popup;
 
-    private Table popupTable;
+    private @Nullable Table popupTable;
 
     private Label statusLabel;
 
@@ -311,16 +313,17 @@ public final class ControlView extends ViewPart {
         if (popup == null || popup.isDisposed()) {
             popup = new Shell(searchText.getShell(), SWT.NO_TRIM | SWT.ON_TOP | SWT.TOOL);
             popup.setLayout(zeroMargin(new GridLayout(1, false)));
-            popupTable = new Table(popup, SWT.SINGLE | SWT.FULL_SELECTION | SWT.NO_FOCUS);
-            popupTable.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-            popupTable.addListener(SWT.MouseDown, e -> {
-                TableItem it = popupTable.getItem(new Point(e.x, e.y));
+            Table table = new Table(popup, SWT.SINGLE | SWT.FULL_SELECTION | SWT.NO_FOCUS);
+            popupTable = table;
+            table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+            table.addListener(SWT.MouseDown, e -> {
+                TableItem it = table.getItem(new Point(e.x, e.y));
                 if (it != null) {
                     addRoot(it.getText());
                 }
             });
         }
-        popupTable.removeAll();
+        Objects.requireNonNull(popupTable).removeAll();
         for (String s : items) {
             new TableItem(popupTable, SWT.NONE).setText(s);
         }
@@ -347,7 +350,7 @@ public final class ControlView extends ViewPart {
             return;
         }
         if (e.keyCode == SWT.ARROW_DOWN || e.keyCode == SWT.ARROW_UP) {
-            int n = popupTable.getItemCount();
+            int n = Objects.requireNonNull(popupTable).getItemCount();
             int i = popupTable.getSelectionIndex() + (e.keyCode == SWT.ARROW_DOWN ? 1 : -1);
             popupTable.setSelection(Math.max(0, Math.min(n - 1, i)));
             e.doit = false;
@@ -358,7 +361,7 @@ public final class ControlView extends ViewPart {
     }
 
     private void onSearchEnter() {
-        if (popupVisible() && popupTable.getSelectionIndex() >= 0) {
+        if (popupVisible() && Objects.requireNonNull(popupTable).getSelectionIndex() >= 0) {
             addRoot(popupTable.getSelection()[0].getText());
             return;
         }
@@ -409,7 +412,7 @@ public final class ControlView extends ViewPart {
         }
 
         @Override
-        public ControlPresenter.EditorHandle openEditor(Path file) {
+        public ControlPresenter.@Nullable EditorHandle openEditor(Path file) {
             RecordingEditor editor = RecordingEditorInput.openOrReport(getSite().getPage(), file, ControlView.this::setMessage);
             return editor == null ? null : new WorkbenchEditorHandle(editor);
         }

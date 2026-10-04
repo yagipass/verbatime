@@ -11,7 +11,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.jspecify.annotations.Nullable;
 
 import com.google.errorprone.annotations.Var;
 
@@ -79,7 +82,7 @@ public final class TraceIndexer {
 
     private boolean closed;
 
-    private MappedTrace buf;
+    private @Nullable MappedTrace buf;
 
     private long size;
 
@@ -117,7 +120,7 @@ public final class TraceIndexer {
 
     private boolean anchorRead;
 
-    private byte[] header;
+    private byte @Nullable [] header;
 
     private final Map<String, String> gcLabels = new HashMap<>();
 
@@ -125,7 +128,7 @@ public final class TraceIndexer {
 
         private final long tid;
 
-        private SessionState session;
+        private @Nullable SessionState session;
 
         private long lastTicks;
 
@@ -193,8 +196,7 @@ public final class TraceIndexer {
     }
 
     private void reset() {
-        data = new TraceSnapshot.Builder();
-        data.path = path;
+        data = new TraceSnapshot.Builder(path);
         data.generation = GENERATIONS.incrementAndGet();
         durationHistogram = new long[DurationHistogram.SIZE];
         states = new HashMap<>();
@@ -225,7 +227,7 @@ public final class TraceIndexer {
         }
     }
 
-    private MappedTrace acquire() {
+    private @Nullable MappedTrace acquire() {
         synchronized (lock) {
             if (closed) {
                 throw new CancelledException();
@@ -272,7 +274,7 @@ public final class TraceIndexer {
         }
     }
 
-    private MappedTrace remap(MappedTrace guard) throws IOException {
+    private MappedTrace remap(@Nullable MappedTrace guard) throws IOException {
         MappedTrace fresh = MappedTrace.open(path);
         MappedTrace old;
         synchronized (lock) {
@@ -314,7 +316,7 @@ public final class TraceIndexer {
                     + "-byte magic \"" + Vbtm.MAGIC + "\"");
         }
         byte[] magic = new byte[Vbtm.MAGIC_BYTES];
-        buf.copy(0, magic, magic.length);
+        Objects.requireNonNull(buf).copy(0, magic, magic.length);
         if (!Vbtm.hasMagic(magic, 0, magic.length)) {
             throw new NotTraceFormatException(
                     path.getFileName() + ": not a supported recording, expected the magic \"" + Vbtm.MAGIC + "\"");
@@ -327,7 +329,7 @@ public final class TraceIndexer {
         if (size <= Vbtm.VERSION_OFFSET) {
             return false;
         }
-        int version = buf.byteAt(Vbtm.VERSION_OFFSET);
+        int version = Objects.requireNonNull(buf).byteAt(Vbtm.VERSION_OFFSET);
         if (version != Vbtm.VERSION) {
             throw new NotTraceFormatException(path.getFileName() + ": format version " + version
                     + " is not supported, this plugin reads version " + Vbtm.VERSION);
@@ -342,7 +344,7 @@ public final class TraceIndexer {
         if (size <= at) {
             return false;
         }
-        if (buf.byteAt(at) != Vbtm.RECORD_ANCHOR) {
+        if (Objects.requireNonNull(buf).byteAt(at) != Vbtm.RECORD_ANCHOR) {
             corrupt(at, "expected the anchor record at offset " + at);
             return false;
         }
@@ -372,7 +374,7 @@ public final class TraceIndexer {
             return false;
         }
         byte[] now = new byte[Vbtm.HEADER_BYTES];
-        buf.copy(0, now, now.length);
+        Objects.requireNonNull(buf).copy(0, now, now.length);
         return !Arrays.equals(header, now);
     }
 
@@ -404,7 +406,7 @@ public final class TraceIndexer {
                 throw new CancelledException();
             }
             long recStart = pos;
-            int type = buf.byteAt(pos++);
+            int type = Objects.requireNonNull(buf).byteAt(pos++);
             try {
                 switch (type) {
                     case Vbtm.RECORD_THREAD -> {
@@ -563,7 +565,7 @@ public final class TraceIndexer {
         if (scratch.length < len) {
             scratch = DecodeScratch.allocate(len);
         }
-        buf.copy(fileOffset, scratch, len);
+        Objects.requireNonNull(buf).copy(fileOffset, scratch, len);
         int openDepthAtStart = st.stack.depth();
         EventCursor cur = eventCursor;
         cur.reset(scratch, 0, len, baseTicks);
@@ -594,7 +596,7 @@ public final class TraceIndexer {
             } else {
                 if (e == EventCursor.Event.CORRUPT) {
                     corrupt(fileOffset + cur.eventIndex(),
-                            faultReason(cur.fault(), cur.faultValue(), fileOffset + cur.eventIndex()));
+                            faultReason(Objects.requireNonNull(cur.fault()), cur.faultValue(), fileOffset + cur.eventIndex()));
                 }
                 if (cur.decodedEvents() > 0) {
                     st.lastTicks = cur.ticks();
@@ -680,9 +682,9 @@ public final class TraceIndexer {
                 open.add(st);
             }
         }
-        open.sort(Comparator.comparingInt(st -> st.session.seq));
+        open.sort(Comparator.comparingInt(st -> Objects.requireNonNull(st.session).seq));
         for (ThreadState st : open) {
-            closeOpenCalls(st, st.session);
+            closeOpenCalls(st, Objects.requireNonNull(st.session));
             st.session = null;
         }
 
@@ -719,7 +721,7 @@ public final class TraceIndexer {
             if (pos >= size) {
                 throw TruncatedException.INSTANCE;
             }
-            int b = buf.byteAt(pos++);
+            int b = Objects.requireNonNull(buf).byteAt(pos++);
             v |= (long) (b & 0x7F) << shift;
             if ((b & 0x80) == 0) {
                 return v;
@@ -739,7 +741,7 @@ public final class TraceIndexer {
             throw TruncatedException.INSTANCE;
         }
         byte[] b = new byte[(int) len];
-        buf.copy(pos, b, (int) len);
+        Objects.requireNonNull(buf).copy(pos, b, (int) len);
         pos += len;
         return new String(b, StandardCharsets.UTF_8);
     }

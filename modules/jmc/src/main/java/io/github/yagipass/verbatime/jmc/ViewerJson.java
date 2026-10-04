@@ -1,6 +1,9 @@
 package io.github.yagipass.verbatime.jmc;
 
 import java.util.BitSet;
+import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
 
 import com.google.errorprone.annotations.Var;
 
@@ -85,7 +88,7 @@ public final class ViewerJson {
         if (d.corruptOffset >= 0) {
             sb.append(",\"corruptOffset\":").append(d.corruptOffset);
             sb.append(",\"corruptReason\":");
-            Json.appendQuoted(sb, d.corruptReason);
+            Json.appendQuoted(sb, Objects.requireNonNull(d.corruptReason));
         }
         int size = d.sessions.size();
         boolean reset = cursor.generation != d.generation || size < cursor.sent;
@@ -258,7 +261,7 @@ public final class ViewerJson {
         return sb.toString();
     }
 
-    public static String matchJson(long reqId, MatchSearch.Match m) {
+    public static String matchJson(long reqId, MatchSearch.@Nullable Match m) {
         StringBuilder sb = new StringBuilder(160);
         sb.append("{\"reqId\":").append(reqId);
         if (m == null) {

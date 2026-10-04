@@ -3,6 +3,7 @@ package io.github.yagipass.verbatime.jmc;
 import java.nio.file.Path;
 import java.util.BitSet;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -23,6 +24,7 @@ import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.IPathEditorInput;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.part.EditorPart;
+import org.jspecify.annotations.Nullable;
 
 import com.google.errorprone.annotations.Var;
 
@@ -54,13 +56,13 @@ public final class RecordingEditor extends EditorPart {
 
     private ViewerBridge bridge;
 
-    private Label statusLabel;
+    private @Nullable Label statusLabel;
 
-    private volatile TraceSnapshot trace;
+    private volatile @Nullable TraceSnapshot trace;
 
-    private TraceIndexer indexer;
+    private @Nullable TraceIndexer indexer;
 
-    private Job loadJob;
+    private @Nullable Job loadJob;
 
     private ExecutorService queryWorker;
 
@@ -74,7 +76,7 @@ public final class RecordingEditor extends EditorPart {
 
     private final ListenerList<Listener> listeners = new ListenerList<>();
 
-    private SelectedCall selection;
+    private @Nullable SelectedCall selection;
 
     private long selectionSeq;
 
@@ -182,7 +184,7 @@ public final class RecordingEditor extends EditorPart {
                 }
                 return Status.CANCEL_STATUS;
             } catch (TraceIndexer.NotTraceFormatException e) {
-                String msg = e.getMessage();
+                String msg = Objects.requireNonNull(e.getMessage());
                 bridge.postIfCurrent(gen, () -> closeViewerAndShow(msg));
                 return Status.OK_STATUS;
             } catch (Exception e) {
@@ -225,11 +227,11 @@ public final class RecordingEditor extends EditorPart {
         }
     }
 
-    public TraceSnapshot trace() {
+    public @Nullable TraceSnapshot trace() {
         return trace;
     }
 
-    public SelectedCall selection() {
+    public @Nullable SelectedCall selection() {
         return selection;
     }
 
@@ -241,7 +243,7 @@ public final class RecordingEditor extends EditorPart {
         listeners.remove(l);
     }
 
-    public void zoomTo(SelectedCall f) {
+    public void zoomTo(@Nullable SelectedCall f) {
         if (f != null && trace != null) {
             bridge.zoomTo(f);
         }
@@ -307,7 +309,7 @@ public final class RecordingEditor extends EditorPart {
         }
 
         @Override
-        public void select(SelectedCall frame) {
+        public void select(@Nullable SelectedCall frame) {
             onSelect(frame);
         }
 
@@ -361,7 +363,7 @@ public final class RecordingEditor extends EditorPart {
         });
     }
 
-    private void onSelect(SelectedCall f) {
+    private void onSelect(@Nullable SelectedCall f) {
         long seq = ++selectionSeq;
         if (f == null) {
             setSelection(null);
@@ -400,7 +402,7 @@ public final class RecordingEditor extends EditorPart {
         });
     }
 
-    private void setSelection(SelectedCall f) {
+    private void setSelection(@Nullable SelectedCall f) {
         selection = f;
         for (Listener l : listeners) {
             l.selectionChanged();

@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.jspecify.annotations.Nullable;
+
 import io.github.yagipass.verbatime.agent.Recording;
 import io.github.yagipass.verbatime.agent.probe.Log;
 
@@ -71,7 +73,7 @@ final class RecordingStreams {
         }
     }
 
-    byte[] read(long streamId) {
+    byte @Nullable [] read(long streamId) {
         retireAll(RecordingStreams::isIdle, true);
         Stream s;
         synchronized (this) {
@@ -96,7 +98,7 @@ final class RecordingStreams {
         return out;
     }
 
-    private static byte[] readLocked(Stream s) throws IOException {
+    private static byte @Nullable [] readLocked(Stream s) throws IOException {
         boolean closed = s.recording.closed();
         long avail = s.recording.writer().committedBytes() - s.offset;
         if (avail <= 0) {

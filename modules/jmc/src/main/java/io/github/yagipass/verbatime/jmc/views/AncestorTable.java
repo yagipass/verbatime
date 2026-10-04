@@ -10,6 +10,7 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
+import org.jspecify.annotations.Nullable;
 
 import com.google.errorprone.annotations.Var;
 
@@ -28,7 +29,7 @@ final class AncestorTable extends Canvas {
 
     private List<Row> rows = List.of();
 
-    private String hoverTip;
+    private @Nullable String hoverTip;
 
     private int paintedRowH;
 

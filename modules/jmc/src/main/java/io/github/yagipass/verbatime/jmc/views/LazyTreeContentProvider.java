@@ -4,6 +4,7 @@ import java.util.function.Supplier;
 
 import org.eclipse.jface.viewers.ILazyTreeContentProvider;
 import org.eclipse.jface.viewers.TreeViewer;
+import org.jspecify.annotations.Nullable;
 
 final class LazyTreeContentProvider<R> implements ILazyTreeContentProvider {
 
@@ -19,6 +20,7 @@ final class LazyTreeContentProvider<R> implements ILazyTreeContentProvider {
 
         R child(R r, int i);
 
+        @Nullable
         R parent(R r);
     }
 
@@ -26,9 +28,9 @@ final class LazyTreeContentProvider<R> implements ILazyTreeContentProvider {
 
     private final Class<R> type;
 
-    private final Supplier<Source<R>> source;
+    private final Supplier<@Nullable Source<R>> source;
 
-    LazyTreeContentProvider(TreeViewer viewer, Class<R> type, Supplier<Source<R>> source) {
+    LazyTreeContentProvider(TreeViewer viewer, Class<R> type, Supplier<@Nullable Source<R>> source) {
         this.viewer = viewer;
         this.type = type;
         this.source = source;
@@ -55,7 +57,7 @@ final class LazyTreeContentProvider<R> implements ILazyTreeContentProvider {
     }
 
     @Override
-    public Object getParent(Object element) {
+    public @Nullable Object getParent(Object element) {
         Source<R> src = source.get();
         if (src != null && type.isInstance(element)) {
             R p = src.parent(type.cast(element));

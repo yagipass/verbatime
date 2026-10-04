@@ -1,5 +1,7 @@
 package io.github.yagipass.verbatime.jmc.index;
 
+import org.jspecify.annotations.Nullable;
+
 final class DecodeScratch {
 
     private static final int MIN_BYTES = 1 << 16;
@@ -22,7 +24,7 @@ final class DecodeScratch {
         return new byte[Math.max(Integer.highestOneBit(len) * 2, MIN_BYTES)];
     }
 
-    static void give(byte[] b) {
+    static void give(byte @Nullable [] b) {
         if (b != null) {
             FREE.set(b);
         }

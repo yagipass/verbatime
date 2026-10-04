@@ -4,6 +4,8 @@ import java.lang.instrument.Instrumentation;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.jspecify.annotations.Nullable;
+
 import io.github.yagipass.verbatime.agent.jmx.VerbatimeControl;
 import io.github.yagipass.verbatime.agent.probe.Log;
 import io.github.yagipass.verbatime.agent.probe.Probe;
@@ -13,7 +15,7 @@ public final class VerbatimeAgent {
     private VerbatimeAgent() {
     }
 
-    public static void premain(String agentArgs, Instrumentation inst) {
+    public static void premain(@Nullable String agentArgs, Instrumentation inst) {
 
         BootstrapInstaller.install(inst);
 

@@ -1,7 +1,10 @@
 package io.github.yagipass.verbatime.jmc.index;
 
-import io.github.yagipass.verbatime.format.EventCursor;
+import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
+import io.github.yagipass.verbatime.format.EventCursor;
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot.ThreadIndex;
 
 public final class ChunkCursor {
@@ -16,7 +19,7 @@ public final class ChunkCursor {
 
     private int len;
 
-    private byte[] scratch = DecodeScratch.take();
+    private byte @Nullable [] scratch = DecodeScratch.take();
 
     private boolean released;
 
@@ -36,7 +39,7 @@ public final class ChunkCursor {
         c++;
         len = (int) m.chunks.payloadLen(c);
         if (len > 0) {
-            if (scratch.length < len) {
+            if (Objects.requireNonNull(scratch).length < len) {
                 scratch = DecodeScratch.allocate(len);
             }
             buf.copy(m.chunks.payloadOffset[c], scratch, len);
@@ -57,7 +60,7 @@ public final class ChunkCursor {
     }
 
     public void open(EventCursor cursor) {
-        cursor.reset(scratch, 0, len, m.chunks.baseTicks[c]);
+        cursor.reset(Objects.requireNonNull(scratch), 0, len, m.chunks.baseTicks[c]);
     }
 
     public void release() {

@@ -5,6 +5,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.function.LongFunction;
 
+import org.jspecify.annotations.Nullable;
+
 import io.github.yagipass.verbatime.agent.probe.Log;
 import io.github.yagipass.verbatime.agent.probe.StartupGate;
 import io.github.yagipass.verbatime.agent.probe.TraceFileWriter;
@@ -16,9 +18,9 @@ public final class Recorder {
 
     private long nextRecordingId = 1;
 
-    private Recording currentRecording;
+    private @Nullable Recording currentRecording;
 
-    public synchronized Recording current() {
+    public synchronized @Nullable Recording current() {
         return currentRecording;
     }
 
@@ -59,7 +61,7 @@ public final class Recorder {
         return r;
     }
 
-    public synchronized Recording stopIfRecording(String reason) {
+    public synchronized @Nullable Recording stopIfRecording(String reason) {
         return currentRecording == null ? null : stop(reason);
     }
 }

@@ -1,5 +1,7 @@
 package io.github.yagipass.verbatime.cli;
 
+import org.jspecify.annotations.Nullable;
+
 final class CliException extends RuntimeException {
 
     static final int USAGE = 1;
@@ -12,15 +14,15 @@ final class CliException extends RuntimeException {
 
     private final int exitCode;
 
-    private final String hint;
+    private final @Nullable String hint;
 
-    CliException(int exitCode, String message, String hint) {
+    CliException(int exitCode, String message, @Nullable String hint) {
         super(message);
         this.exitCode = exitCode;
         this.hint = hint;
     }
 
-    static CliException usage(String message, String hint) {
+    static CliException usage(String message, @Nullable String hint) {
         return new CliException(USAGE, message, hint);
     }
 
@@ -28,6 +30,7 @@ final class CliException extends RuntimeException {
         return exitCode;
     }
 
+    @Nullable
     String hint() {
         return hint;
     }
