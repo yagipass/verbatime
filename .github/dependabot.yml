@@ -30,6 +30,12 @@ updates:
         versions: ["[3,)"]
       - dependency-name: "org.scala-lang:scala3-library_3"
         versions: ["[3.8,)"]
+      - dependency-name: "org.scala-lang:scala3-compiler_3"
+        versions: ["[3.8,)"]
+      - dependency-name: "org.scala-lang:scala3-interfaces"
+        versions: ["[3.8,)"]
+      - dependency-name: "org.scala-lang:tasty-core_3"
+        versions: ["[3.8,)"]
 
   - package-ecosystem: maven
     directory: /examples
