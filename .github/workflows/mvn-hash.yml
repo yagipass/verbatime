@@ -5,6 +5,7 @@ on:
     paths:
       - pom.xml
       - modules/*/pom.xml
+      - flake.lock
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
