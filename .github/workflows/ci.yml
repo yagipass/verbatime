@@ -40,9 +40,9 @@ jobs:
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.m2/repository
-          key: m2-agent-${{ hashFiles('pom.xml', 'modules/format/pom.xml', 'modules/agent/pom.xml') }}
+          key: m2-agent-corpus-full-${{ hashFiles('pom.xml', 'modules/format/pom.xml', 'modules/agent/pom.xml') }}
           restore-keys: m2-agent-
-      - run: nix develop .#agent --command mvn -B -pl modules/agent -am verify
+      - run: nix develop .#agent --command mvn -B -pl modules/agent -am verify -Pcorpus-full
 
   jmc:
     runs-on: ubuntu-latest
