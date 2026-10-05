@@ -175,7 +175,6 @@
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>3.12.0</version>
           <configuration>
-            <outputTimestamp>1980-01-01T00:00:02Z</outputTimestamp>
             <doclint>all,-missing</doclint>
             <additionalOptions>
               <additionalOption>--no-fonts</additionalOption>
