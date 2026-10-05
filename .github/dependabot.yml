@@ -21,6 +21,15 @@ updates:
     groups:
       eclipse:
         patterns: ["org.eclipse.platform:*", "org.osgi:*"]
+    ignore:
+      - dependency-name: "junit:junit"
+      - dependency-name: "net.bytebuddy:byte-buddy"
+      - dependency-name: "io.netty:*"
+        versions: ["[4.2,)"]
+      - dependency-name: "org.scala-lang:scala-library"
+        versions: ["[3,)"]
+      - dependency-name: "org.scala-lang:scala3-library_3"
+        versions: ["[3.8,)"]
 
   - package-ecosystem: maven
     directory: /examples
