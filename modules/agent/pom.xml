@@ -101,7 +101,7 @@
                 <artifactItem><groupId>io.netty</groupId><artifactId>netty-transport</artifactId><version>4.1.138.Final</version></artifactItem>
                 <artifactItem><groupId>io.netty</groupId><artifactId>netty-transport-native-unix-common</artifactId><version>4.1.138.Final</version></artifactItem>
                 <artifactItem><groupId>io.netty</groupId><artifactId>netty-codec</artifactId><version>4.1.138.Final</version></artifactItem>
-                <artifactItem><groupId>io.netty</groupId><artifactId>netty-codec-http</artifactId><version>4.1.138.Final</version></artifactItem>
+                <artifactItem><groupId>io.netty</groupId><artifactId>netty-codec-http</artifactId><version>4.2.18.Final</version></artifactItem>
                 <artifactItem><groupId>io.netty</groupId><artifactId>netty-handler</artifactId><version>4.1.138.Final</version></artifactItem>
                 <artifactItem><groupId>org.apache.httpcomponents</groupId><artifactId>httpclient</artifactId><version>4.5.14</version></artifactItem>
                 <artifactItem><groupId>org.apache.httpcomponents</groupId><artifactId>httpcore</artifactId><version>4.4.16</version></artifactItem>
