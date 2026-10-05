@@ -21,6 +21,32 @@ updates:
     groups:
       eclipse:
         patterns: ["org.eclipse.platform:*", "org.osgi:*"]
+      jackson:
+        patterns: ["com.fasterxml.jackson.core:*"]
+      jboss-marshalling:
+        patterns: ["org.jboss.marshalling:*"]
+      jetty:
+        patterns: ["org.eclipse.jetty:*"]
+      kotlin:
+        patterns: ["org.jetbrains.kotlin:*"]
+      log4j:
+        patterns: ["org.apache.logging.log4j:*"]
+      logback:
+        patterns: ["ch.qos.logback:*"]
+      micrometer:
+        patterns: ["io.micrometer:*"]
+      netty:
+        patterns: ["io.netty:*"]
+      scala2:
+        patterns: ["org.scala-lang:scala-library", "org.scala-lang:scala-compiler", "org.scala-lang:scala-reflect"]
+      scala3:
+        patterns: ["org.scala-lang:scala3-*", "org.scala-lang:tasty-core_3"]
+      spring-boot:
+        patterns: ["org.springframework.boot:*"]
+      spring-framework:
+        patterns: ["org.springframework:*"]
+      xalan:
+        patterns: ["xalan:*"]
     ignore:
       - dependency-name: "junit:junit"
       - dependency-name: "net.bytebuddy:byte-buddy"
