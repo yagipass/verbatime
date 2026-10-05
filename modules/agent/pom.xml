@@ -591,7 +591,7 @@
                     <artifactItem><groupId>org.apache.poi</groupId><artifactId>poi-ooxml-lite</artifactId><version>5.4.1</version></artifactItem>
                     <artifactItem><groupId>org.apache.xmlbeans</groupId><artifactId>xmlbeans</artifactId><version>5.3.0</version></artifactItem>
                     <artifactItem><groupId>com.google.protobuf</groupId><artifactId>protobuf-java</artifactId><version>4.36.2</version></artifactItem>
-                    <artifactItem><groupId>com.github.ben-manes.caffeine</groupId><artifactId>caffeine</artifactId><version>3.2.4</version></artifactItem>
+                    <artifactItem><groupId>com.github.ben-manes.caffeine</groupId><artifactId>caffeine</artifactId><version>3.3.0</version></artifactItem>
 
                     <artifactItem><groupId>org.apache.tomcat.embed</groupId><artifactId>tomcat-embed-core</artifactId><version>11.0.26</version></artifactItem>
                     <artifactItem><groupId>org.eclipse.jetty</groupId><artifactId>jetty-server</artifactId><version>12.1.13</version></artifactItem>
