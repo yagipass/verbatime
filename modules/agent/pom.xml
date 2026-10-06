@@ -110,7 +110,7 @@
                 <artifactItem><groupId>org.jetbrains.kotlinx</groupId><artifactId>kotlinx-coroutines-core-jvm</artifactId><version>1.11.0</version></artifactItem>
                 <artifactItem><groupId>org.scala-lang</groupId><artifactId>scala-library</artifactId><version>2.13.18</version></artifactItem>
                 <artifactItem><groupId>org.scala-lang</groupId><artifactId>scala3-library_3</artifactId><version>3.7.4</version></artifactItem>
-                <artifactItem><groupId>org.apache.groovy</groupId><artifactId>groovy</artifactId><version>4.0.33</version></artifactItem>
+                <artifactItem><groupId>org.apache.groovy</groupId><artifactId>groovy</artifactId><version>6.0.0</version></artifactItem>
                 <artifactItem><groupId>org.clojure</groupId><artifactId>clojure</artifactId><version>1.12.6</version></artifactItem>
                 <artifactItem><groupId>org.clojure</groupId><artifactId>spec.alpha</artifactId><version>0.5.238</version></artifactItem>
                 <artifactItem><groupId>org.clojure</groupId><artifactId>core.specs.alpha</artifactId><version>0.4.74</version></artifactItem>
