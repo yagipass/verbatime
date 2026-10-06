@@ -115,7 +115,7 @@
                 <artifactItem><groupId>org.clojure</groupId><artifactId>spec.alpha</artifactId><version>0.5.238</version></artifactItem>
                 <artifactItem><groupId>org.clojure</groupId><artifactId>core.specs.alpha</artifactId><version>0.4.74</version></artifactItem>
 
-                <artifactItem><groupId>com.h2database</groupId><artifactId>h2</artifactId><version>2.3.232</version></artifactItem>
+                <artifactItem><groupId>com.h2database</groupId><artifactId>h2</artifactId><version>2.5.252</version></artifactItem>
                 <artifactItem><groupId>org.eclipse.jdt</groupId><artifactId>ecj</artifactId><version>3.46.0</version></artifactItem>
                 <artifactItem><groupId>org.antlr</groupId><artifactId>antlr4-runtime</artifactId><version>4.13.2</version></artifactItem>
                 <artifactItem><groupId>org.apache.lucene</groupId><artifactId>lucene-core</artifactId><version>10.5.1</version></artifactItem>
