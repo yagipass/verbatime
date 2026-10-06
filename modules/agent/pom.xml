@@ -602,7 +602,7 @@
                     <artifactItem><groupId>org.jboss.xnio</groupId><artifactId>xnio-api</artifactId><version>3.8.17.Final</version></artifactItem>
                     <artifactItem><groupId>org.jgroups</groupId><artifactId>jgroups</artifactId><version>5.5.7.Final</version></artifactItem>
                     <artifactItem><groupId>org.apache.logging.log4j</groupId><artifactId>log4j-core</artifactId><version>2.26.1</version></artifactItem>
-                    <artifactItem><groupId>org.slf4j</groupId><artifactId>slf4j-api</artifactId><version>2.0.17</version></artifactItem>
+                    <artifactItem><groupId>org.slf4j</groupId><artifactId>slf4j-api</artifactId><version>2.0.20</version></artifactItem>
                     <artifactItem><groupId>ch.qos.logback</groupId><artifactId>logback-core</artifactId><version>1.6.5</version></artifactItem>
                     <artifactItem><groupId>ch.qos.logback</groupId><artifactId>logback-classic</artifactId><version>1.6.5</version></artifactItem>
                     <artifactItem><groupId>io.projectreactor</groupId><artifactId>reactor-core</artifactId><version>3.8.7</version></artifactItem>
