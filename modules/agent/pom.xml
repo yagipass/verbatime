@@ -607,7 +607,7 @@
                     <artifactItem><groupId>ch.qos.logback</groupId><artifactId>logback-classic</artifactId><version>1.6.5</version></artifactItem>
                     <artifactItem><groupId>io.projectreactor</groupId><artifactId>reactor-core</artifactId><version>3.8.7</version></artifactItem>
                     <artifactItem><groupId>org.reactivestreams</groupId><artifactId>reactive-streams</artifactId><version>1.0.4</version></artifactItem>
-                    <artifactItem><groupId>org.apache.kafka</groupId><artifactId>kafka-clients</artifactId><version>4.1.2</version></artifactItem>
+                    <artifactItem><groupId>org.apache.kafka</groupId><artifactId>kafka-clients</artifactId><version>4.3.1</version></artifactItem>
                     <artifactItem><groupId>org.springframework</groupId><artifactId>spring-web</artifactId><version>7.0.9</version></artifactItem>
                     <artifactItem><groupId>org.springframework</groupId><artifactId>spring-webmvc</artifactId><version>7.0.9</version></artifactItem>
                     <artifactItem><groupId>org.springframework</groupId><artifactId>spring-jdbc</artifactId><version>7.0.9</version></artifactItem>
