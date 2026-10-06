@@ -15,6 +15,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    open-pull-requests-limit: 30
     commit-message:
       prefix: build
       include: scope
@@ -67,6 +68,7 @@ updates:
     directory: /examples
     schedule:
       interval: weekly
+    open-pull-requests-limit: 30
     commit-message:
       prefix: build
       include: scope
