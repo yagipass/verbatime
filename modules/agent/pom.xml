@@ -588,7 +588,7 @@
                     <artifactItem><groupId>com.ibm.icu</groupId><artifactId>icu4j</artifactId><version>78.3</version></artifactItem>
                     <artifactItem><groupId>org.bouncycastle</groupId><artifactId>bcprov-jdk18on</artifactId><version>1.86</version></artifactItem>
                     <artifactItem><groupId>net.sf.saxon</groupId><artifactId>Saxon-HE</artifactId><version>13.0</version></artifactItem>
-                    <artifactItem><groupId>org.apache.poi</groupId><artifactId>poi-ooxml-lite</artifactId><version>5.4.1</version></artifactItem>
+                    <artifactItem><groupId>org.apache.poi</groupId><artifactId>poi-ooxml-lite</artifactId><version>5.5.1</version></artifactItem>
                     <artifactItem><groupId>org.apache.xmlbeans</groupId><artifactId>xmlbeans</artifactId><version>5.3.0</version></artifactItem>
                     <artifactItem><groupId>com.google.protobuf</groupId><artifactId>protobuf-java</artifactId><version>4.36.2</version></artifactItem>
                     <artifactItem><groupId>com.github.ben-manes.caffeine</groupId><artifactId>caffeine</artifactId><version>3.3.0</version></artifactItem>
