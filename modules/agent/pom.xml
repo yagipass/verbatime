@@ -582,7 +582,7 @@
                     <artifactItem><groupId>xerces</groupId><artifactId>xercesImpl</artifactId><version>2.12.2</version></artifactItem>
                     <artifactItem><groupId>org.apache.commons</groupId><artifactId>commons-math3</artifactId><version>3.6.1</version></artifactItem>
                     <artifactItem><groupId>org.mozilla</groupId><artifactId>rhino</artifactId><version>1.9.1</version></artifactItem>
-                    <artifactItem><groupId>org.aspectj</groupId><artifactId>aspectjweaver</artifactId><version>1.9.25</version></artifactItem>
+                    <artifactItem><groupId>org.aspectj</groupId><artifactId>aspectjweaver</artifactId><version>1.9.25.1</version></artifactItem>
                     <artifactItem><groupId>com.oracle.database.jdbc</groupId><artifactId>ojdbc11</artifactId><version>23.9.0.25.07</version></artifactItem>
                     <artifactItem><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><version>42.7.13</version></artifactItem>
                     <artifactItem><groupId>com.ibm.icu</groupId><artifactId>icu4j</artifactId><version>78.3</version></artifactItem>
