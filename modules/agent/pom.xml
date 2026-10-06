@@ -613,8 +613,8 @@
                     <artifactItem><groupId>org.springframework</groupId><artifactId>spring-jdbc</artifactId><version>7.0.9</version></artifactItem>
                     <artifactItem><groupId>org.springframework</groupId><artifactId>spring-tx</artifactId><version>7.0.9</version></artifactItem>
                     <artifactItem><groupId>org.springframework</groupId><artifactId>spring-orm</artifactId><version>7.0.9</version></artifactItem>
-                    <artifactItem><groupId>org.springframework.boot</groupId><artifactId>spring-boot</artifactId><version>4.0.8</version></artifactItem>
-                    <artifactItem><groupId>org.springframework.boot</groupId><artifactId>spring-boot-autoconfigure</artifactId><version>4.0.8</version></artifactItem>
+                    <artifactItem><groupId>org.springframework.boot</groupId><artifactId>spring-boot</artifactId><version>4.1.1</version></artifactItem>
+                    <artifactItem><groupId>org.springframework.boot</groupId><artifactId>spring-boot-autoconfigure</artifactId><version>4.1.1</version></artifactItem>
                     <artifactItem><groupId>org.mockito</groupId><artifactId>mockito-core</artifactId><version>5.20.0</version></artifactItem>
                   </artifactItems>
                 </configuration>
