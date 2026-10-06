@@ -575,7 +575,7 @@
                     <artifactItem><groupId>org.scala-lang</groupId><artifactId>scala3-interfaces</artifactId><version>3.7.4</version></artifactItem>
                     <artifactItem><groupId>org.scala-lang</groupId><artifactId>tasty-core_3</artifactId><version>3.7.4</version></artifactItem>
                     <artifactItem><groupId>org.scala-lang.modules</groupId><artifactId>scala-asm</artifactId><version>9.10.1-scala-1</version></artifactItem>
-                    <artifactItem><groupId>org.scala-sbt</groupId><artifactId>compiler-interface</artifactId><version>1.10.7</version></artifactItem>
+                    <artifactItem><groupId>org.scala-sbt</groupId><artifactId>compiler-interface</artifactId><version>2.0.4</version></artifactItem>
 
                     <artifactItem><groupId>xalan</groupId><artifactId>xalan</artifactId><version>2.7.3</version></artifactItem>
                     <artifactItem><groupId>xalan</groupId><artifactId>serializer</artifactId><version>2.7.3</version></artifactItem>
