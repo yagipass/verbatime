@@ -133,7 +133,7 @@
                 <artifactItem><groupId>commons-logging</groupId><artifactId>commons-logging</artifactId><version>1.4.0</version></artifactItem>
                 <artifactItem><groupId>io.micrometer</groupId><artifactId>micrometer-observation</artifactId><version>1.17.1</version></artifactItem>
                 <artifactItem><groupId>io.micrometer</groupId><artifactId>micrometer-commons</artifactId><version>1.17.1</version></artifactItem>
-                <artifactItem><groupId>org.hibernate.orm</groupId><artifactId>hibernate-core</artifactId><version>7.4.11.Final</version></artifactItem>
+                <artifactItem><groupId>org.hibernate.orm</groupId><artifactId>hibernate-core</artifactId><version>7.4.12.Final</version></artifactItem>
                 <artifactItem><groupId>org.hibernate.models</groupId><artifactId>hibernate-models</artifactId><version>1.3.4</version></artifactItem>
                 <artifactItem><groupId>jakarta.persistence</groupId><artifactId>jakarta.persistence-api</artifactId><version>3.2.0</version></artifactItem>
                 <artifactItem><groupId>jakarta.transaction</groupId><artifactId>jakarta.transaction-api</artifactId><version>2.0.1</version></artifactItem>
