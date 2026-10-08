@@ -15,7 +15,7 @@ docker compose run --rm --build test
 Maven first installs the shared `workload` module, then runs the tests. The forked JVM starts
 recording in the agent's `premain`, the two tests run in well under a second, and the agent's
 shutdown hook closes the recording as the fork exits, leaving it in the file below, as described in
-[Examples whose JVM exits on its own](../README.md#examples-whose-jvm-exits-on-its-own):
+[Recording tests and batch jobs](../README.md#recording-tests-and-batch-jobs):
 
 ```text
 recordings/junit-maven.vbtm
