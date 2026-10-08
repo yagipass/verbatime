@@ -13,3 +13,4 @@ docs/.wrangler/
 notes/
 .claude/skills/
 .agents/skills/
+.vscode/
