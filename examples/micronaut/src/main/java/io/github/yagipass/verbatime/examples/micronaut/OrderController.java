@@ -14,26 +14,27 @@ import io.micronaut.http.annotation.QueryValue;
 @Controller
 public class OrderController {
 
-    private final OrderService orders;
+  private final OrderService orders;
 
-    OrderController(OrderService orders) {
-        this.orders = orders;
-    }
+  OrderController(OrderService orders) {
+    this.orders = orders;
+  }
 
-    @Get("/orders")
-    @Produces(MediaType.TEXT_PLAIN)
-    public String place(@QueryValue(defaultValue = "widget") String sku, @QueryValue(defaultValue = "1") int qty) {
-        return orders.placeOrder(sku, qty).toText() + "\n";
-    }
+  @Get("/orders")
+  @Produces(MediaType.TEXT_PLAIN)
+  public String place(
+      @QueryValue(defaultValue = "widget") String sku, @QueryValue(defaultValue = "1") int qty) {
+    return orders.placeOrder(sku, qty).toText() + "\n";
+  }
 
-    @Get("/healthz")
-    @Produces(MediaType.TEXT_PLAIN)
-    public String healthz() {
-        return "ok\n";
-    }
+  @Get("/healthz")
+  @Produces(MediaType.TEXT_PLAIN)
+  public String healthz() {
+    return "ok\n";
+  }
 
-    @Error(exception = OutOfStockException.class)
-    public HttpResponse<String> outOfStock(OutOfStockException e) {
-        return HttpResponse.status(HttpStatus.CONFLICT).body(e.getMessage() + "\n");
-    }
+  @Error(exception = OutOfStockException.class)
+  public HttpResponse<String> outOfStock(OutOfStockException e) {
+    return HttpResponse.status(HttpStatus.CONFLICT).body(e.getMessage() + "\n");
+  }
 }

@@ -9,109 +9,108 @@ import java.util.Map;
 
 final class FakeAgent implements Agent {
 
-    Map<String, String> steady = Map.of("v", "4", "pid", "7", "state", "idle", "roots", "0");
+  Map<String, String> steady = Map.of("v", "4", "pid", "7", "state", "idle", "roots", "0");
 
-    final Deque<Map<String, String>> statuses = new ArrayDeque<>();
+  final Deque<Map<String, String>> statuses = new ArrayDeque<>();
 
-    IOException statusError;
+  IOException statusError;
 
-    String[] searchResults = new String[0];
+  String[] searchResults = new String[0];
 
-    IOException searchError;
+  IOException searchError;
 
-    final List<String> searchQueries = new ArrayList<>();
+  final List<String> searchQueries = new ArrayList<>();
 
-    final List<String[]> replacedRoots = new ArrayList<>();
+  final List<String[]> replacedRoots = new ArrayList<>();
 
-    long nextRecordingId = 1;
+  long nextRecordingId = 1;
 
-    int starts;
+  int starts;
 
-    IOException startError;
+  IOException startError;
 
-    int stops;
+  int stops;
 
-    IOException stopError;
+  IOException stopError;
 
-    final Deque<byte[]> chunks = new ArrayDeque<>();
+  final Deque<byte[]> chunks = new ArrayDeque<>();
 
-    IOException readError;
+  IOException readError;
 
-    Runnable onRead = () -> {
-    };
+  Runnable onRead = () -> {};
 
-    final List<Long> openedAt = new ArrayList<>();
+  final List<Long> openedAt = new ArrayList<>();
 
-    final List<Long> closedStreams = new ArrayList<>();
+  final List<Long> closedStreams = new ArrayList<>();
 
-    long nextStreamId = 100;
+  long nextStreamId = 100;
 
-    boolean closed;
+  boolean closed;
 
-    @Override
-    public Map<String, String> status() throws IOException {
-        if (statusError != null) {
-            throw statusError;
-        }
-        return statuses.isEmpty() ? steady : statuses.poll();
+  @Override
+  public Map<String, String> status() throws IOException {
+    if (statusError != null) {
+      throw statusError;
     }
+    return statuses.isEmpty() ? steady : statuses.poll();
+  }
 
-    @Override
-    public String[] searchMethods(String query, int max) throws IOException {
-        searchQueries.add(query);
-        if (searchError != null) {
-            throw searchError;
-        }
-        return searchResults;
+  @Override
+  public String[] searchMethods(String query, int max) throws IOException {
+    searchQueries.add(query);
+    if (searchError != null) {
+      throw searchError;
     }
+    return searchResults;
+  }
 
-    @Override
-    public void replaceRoots(String[] specs) throws IOException {
-        replacedRoots.add(specs);
-    }
+  @Override
+  public void replaceRoots(String[] specs) throws IOException {
+    replacedRoots.add(specs);
+  }
 
-    @Override
-    public long startRecording() throws IOException {
-        starts++;
-        if (startError != null) {
-            throw startError;
-        }
-        return nextRecordingId++;
+  @Override
+  public long startRecording() throws IOException {
+    starts++;
+    if (startError != null) {
+      throw startError;
     }
+    return nextRecordingId++;
+  }
 
-    @Override
-    public void stopRecording() throws IOException {
-        stops++;
-        if (stopError != null) {
-            throw stopError;
-        }
+  @Override
+  public void stopRecording() throws IOException {
+    stops++;
+    if (stopError != null) {
+      throw stopError;
     }
+  }
 
-    @Override
-    public long openStream(long recordingId, long fromOffset) {
-        openedAt.add(fromOffset);
-        return nextStreamId++;
-    }
+  @Override
+  public long openStream(long recordingId, long fromOffset) {
+    openedAt.add(fromOffset);
+    return nextStreamId++;
+  }
 
-    @Override
-    public byte[] readStream(long streamId) throws IOException {
-        onRead.run();
-        if (!chunks.isEmpty()) {
-            return chunks.poll();
-        }
-        if (readError != null) {
-            throw readError;
-        }
-        return null;
+  @Override
+  public byte[] readStream(long streamId) throws IOException {
+    onRead.run();
+    if (!chunks.isEmpty()) {
+      return chunks.poll();
     }
+    if (readError != null) {
+      throw readError;
+    }
+    return null;
+  }
 
-    @Override
-    public void closeStream(long streamId) {
-        closedStreams.add(streamId);
-    }
+  @Override
+  public void closeStream(long streamId) {
+    closedStreams.add(streamId);
+  }
 
-    @Override
-    public void close() {
-        closed = true;
-    }
+  @Override
+  public void close() {
+    closed = true;
+  }
 }

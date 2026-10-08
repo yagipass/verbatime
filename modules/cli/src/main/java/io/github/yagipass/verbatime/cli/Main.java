@@ -10,7 +10,8 @@ import java.util.List;
 
 public final class Main {
 
-    static final String HELP = """
+  static final String HELP =
+      """
             vbtm - read .vbtm recordings of Verbatime, written for AI agents and scripts
 
             Usage: vbtm <command> <file> [arguments] [options]
@@ -52,61 +53,66 @@ public final class Main {
             3 the file is corrupt. What could be read is still printed, followed by a "# status:" line.
             """;
 
-    private interface Runner {
+  private interface Runner {
 
-        int run(List<String> argv, PrintStream stdout);
-    }
+    int run(List<String> argv, PrintStream stdout);
+  }
 
-    private record Command(String help, Runner runner) {
-    }
+  private record Command(String help, Runner runner) {}
 
-    private Main() {
-    }
+  private Main() {}
 
-    public static void main(String[] args) {
-        PrintStream stdout = new PrintStream(new BufferedOutputStream(new FileOutputStream(FileDescriptor.out),
-                1 << 16), false, StandardCharsets.UTF_8);
-        PrintStream stderr = new PrintStream(new FileOutputStream(FileDescriptor.err), true,
-                StandardCharsets.UTF_8);
-        int code = run(Arrays.asList(args), stdout, stderr);
-        stdout.flush();
-        System.exit(code);
-    }
+  public static void main(String[] args) {
+    PrintStream stdout =
+        new PrintStream(
+            new BufferedOutputStream(new FileOutputStream(FileDescriptor.out), 1 << 16),
+            false,
+            StandardCharsets.UTF_8);
+    PrintStream stderr =
+        new PrintStream(new FileOutputStream(FileDescriptor.err), true, StandardCharsets.UTF_8);
+    int code = run(Arrays.asList(args), stdout, stderr);
+    stdout.flush();
+    System.exit(code);
+  }
 
-    static int run(List<String> args, PrintStream stdout, PrintStream stderr) {
-        try {
-            if (args.isEmpty() || args.get(0).equals("--help") || args.get(0).equals("-h")
-                    || args.get(0).equals("help")) {
-                stdout.print(HELP);
-                return 0;
-            }
-            Command command = command(args.get(0));
-            List<String> rest = args.subList(1, args.size());
-            if (rest.contains("--help") || rest.contains("-h")) {
-                stdout.print(command.help());
-                return 0;
-            }
-            return command.runner().run(rest, stdout);
-        } catch (CliException e) {
-            stdout.flush();
-            stderr.println("vbtm: " + e.getMessage());
-            if (e.hint() != null) {
-                stderr.println("hint: " + e.hint());
-            }
-            return e.exitCode();
-        }
+  static int run(List<String> args, PrintStream stdout, PrintStream stderr) {
+    try {
+      if (args.isEmpty()
+          || args.get(0).equals("--help")
+          || args.get(0).equals("-h")
+          || args.get(0).equals("help")) {
+        stdout.print(HELP);
+        return 0;
+      }
+      Command command = command(args.get(0));
+      List<String> rest = args.subList(1, args.size());
+      if (rest.contains("--help") || rest.contains("-h")) {
+        stdout.print(command.help());
+        return 0;
+      }
+      return command.runner().run(rest, stdout);
+    } catch (CliException e) {
+      stdout.flush();
+      stderr.println("vbtm: " + e.getMessage());
+      if (e.hint() != null) {
+        stderr.println("hint: " + e.hint());
+      }
+      return e.exitCode();
     }
+  }
 
-    private static Command command(String name) {
-        return switch (name) {
-            case "sessions" -> new Command(SessionsCommand.HELP, SessionsCommand::run);
-            case "hot" -> new Command(HotCommand.HELP, HotCommand::run);
-            case "throws" -> new Command(ThrowsCommand.HELP, ThrowsCommand::run);
-            case "tree" -> new Command(TreeCommand.HELP, TreeCommand::run);
-            case "find" -> new Command(FindCommand.HELP, FindCommand::run);
-            case "callers" -> new Command(CallersCommand.HELP, CallersCommand::run);
-            default -> throw CliException.usage("unknown command '" + name + "'",
-                    "the commands are sessions, hot, throws, tree, find and callers, see vbtm --help");
-        };
-    }
+  private static Command command(String name) {
+    return switch (name) {
+      case "sessions" -> new Command(SessionsCommand.HELP, SessionsCommand::run);
+      case "hot" -> new Command(HotCommand.HELP, HotCommand::run);
+      case "throws" -> new Command(ThrowsCommand.HELP, ThrowsCommand::run);
+      case "tree" -> new Command(TreeCommand.HELP, TreeCommand::run);
+      case "find" -> new Command(FindCommand.HELP, FindCommand::run);
+      case "callers" -> new Command(CallersCommand.HELP, CallersCommand::run);
+      default ->
+          throw CliException.usage(
+              "unknown command '" + name + "'",
+              "the commands are sessions, hot, throws, tree, find and callers, see vbtm --help");
+    };
+  }
 }

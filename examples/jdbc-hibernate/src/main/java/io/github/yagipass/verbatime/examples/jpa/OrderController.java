@@ -1,7 +1,6 @@
 package io.github.yagipass.verbatime.examples.jpa;
 
 import java.util.List;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,24 +10,26 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class OrderController {
 
-    private final PersistentOrderService orders;
+  private final PersistentOrderService orders;
 
-    OrderController(PersistentOrderService orders) {
-        this.orders = orders;
-    }
+  OrderController(PersistentOrderService orders) {
+    this.orders = orders;
+  }
 
-    @GetMapping("/orders")
-    public OrderEntity place(@RequestParam(defaultValue = "widget") String sku, @RequestParam(defaultValue = "1") int qty) {
-        return orders.place(sku, qty);
-    }
+  @GetMapping("/orders")
+  public OrderEntity place(
+      @RequestParam(defaultValue = "widget") String sku,
+      @RequestParam(defaultValue = "1") int qty) {
+    return orders.place(sku, qty);
+  }
 
-    @GetMapping("/orders/recent")
-    public List<OrderEntity> recent() {
-        return orders.recent();
-    }
+  @GetMapping("/orders/recent")
+  public List<OrderEntity> recent() {
+    return orders.recent();
+  }
 
-    @GetMapping("/orders/{id}")
-    public ResponseEntity<OrderEntity> find(@PathVariable long id) {
-        return ResponseEntity.of(orders.find(id));
-    }
+  @GetMapping("/orders/{id}")
+  public ResponseEntity<OrderEntity> find(@PathVariable long id) {
+    return ResponseEntity.of(orders.find(id));
+  }
 }

@@ -18,7 +18,6 @@ let
       fileset = fs.unions [
         ../pom.xml
         ../.mvn
-        ../eclipse-formatter.xml
         ../modules/agent/pom.xml
         ../modules/jmc/pom.xml
         ../modules/format/pom.xml

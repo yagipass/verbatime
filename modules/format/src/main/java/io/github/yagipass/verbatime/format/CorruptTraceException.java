@@ -2,16 +2,16 @@ package io.github.yagipass.verbatime.format;
 
 public final class CorruptTraceException extends RuntimeException {
 
-    private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 1L;
 
-    private final long offset;
+  private final long offset;
 
-    CorruptTraceException(long offset, String message) {
-        super(message);
-        this.offset = offset;
-    }
+  CorruptTraceException(long offset, String message) {
+    super(message);
+    this.offset = offset;
+  }
 
-    public long offset() {
-        return offset;
-    }
+  public long offset() {
+    return offset;
+  }
 }

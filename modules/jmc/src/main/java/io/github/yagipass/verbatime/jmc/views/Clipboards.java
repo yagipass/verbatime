@@ -7,15 +7,14 @@ import org.eclipse.swt.widgets.Display;
 
 final class Clipboards {
 
-    private Clipboards() {
-    }
+  private Clipboards() {}
 
-    static void copyText(Display display, String text) {
-        Clipboard clipboard = new Clipboard(display);
-        try {
-            clipboard.setContents(new Object[] { text }, new Transfer[] { TextTransfer.getInstance() });
-        } finally {
-            clipboard.dispose();
-        }
+  static void copyText(Display display, String text) {
+    Clipboard clipboard = new Clipboard(display);
+    try {
+      clipboard.setContents(new Object[] {text}, new Transfer[] {TextTransfer.getInstance()});
+    } finally {
+      clipboard.dispose();
     }
+  }
 }

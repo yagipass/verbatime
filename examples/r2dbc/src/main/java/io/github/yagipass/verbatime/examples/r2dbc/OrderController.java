@@ -1,44 +1,49 @@
 package io.github.yagipass.verbatime.examples.r2dbc;
 
+import io.github.yagipass.verbatime.examples.workload.OrderService;
+import io.github.yagipass.verbatime.examples.workload.Receipt;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import io.github.yagipass.verbatime.examples.workload.OrderService;
-import io.github.yagipass.verbatime.examples.workload.Receipt;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
 public class OrderController {
 
-    private final OrderService orders;
+  private final OrderService orders;
 
-    private final OrderRepository repository;
+  private final OrderRepository repository;
 
-    OrderController(OrderService orders, OrderRepository repository) {
-        this.orders = orders;
-        this.repository = repository;
-    }
+  OrderController(OrderService orders, OrderRepository repository) {
+    this.orders = orders;
+    this.repository = repository;
+  }
 
-    @GetMapping("/orders")
-    public Mono<OrderEntity> place(@RequestParam(defaultValue = "widget") String sku, @RequestParam(defaultValue = "1") int qty) {
-        return Mono.fromSupplier(() -> orders.placeOrder(sku, qty)).flatMap(this::save);
-    }
+  @GetMapping("/orders")
+  public Mono<OrderEntity> place(
+      @RequestParam(defaultValue = "widget") String sku,
+      @RequestParam(defaultValue = "1") int qty) {
+    return Mono.fromSupplier(() -> orders.placeOrder(sku, qty)).flatMap(this::save);
+  }
 
-    @GetMapping("/orders/recent")
-    public Flux<OrderEntity> recent() {
-        return repository.findTop10ByOrderByIdDesc();
-    }
+  @GetMapping("/orders/recent")
+  public Flux<OrderEntity> recent() {
+    return repository.findTop10ByOrderByIdDesc();
+  }
 
-    @GetMapping("/orders/{id}")
-    public Mono<ResponseEntity<OrderEntity>> find(@PathVariable long id) {
-        return repository.findById(id).map(ResponseEntity::ok).defaultIfEmpty(ResponseEntity.notFound().build());
-    }
+  @GetMapping("/orders/{id}")
+  public Mono<ResponseEntity<OrderEntity>> find(@PathVariable long id) {
+    return repository
+        .findById(id)
+        .map(ResponseEntity::ok)
+        .defaultIfEmpty(ResponseEntity.notFound().build());
+  }
 
-    Mono<OrderEntity> save(Receipt receipt) {
-        return repository.save(OrderEntity.of(receipt.sku(), receipt.qty(), receipt.cents(), receipt.txId()));
-    }
+  Mono<OrderEntity> save(Receipt receipt) {
+    return repository.save(
+        OrderEntity.of(receipt.sku(), receipt.qty(), receipt.cents(), receipt.txId()));
+  }
 }

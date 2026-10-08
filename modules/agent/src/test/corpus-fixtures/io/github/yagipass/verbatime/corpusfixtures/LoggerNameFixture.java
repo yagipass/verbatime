@@ -4,10 +4,9 @@ import org.apache.logging.log4j.LogManager;
 
 public final class LoggerNameFixture {
 
-    private LoggerNameFixture() {
-    }
+  private LoggerNameFixture() {}
 
-    public static String loggerName() {
-        return LogManager.getLogger().getName();
-    }
+  public static String loggerName() {
+    return LogManager.getLogger().getName();
+  }
 }

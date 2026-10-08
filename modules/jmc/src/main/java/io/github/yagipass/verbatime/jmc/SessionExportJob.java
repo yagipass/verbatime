@@ -1,49 +1,57 @@
 package io.github.yagipass.verbatime.jmc;
 
+import io.github.yagipass.verbatime.jmc.export.SessionExporter;
+import io.github.yagipass.verbatime.jmc.index.TraceIndexer;
+import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
+import io.github.yagipass.verbatime.jmc.index.TraceSnapshot.Session;
 import java.nio.file.Path;
-
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Shell;
 import org.jspecify.annotations.Nullable;
 
-import io.github.yagipass.verbatime.jmc.export.SessionExporter;
-import io.github.yagipass.verbatime.jmc.index.TraceIndexer;
-import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
-import io.github.yagipass.verbatime.jmc.index.TraceSnapshot.Session;
-
 final class SessionExportJob {
 
-    private SessionExportJob() {
-    }
+  private SessionExportJob() {}
 
-    static void schedule(Shell parent, TraceSnapshot data, Session s, long floorNs,
-            Path dest) {
-        UiThread ui = UiThread.of(parent.getDisplay());
-        Job job = Job.create("Exporting session #" + s.seq + " of " + data.path.getFileName(), monitor -> {
-            monitor.beginTask(dest.getFileName().toString(), ProgressMonitors.TICKS);
-            try {
-                SessionExporter.Result r = SessionExporter.export(data, s, floorNs, dest, ProgressMonitors.of(monitor));
-                ui.post(() -> MessageDialog.openInformation(shellOrNull(parent), "Export session",
-                        SessionExportTexts.summary(dest, s, floorNs, r)));
+  static void schedule(Shell parent, TraceSnapshot data, Session s, long floorNs, Path dest) {
+    UiThread ui = UiThread.of(parent.getDisplay());
+    Job job =
+        Job.create(
+            "Exporting session #" + s.seq + " of " + data.path.getFileName(),
+            monitor -> {
+              monitor.beginTask(dest.getFileName().toString(), ProgressMonitors.TICKS);
+              try {
+                SessionExporter.Result r =
+                    SessionExporter.export(data, s, floorNs, dest, ProgressMonitors.of(monitor));
+                ui.post(
+                    () ->
+                        MessageDialog.openInformation(
+                            shellOrNull(parent),
+                            "Export session",
+                            SessionExportTexts.summary(dest, s, floorNs, r)));
                 return Status.OK_STATUS;
-            } catch (TraceIndexer.CancelledException c) {
+              } catch (TraceIndexer.CancelledException c) {
                 return Status.CANCEL_STATUS;
-            } catch (Exception e) {
-                ui.post(() -> MessageDialog.openError(shellOrNull(parent), "Export session",
-                        "Failed to export session #" + s.seq + " to " + dest + ":\n" + e));
+              } catch (Exception e) {
+                ui.post(
+                    () ->
+                        MessageDialog.openError(
+                            shellOrNull(parent),
+                            "Export session",
+                            "Failed to export session #" + s.seq + " to " + dest + ":\n" + e));
                 return Status.OK_STATUS;
-            } finally {
+              } finally {
                 data.buffer.release();
                 monitor.done();
-            }
-        });
-        job.setUser(true);
-        job.schedule();
-    }
+              }
+            });
+    job.setUser(true);
+    job.schedule();
+  }
 
-    private static @Nullable Shell shellOrNull(Shell s) {
-        return s.isDisposed() ? null : s;
-    }
+  private static @Nullable Shell shellOrNull(Shell s) {
+    return s.isDisposed() ? null : s;
+  }
 }

@@ -8,22 +8,32 @@ import io.undertow.util.Headers;
 
 public final class Main {
 
-    private Main() {
-    }
+  private Main() {}
 
-    public static void main(String[] args) {
-        int port = 8080;
-        OrderService orders = new OrderService();
-        warmUp(orders);
-        Undertow server = Undertow.builder().addHttpListener(port, "0.0.0.0").setHandler(Handlers.path().addExactPath("/healthz", exchange -> {
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain; charset=utf-8");
-            exchange.getResponseSender().send("ok\n");
-        }).addExactPath("/orders", new BlockingHandler(new OrderHandler(orders)))).build();
-        server.start();
-        System.out.println("undertow listening on port " + port);
-    }
+  public static void main(String[] args) {
+    int port = 8080;
+    OrderService orders = new OrderService();
+    warmUp(orders);
+    Undertow server =
+        Undertow.builder()
+            .addHttpListener(port, "0.0.0.0")
+            .setHandler(
+                Handlers.path()
+                    .addExactPath(
+                        "/healthz",
+                        exchange -> {
+                          exchange
+                              .getResponseHeaders()
+                              .put(Headers.CONTENT_TYPE, "text/plain; charset=utf-8");
+                          exchange.getResponseSender().send("ok\n");
+                        })
+                    .addExactPath("/orders", new BlockingHandler(new OrderHandler(orders))))
+            .build();
+    server.start();
+    System.out.println("undertow listening on port " + port);
+  }
 
-    private static void warmUp(OrderService orders) {
-        orders.placeOrder("warmup", 1);
-    }
+  private static void warmUp(OrderService orders) {
+    orders.placeOrder("warmup", 1);
+  }
 }

@@ -5,14 +5,14 @@ import io.helidon.webserver.WebServer;
 
 public final class Main {
 
-    private Main() {
-    }
+  private Main() {}
 
-    public static void main(String[] args) {
-        int port = 8080;
-        OrdersService service = new OrdersService(new OrderService());
-        WebServer server = WebServer.builder().port(port).routing(routing -> routing.register("/", service)).build();
-        server.start();
-        System.out.println("helidon-se listening on port " + server.port());
-    }
+  public static void main(String[] args) {
+    int port = 8080;
+    OrdersService service = new OrdersService(new OrderService());
+    WebServer server =
+        WebServer.builder().port(port).routing(routing -> routing.register("/", service)).build();
+    server.start();
+    System.out.println("helidon-se listening on port " + server.port());
+  }
 }

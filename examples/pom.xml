@@ -53,15 +53,10 @@
               <include>*/src/main/java/**/*.java</include>
               <include>*/src/test/java/**/*.java</include>
             </includes>
-            <eclipse>
-              <file>${project.basedir}/../eclipse-formatter.xml</file>
-            </eclipse>
-            <importOrder>
-              <order>\#,java,javax,jakarta,org,com</order>
-            </importOrder>
-            <removeUnusedImports/>
-            <trimTrailingWhitespace/>
-            <endWithNewline/>
+            <googleJavaFormat>
+              <version>1.36.1</version>
+              <reorderImports>true</reorderImports>
+            </googleJavaFormat>
           </java>
         </configuration>
       </plugin>
