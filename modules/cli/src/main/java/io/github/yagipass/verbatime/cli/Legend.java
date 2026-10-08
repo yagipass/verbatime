@@ -5,29 +5,30 @@ import java.util.Set;
 
 final class Legend {
 
-    private final Names names;
+  private final Names names;
 
-    private final Set<Integer> ids = new LinkedHashSet<>();
+  private final Set<Integer> ids = new LinkedHashSet<>();
 
-    Legend(Names names) {
-        this.names = names;
+  Legend(Names names) {
+    this.names = names;
+  }
+
+  void add(int methodId) {
+    if (names.collides(methodId)) {
+      ids.add(methodId);
     }
+  }
 
-    void add(int methodId) {
-        if (names.collides(methodId)) {
-            ids.add(methodId);
-        }
+  void print(Out out) {
+    if (ids.isEmpty()) {
+      return;
     }
-
-    void print(Out out) {
-        if (ids.isEmpty()) {
-            return;
-        }
-        out.text("");
-        out.text("names printed alike:");
-        for (int id : ids) {
-            out.text("  " + names.displayName(id) + " = " + names.fullName(id));
-            out.json(new Json("name").put("method", names.displayName(id)).put("full", names.fullName(id)));
-        }
+    out.text("");
+    out.text("names printed alike:");
+    for (int id : ids) {
+      out.text("  " + names.displayName(id) + " = " + names.fullName(id));
+      out.json(
+          new Json("name").put("method", names.displayName(id)).put("full", names.fullName(id)));
     }
+  }
 }

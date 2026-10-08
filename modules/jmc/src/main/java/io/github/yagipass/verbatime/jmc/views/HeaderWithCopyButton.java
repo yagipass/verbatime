@@ -9,19 +9,19 @@ import org.eclipse.swt.widgets.Label;
 
 record HeaderWithCopyButton(Label label, Button copy) {
 
-    static HeaderWithCopyButton create(Composite parent, String copyTip, Runnable onCopy) {
-        Composite head = new Composite(parent, SWT.NONE);
-        head.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-        GridLayout layout = new GridLayout(2, false);
-        layout.marginWidth = 0;
-        layout.marginHeight = 0;
-        head.setLayout(layout);
-        Label label = new Label(head, SWT.WRAP);
-        label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-        Button copy = new Button(head, SWT.PUSH);
-        copy.setText("Copy");
-        copy.setToolTipText(copyTip);
-        copy.addListener(SWT.Selection, e -> onCopy.run());
-        return new HeaderWithCopyButton(label, copy);
-    }
+  static HeaderWithCopyButton create(Composite parent, String copyTip, Runnable onCopy) {
+    Composite head = new Composite(parent, SWT.NONE);
+    head.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+    GridLayout layout = new GridLayout(2, false);
+    layout.marginWidth = 0;
+    layout.marginHeight = 0;
+    head.setLayout(layout);
+    Label label = new Label(head, SWT.WRAP);
+    label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+    Button copy = new Button(head, SWT.PUSH);
+    copy.setText("Copy");
+    copy.setToolTipText(copyTip);
+    copy.addListener(SWT.Selection, e -> onCopy.run());
+    return new HeaderWithCopyButton(label, copy);
+  }
 }

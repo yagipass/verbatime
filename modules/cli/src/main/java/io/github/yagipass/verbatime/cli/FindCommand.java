@@ -9,7 +9,8 @@ import java.util.Set;
 
 final class FindCommand {
 
-    static final String HELP = """
+  static final String HELP =
+      """
             vbtm find <file> PATTERN [--session SESSION] [--min DUR] [--thrown] [--sort dur|start] [--limit N] [--all]
               [--json]
 
@@ -28,156 +29,227 @@ final class FindCommand {
             throwing and ~ when it was still open when the recording ended.
             """;
 
-    private FindCommand() {
+  private FindCommand() {}
+
+  private record Match(
+      int session,
+      long ordinal,
+      long startTicks,
+      long durTicks,
+      long selfTicks,
+      int depth,
+      int methodId,
+      int callerId,
+      int exceptionId,
+      boolean unclosed) {
+
+    CallId id() {
+      return new CallId(session, ordinal);
+    }
+  }
+
+  private static final class Matches implements SessionWalker.Visitor {
+
+    private final PriorityQueue<Match> kept;
+
+    long count;
+
+    long totalTicks;
+
+    private final MethodPattern pattern;
+
+    private final SessionWalker walker;
+
+    private final long minTicks;
+
+    private final boolean thrownOnly;
+
+    private final int limit;
+
+    private final Comparator<Match> order;
+
+    private final CallStack stack = new CallStack();
+
+    private int session;
+
+    private int openMatches;
+
+    Matches(
+        MethodPattern pattern,
+        SessionWalker walker,
+        long minTicks,
+        boolean thrownOnly,
+        int limit,
+        Comparator<Match> order) {
+      this.pattern = pattern;
+      this.walker = walker;
+      this.minTicks = minTicks;
+      this.thrownOnly = thrownOnly;
+      this.limit = limit;
+      this.order = order;
+      this.kept = new PriorityQueue<>(order.reversed());
     }
 
-    private record Match(int session, long ordinal, long startTicks, long durTicks, long selfTicks, int depth,
-            int methodId, int callerId, int exceptionId, boolean unclosed) {
-
-        CallId id() {
-            return new CallId(session, ordinal);
-        }
+    void walk(TraceFile.Session s) {
+      session = s.number;
+      walker.walk(s, this);
     }
 
-    private static final class Matches implements SessionWalker.Visitor {
-
-        private final PriorityQueue<Match> kept;
-
-        long count;
-
-        long totalTicks;
-
-        private final MethodPattern pattern;
-
-        private final SessionWalker walker;
-
-        private final long minTicks;
-
-        private final boolean thrownOnly;
-
-        private final int limit;
-
-        private final Comparator<Match> order;
-
-        private final CallStack stack = new CallStack();
-
-        private int session;
-
-        private int openMatches;
-
-        Matches(MethodPattern pattern, SessionWalker walker, long minTicks,
-                boolean thrownOnly, int limit, Comparator<Match> order) {
-            this.pattern = pattern;
-            this.walker = walker;
-            this.minTicks = minTicks;
-            this.thrownOnly = thrownOnly;
-            this.limit = limit;
-            this.order = order;
-            this.kept = new PriorityQueue<>(order.reversed());
-        }
-
-        void walk(TraceFile.Session s) {
-            session = s.number;
-            walker.walk(s, this);
-        }
-
-        List<Match> rows() {
-            List<Match> rows = new ArrayList<>(kept);
-            rows.sort(order);
-            return rows;
-        }
-
-        @Override
-        public void enter(long ordinal, int depth, int methodId, long startTicks) {
-            stack.push(depth, methodId);
-            if (pattern.matches(methodId)) {
-                openMatches++;
-            }
-        }
-
-        @Override
-        public void exit(long ordinal, int depth, int methodId, long startTicks,
-                long durTicks, long selfTicks, int exceptionId, boolean unclosed) {
-            if (!pattern.matches(methodId)) {
-                return;
-            }
-            openMatches--;
-            if (durTicks < minTicks || (thrownOnly && exceptionId == SessionWalker.NO_EXCEPTION)) {
-                return;
-            }
-            count++;
-            if (openMatches == 0) {
-                totalTicks += durTicks;
-            }
-            Match m = new Match(session, ordinal, startTicks - walker.startTicks, durTicks, selfTicks, depth,
-                    methodId, stack.callerOf(depth), exceptionId, unclosed);
-            if (kept.size() < limit) {
-                kept.add(m);
-            } else if (order.compare(m, kept.peek()) < 0) {
-                kept.poll();
-                kept.add(m);
-            }
-        }
+    List<Match> rows() {
+      List<Match> rows = new ArrayList<>(kept);
+      rows.sort(order);
+      return rows;
     }
 
-    static int run(List<String> argv, PrintStream stdout) {
-        Args args = Args.parse("find", argv, Set.of("session", "min", "sort", "limit"),
-                Set.of("json", "all", "thrown"));
-        args.rejectPositionalsBeyond(2);
-        TraceFile file = TraceFile.open(args.positional(0, "the .vbtm file"));
-        Out out = new Out(stdout, args.has("json"));
-        Names names = new Names(file);
-        MethodPattern pattern = MethodPattern.resolve(file, names, args.positional(1, "the method PATTERN"),
-                args.has("all"));
-        Scope scope = Scope.of(file, args.value("session"));
-        long minTicks = args.ticks("min", 0);
-        String sort = args.choice("sort", "dur", "dur", "start");
-        int limit = args.positiveInt("limit", 50);
-        boolean thrownOnly = args.has("thrown");
-
-        Comparator<Match> order = sort.equals("dur")
-                ? Comparator.comparingLong((Match m) -> -m.durTicks()).thenComparingInt(Match::session)
-                        .thenComparingLong(Match::ordinal)
-                : Comparator.comparingInt(Match::session).thenComparingLong(Match::ordinal);
-        Matches matches = new Matches(pattern, new SessionWalker(file), minTicks, thrownOnly, limit, order);
-        for (TraceFile.Session s : scope.sessions) {
-            matches.walk(s);
-        }
-        List<Match> rows = matches.rows();
-
-        out.text("pattern: " + pattern.text + " -> " + pattern.fullNames(names) + "  scope: " + scope.label);
-        out.text("matches: " + Formats.grouped(matches.count) + " calls"
-                + (minTicks > 0 ? " >= " + Formats.duration(minTicks) : "") + (thrownOnly ? " that threw" : "") + ", "
-                + Formats.ms(matches.totalTicks)
-                + " ms in total, where a call inside another call of the same method is not added again");
-        out.text("sorted by " + sort + ", showing " + Formats.grouped(rows.size())
-                + ". start is ms from the session start");
-        out.text("");
-        out.json(new Json("find").put("pattern", pattern.text).put("scope", scope.label).put("calls", matches.count)
-                .ms("total_ms", matches.totalTicks).put("sort", sort).put("thrown", thrownOnly));
-        Out.Table table = new Out.Table(">id", ">start", ">dur", ">self", ">depth", "method", "caller", "flags");
-        Legend legend = new Legend(names);
-        for (Match m : rows) {
-            String id = m.id().toString();
-            String caller = m.callerId() < 0 ? null : names.displayName(m.callerId());
-            String exception = m.exceptionId() == SessionWalker.NO_EXCEPTION ? null
-                    : file.exceptionName(m.exceptionId());
-            String flags = (exception == null ? "" : m.exceptionId() > 0 ? "!" + Names.simpleClass(exception)
-                    : "!")
-                    + (m.unclosed() ? " ~" : "");
-            table.add(id, Formats.ms(m.startTicks()), Formats.ms(m.durTicks()), Formats.ms(m.selfTicks()),
-                    String.valueOf(m.depth()), names.displayName(m.methodId()), caller == null ? "-" : caller,
-                    flags.trim());
-            out.json(new Json("call").put("id", id).ms("start_ms", m.startTicks()).ms("dur_ms", m.durTicks())
-                    .ms("self_ms", m.selfTicks()).put("depth", m.depth()).put("method", names.displayName(m.methodId()))
-                    .put("caller", caller).put("exception", exception).put("unclosed", m.unclosed()));
-            legend.add(m.methodId());
-            legend.add(m.callerId());
-        }
-        table.print(out);
-        legend.print(out);
-        out.more(matches.count - rows.size(), "calls", args.commandWith("limit", limit * 3L));
-        out.status(file);
-        return file.exitCode();
+    @Override
+    public void enter(long ordinal, int depth, int methodId, long startTicks) {
+      stack.push(depth, methodId);
+      if (pattern.matches(methodId)) {
+        openMatches++;
+      }
     }
+
+    @Override
+    public void exit(
+        long ordinal,
+        int depth,
+        int methodId,
+        long startTicks,
+        long durTicks,
+        long selfTicks,
+        int exceptionId,
+        boolean unclosed) {
+      if (!pattern.matches(methodId)) {
+        return;
+      }
+      openMatches--;
+      if (durTicks < minTicks || (thrownOnly && exceptionId == SessionWalker.NO_EXCEPTION)) {
+        return;
+      }
+      count++;
+      if (openMatches == 0) {
+        totalTicks += durTicks;
+      }
+      Match m =
+          new Match(
+              session,
+              ordinal,
+              startTicks - walker.startTicks,
+              durTicks,
+              selfTicks,
+              depth,
+              methodId,
+              stack.callerOf(depth),
+              exceptionId,
+              unclosed);
+      if (kept.size() < limit) {
+        kept.add(m);
+      } else if (order.compare(m, kept.peek()) < 0) {
+        kept.poll();
+        kept.add(m);
+      }
+    }
+  }
+
+  static int run(List<String> argv, PrintStream stdout) {
+    Args args =
+        Args.parse(
+            "find",
+            argv,
+            Set.of("session", "min", "sort", "limit"),
+            Set.of("json", "all", "thrown"));
+    args.rejectPositionalsBeyond(2);
+    TraceFile file = TraceFile.open(args.positional(0, "the .vbtm file"));
+    Out out = new Out(stdout, args.has("json"));
+    Names names = new Names(file);
+    MethodPattern pattern =
+        MethodPattern.resolve(
+            file, names, args.positional(1, "the method PATTERN"), args.has("all"));
+    Scope scope = Scope.of(file, args.value("session"));
+    long minTicks = args.ticks("min", 0);
+    String sort = args.choice("sort", "dur", "dur", "start");
+    int limit = args.positiveInt("limit", 50);
+    boolean thrownOnly = args.has("thrown");
+
+    Comparator<Match> order =
+        sort.equals("dur")
+            ? Comparator.comparingLong((Match m) -> -m.durTicks())
+                .thenComparingInt(Match::session)
+                .thenComparingLong(Match::ordinal)
+            : Comparator.comparingInt(Match::session).thenComparingLong(Match::ordinal);
+    Matches matches =
+        new Matches(pattern, new SessionWalker(file), minTicks, thrownOnly, limit, order);
+    for (TraceFile.Session s : scope.sessions) {
+      matches.walk(s);
+    }
+    List<Match> rows = matches.rows();
+
+    out.text(
+        "pattern: " + pattern.text + " -> " + pattern.fullNames(names) + "  scope: " + scope.label);
+    out.text(
+        "matches: "
+            + Formats.grouped(matches.count)
+            + " calls"
+            + (minTicks > 0 ? " >= " + Formats.duration(minTicks) : "")
+            + (thrownOnly ? " that threw" : "")
+            + ", "
+            + Formats.ms(matches.totalTicks)
+            + " ms in total, where a call inside another call of the same method is not added again");
+    out.text(
+        "sorted by "
+            + sort
+            + ", showing "
+            + Formats.grouped(rows.size())
+            + ". start is ms from the session start");
+    out.text("");
+    out.json(
+        new Json("find")
+            .put("pattern", pattern.text)
+            .put("scope", scope.label)
+            .put("calls", matches.count)
+            .ms("total_ms", matches.totalTicks)
+            .put("sort", sort)
+            .put("thrown", thrownOnly));
+    Out.Table table =
+        new Out.Table(">id", ">start", ">dur", ">self", ">depth", "method", "caller", "flags");
+    Legend legend = new Legend(names);
+    for (Match m : rows) {
+      String id = m.id().toString();
+      String caller = m.callerId() < 0 ? null : names.displayName(m.callerId());
+      String exception =
+          m.exceptionId() == SessionWalker.NO_EXCEPTION
+              ? null
+              : file.exceptionName(m.exceptionId());
+      String flags =
+          (exception == null ? "" : m.exceptionId() > 0 ? "!" + Names.simpleClass(exception) : "!")
+              + (m.unclosed() ? " ~" : "");
+      table.add(
+          id,
+          Formats.ms(m.startTicks()),
+          Formats.ms(m.durTicks()),
+          Formats.ms(m.selfTicks()),
+          String.valueOf(m.depth()),
+          names.displayName(m.methodId()),
+          caller == null ? "-" : caller,
+          flags.trim());
+      out.json(
+          new Json("call")
+              .put("id", id)
+              .ms("start_ms", m.startTicks())
+              .ms("dur_ms", m.durTicks())
+              .ms("self_ms", m.selfTicks())
+              .put("depth", m.depth())
+              .put("method", names.displayName(m.methodId()))
+              .put("caller", caller)
+              .put("exception", exception)
+              .put("unclosed", m.unclosed()));
+      legend.add(m.methodId());
+      legend.add(m.callerId());
+    }
+    table.print(out);
+    legend.print(out);
+    out.more(matches.count - rows.size(), "calls", args.commandWith("limit", limit * 3L));
+    out.status(file);
+    return file.exitCode();
+  }
 }

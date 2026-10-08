@@ -1,5 +1,7 @@
 package io.github.yagipass.verbatime.agent;
 
+import com.google.errorprone.annotations.Var;
+import io.github.yagipass.verbatime.agent.probe.Log;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.ClassTransform;
@@ -11,69 +13,76 @@ import java.lang.classfile.MethodTransform;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
-
 import org.jspecify.annotations.Nullable;
-
-import com.google.errorprone.annotations.Var;
-
-import io.github.yagipass.verbatime.agent.probe.Log;
 
 final class StartupGateTransform {
 
-    private static final ClassDesc GATE = ClassDesc.of("io.github.yagipass.verbatime.agent.probe.StartupGate");
+  private static final ClassDesc GATE =
+      ClassDesc.of("io.github.yagipass.verbatime.agent.probe.StartupGate");
 
-    private static final MethodTypeDesc VOID_NOARG = MethodTypeDesc.of(ConstantDescs.CD_void);
+  private static final MethodTypeDesc VOID_NOARG = MethodTypeDesc.of(ConstantDescs.CD_void);
 
-    private static final String MAIN_NAME = "main";
+  private static final String MAIN_NAME = "main";
 
-    private static final String MAIN_DESC = "([Ljava/lang/String;)V";
+  private static final String MAIN_DESC = "([Ljava/lang/String;)V";
 
-    private static final String MAIN_NOARG_DESC = "()V";
+  private static final String MAIN_NOARG_DESC = "()V";
 
-    private static final CodeTransform PREPEND_AWAIT = new CodeTransform() {
+  private static final CodeTransform PREPEND_AWAIT =
+      new CodeTransform() {
         @Override
         public void atStart(CodeBuilder cob) {
-            emitAwait(cob);
+          emitAwait(cob);
         }
 
         @Override
         public void accept(CodeBuilder cob, CodeElement ce) {
-            cob.with(ce);
+          cob.with(ce);
         }
-    };
+      };
 
-    private StartupGateTransform() {
-    }
+  private StartupGateTransform() {}
 
-    static void emitAwait(CodeBuilder cob) {
-        cob.invokestatic(GATE, "await", VOID_NOARG);
-    }
+  static void emitAwait(CodeBuilder cob) {
+    cob.invokestatic(GATE, "await", VOID_NOARG);
+  }
 
-    static @Nullable String launcherMainSig(ClassModel cm) {
-        @Var String noArg = null;
-        for (MethodModel mm : cm.methods()) {
-            if (!mm.methodName().equalsString(MAIN_NAME) || mm.code().isEmpty() || (mm.flags().flagsMask() & ClassFile.ACC_PRIVATE) != 0) {
-                continue;
-            }
-            if (mm.methodType().equalsString(MAIN_DESC)) {
-                return MAIN_NAME + MAIN_DESC;
-            }
-            if (mm.methodType().equalsString(MAIN_NOARG_DESC)) {
-                noArg = MAIN_NAME + MAIN_NOARG_DESC;
-            }
-        }
-        return noArg;
+  static @Nullable String launcherMainSig(ClassModel cm) {
+    @Var String noArg = null;
+    for (MethodModel mm : cm.methods()) {
+      if (!mm.methodName().equalsString(MAIN_NAME)
+          || mm.code().isEmpty()
+          || (mm.flags().flagsMask() & ClassFile.ACC_PRIVATE) != 0) {
+        continue;
+      }
+      if (mm.methodType().equalsString(MAIN_DESC)) {
+        return MAIN_NAME + MAIN_DESC;
+      }
+      if (mm.methodType().equalsString(MAIN_NOARG_DESC)) {
+        noArg = MAIN_NAME + MAIN_NOARG_DESC;
+      }
     }
+    return noArg;
+  }
 
-    static ClassTransform prependAwait(String sig) {
-        return ClassTransform.transformingMethods(mm -> sig.equals(mm.methodName().stringValue() + mm.methodType().stringValue()), MethodTransform.transformingCode(PREPEND_AWAIT));
-    }
+  static ClassTransform prependAwait(String sig) {
+    return ClassTransform.transformingMethods(
+        mm -> sig.equals(mm.methodName().stringValue() + mm.methodType().stringValue()),
+        MethodTransform.transformingCode(PREPEND_AWAIT));
+  }
 
-    static void logArmed(String binaryName, @Nullable String sig) {
-        if (sig != null) {
-            Log.info("startup gate armed on " + binaryName + "::" + (sig.endsWith(MAIN_NOARG_DESC) ? "main()" : "main(String[])"));
-        } else {
-            Log.warn("startup gate not armed because " + binaryName + " declares no main(String[]) or main() the java launcher could run. A private main or one inherited from a superclass does not count. waitstart cannot pause this JVM");
-        }
+  static void logArmed(String binaryName, @Nullable String sig) {
+    if (sig != null) {
+      Log.info(
+          "startup gate armed on "
+              + binaryName
+              + "::"
+              + (sig.endsWith(MAIN_NOARG_DESC) ? "main()" : "main(String[])"));
+    } else {
+      Log.warn(
+          "startup gate not armed because "
+              + binaryName
+              + " declares no main(String[]) or main() the java launcher could run. A private main or one inherited from a superclass does not count. waitstart cannot pause this JVM");
     }
+  }
 }

@@ -11,172 +11,219 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.errorprone.annotations.Var;
+import io.github.yagipass.verbatime.format.TraceReader.Outcome;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.junit.jupiter.api.Test;
-
-import com.google.errorprone.annotations.Var;
-
-import io.github.yagipass.verbatime.format.TraceReader.Outcome;
 
 final class TraceReaderTest {
 
-    private static final class VisitLog implements TraceReader.Visitor {
+  private static final class VisitLog implements TraceReader.Visitor {
 
-        final List<String> calls = new ArrayList<>();
+    final List<String> calls = new ArrayList<>();
 
-        @Override
-        public void anchor(long startEpochMs, int utcOffsetSeconds) {
-            calls.add("anchor " + startEpochMs + " " + utcOffsetSeconds);
-        }
-
-        @Override
-        public void thread(long tid, String name) {
-            calls.add("thread " + tid + " " + name);
-        }
-
-        @Override
-        public void clazz(long baseId, String className, String[] sigs) {
-            calls.add("class " + baseId + " " + className + " " + Arrays.toString(sigs));
-        }
-
-        @Override
-        public void exception(long id, String className) {
-            calls.add("exception " + id + " " + className);
-        }
-
-        @Override
-        public void gc(long startTicks, long durTicks, int action, String name,
-                String cause) {
-            calls.add("gc " + startTicks + " " + durTicks + " " + action + " " + name + " " + cause);
-        }
-
-        @Override
-        public void chunk(long tid, long baseTicks, byte[] bytes, int off, int len,
-                boolean sessionEnd, boolean truncated) {
-            calls.add("chunk " + tid + " " + baseTicks + " " + Arrays.toString(Arrays.copyOfRange(bytes, off, off + len))
-                    + (sessionEnd ? " end" : "") + (truncated ? " partial" : ""));
-        }
-
-        @Override
-        public void end() {
-            calls.add("end");
-        }
+    @Override
+    public void anchor(long startEpochMs, int utcOffsetSeconds) {
+      calls.add("anchor " + startEpochMs + " " + utcOffsetSeconds);
     }
 
-    private static List<String> goldenCalls() {
-        return List.of("anchor " + EPOCH_MS + " " + UTC_OFFSET, "thread 7 main", "class 0 a.B [m()V, n(I)V]",
-                "exception 1 x.E", "gc 300 20 1 G1 Alloc", "chunk 7 100 " + Arrays.toString(bytes(PAYLOAD)),
-                "chunk 7 200 [] end", "end");
+    @Override
+    public void thread(long tid, String name) {
+      calls.add("thread " + tid + " " + name);
     }
 
-    @Test
-    void theReaderDecodesTheGoldenBytesIntoTheSameRecordsInOrder() {
-        VisitLog r = new VisitLog();
-        assertEquals(Outcome.CLEAN, TraceReader.read(golden(), r));
-        assertEquals(goldenCalls(), r.calls);
+    @Override
+    public void clazz(long baseId, String className, String[] sigs) {
+      calls.add("class " + baseId + " " + className + " " + Arrays.toString(sigs));
     }
 
-    @Test
-    void aCutInsideAChunkReportsThePartialPayloadAndTruncation() {
-        VisitLog r = new VisitLog();
-        byte[] cut = Arrays.copyOf(golden(), CHUNK_PAYLOAD_OFFSET + 3);
-        assertEquals(Outcome.TRUNCATED, TraceReader.read(cut, r));
-        assertEquals("chunk 7 100 " + Arrays.toString(Arrays.copyOf(bytes(PAYLOAD), 3)) + " partial",
-                r.calls.get(r.calls.size() - 1));
+    @Override
+    public void exception(long id, String className) {
+      calls.add("exception " + id + " " + className);
     }
 
-    @Test
-    void aTraceWithoutTheEndRecordIsTruncatedEvenWhenEveryRecordIsWhole() {
-        VisitLog r = new VisitLog();
-        assertEquals(Outcome.TRUNCATED, TraceReader.read(Arrays.copyOf(golden(), GOLDEN.length - 1), r));
-        assertEquals(goldenCalls().subList(0, goldenCalls().size() - 1), r.calls);
+    @Override
+    public void gc(long startTicks, long durTicks, int action, String name, String cause) {
+      calls.add("gc " + startTicks + " " + durTicks + " " + action + " " + name + " " + cause);
     }
 
-    @Test
-    void theMagicAndTheVersionByteAreCheckedBeforeAnything() {
-        byte[] oldMagic = golden();
-        System.arraycopy(new byte[] { 'v', 'a', 'f', '1' }, 0, oldMagic, 0, 4);
-        @Var CorruptTraceException e = assertThrows(CorruptTraceException.class,
-                () -> TraceReader.read(oldMagic, new VisitLog()));
-        assertEquals(0, e.offset());
-        assertTrue(e.getMessage().contains("magic"), e.getMessage());
-
-        byte[] newer = golden();
-        newer[Vbtm.VERSION_OFFSET] = (byte) (Vbtm.VERSION + 1);
-        e = assertThrows(CorruptTraceException.class, () -> TraceReader.read(newer, new VisitLog()));
-        assertEquals(Vbtm.VERSION_OFFSET, e.offset(), "the version is refused before the anchor is even looked at");
-        assertTrue(e.getMessage().contains("version " + (Vbtm.VERSION + 1)), e.getMessage());
-        assertTrue(e.getMessage().contains("version " + Vbtm.VERSION), e.getMessage());
+    @Override
+    public void chunk(
+        long tid,
+        long baseTicks,
+        byte[] bytes,
+        int off,
+        int len,
+        boolean sessionEnd,
+        boolean truncated) {
+      calls.add(
+          "chunk "
+              + tid
+              + " "
+              + baseTicks
+              + " "
+              + Arrays.toString(Arrays.copyOfRange(bytes, off, off + len))
+              + (sessionEnd ? " end" : "")
+              + (truncated ? " partial" : ""));
     }
 
-    @Test
-    void aCutInsideAnyRecordHeaderIsTruncatedNotCorrupt() {
-        for (int n = Vbtm.MAGIC_BYTES; n < GOLDEN.length; n++) {
-            byte[] cut = Arrays.copyOf(golden(), n);
-            assertEquals(Outcome.TRUNCATED, TraceReader.read(cut, new VisitLog()), "cut at " + n);
-        }
+    @Override
+    public void end() {
+      calls.add("end");
     }
+  }
 
-    @Test
-    void theReaderRejectsWhatTheViewerRejects() {
-        rejects(new TraceBuilder(EPOCH_MS, Vbtm.MAX_UTC_OFFSET_SECONDS + 1), "UTC offset");
-        rejects(new TraceBuilder(EPOCH_MS, Integer.MIN_VALUE), "UTC offset");
-        rejects(trace().clazz(Vbtm.METHOD_ID_LIMIT - 1, "a.B", "m()V", "n()V"), "2^22");
-        rejects(trace().clazz(Long.MAX_VALUE, "a.B", "m()V"), "2^22");
-        rejects(trace().exception(0, "x.E"), "exception id 0");
-        rejects(trace().exception(Vbtm.EXCEPTION_ID_LIMIT, "x.E"), "exception id " + Vbtm.EXCEPTION_ID_LIMIT);
-        rejects(trace().gc(Vbtm.MAX_TICKS + 1, 0, Vbtm.GC_ACTION_MINOR, "G1", "Alloc"), "ticks out of range");
-        rejects(trace().gc(1, Vbtm.MAX_TICKS, Vbtm.GC_ACTION_MINOR, "G1", "Alloc"), "ticks out of range");
-        rejects(trace().gc(0, 0, Vbtm.GC_ACTION_MAJOR + 1, "G1", "Alloc"), "unknown GC action");
-        rejects(trace().gc(0, 0, Vbtm.GC_ACTION_MINOR, "x".repeat(Vbtm.MAX_GC_LABEL_BYTES + 1), ""), "collector name");
-        rejects(trace().gc(0, 0, Vbtm.GC_ACTION_MINOR, "", "x".repeat(Vbtm.MAX_GC_LABEL_BYTES + 1)), "GC cause");
-        rejects(varint(trace().rawBytes(Vbtm.RECORD_CHUNK, 7, 0), Vbtm.MAX_CHUNK_PAYLOAD_BYTES + 1), "payload length");
-        rejects(varint(trace().rawBytes(Vbtm.RECORD_CHUNK, 7), Vbtm.MAX_TICKS + 1).rawBytes(0), "base ticks");
-        rejects(varint(trace().rawBytes(Vbtm.RECORD_CHUNK_END, 7), -1L).rawBytes(0), "base ticks");
-        rejects(varint(trace().rawBytes(Vbtm.RECORD_THREAD, 7), -1L), "negative string length");
-        rejects(varint(trace().rawBytes(Vbtm.RECORD_GC, 0, 0, Vbtm.GC_ACTION_MINOR), -1L), "negative string length");
-        rejects(trace().rawBytes(0x7F), "unknown record type");
-        rejects(trace().end().rawBytes(Vbtm.RECORD_THREAD), "after the END record");
-        int[] tenContinuations = new int[Varint.MAX_BYTES];
-        Arrays.fill(tenContinuations, 0x80);
-        rejects(trace().rawBytes(Vbtm.RECORD_THREAD).rawBytes(tenContinuations), "varint too long");
-    }
+  private static List<String> goldenCalls() {
+    return List.of(
+        "anchor " + EPOCH_MS + " " + UTC_OFFSET,
+        "thread 7 main",
+        "class 0 a.B [m()V, n(I)V]",
+        "exception 1 x.E",
+        "gc 300 20 1 G1 Alloc",
+        "chunk 7 100 " + Arrays.toString(bytes(PAYLOAD)),
+        "chunk 7 200 [] end",
+        "end");
+  }
 
-    @Test
-    void theReaderAcceptsValuesAtTheLimits() {
-        TraceBuilder w = new TraceBuilder(EPOCH_MS, Vbtm.MAX_UTC_OFFSET_SECONDS)
-                .clazz(Vbtm.METHOD_ID_LIMIT - 1, "a.B", "m()V").exception(Vbtm.EXCEPTION_ID_LIMIT - 1, "x.E")
-                .gc(1, Vbtm.MAX_TICKS - 1, Vbtm.GC_ACTION_MAJOR, "x".repeat(Vbtm.MAX_GC_LABEL_BYTES), "")
-                .chunk(7, Vbtm.MAX_TICKS, new byte[0], true).end();
-        VisitLog r = new VisitLog();
-        assertEquals(Outcome.CLEAN, TraceReader.read(w.bytes(), r));
-        assertEquals(6, r.calls.size());
-        VisitLog west = new VisitLog();
-        assertEquals(Outcome.CLEAN,
-                TraceReader.read(new TraceBuilder(EPOCH_MS, -Vbtm.MAX_UTC_OFFSET_SECONDS).end().bytes(), west));
-        assertEquals("anchor " + EPOCH_MS + " " + -Vbtm.MAX_UTC_OFFSET_SECONDS, west.calls.get(0));
-    }
+  @Test
+  void theReaderDecodesTheGoldenBytesIntoTheSameRecordsInOrder() {
+    VisitLog r = new VisitLog();
+    assertEquals(Outcome.CLEAN, TraceReader.read(golden(), r));
+    assertEquals(goldenCalls(), r.calls);
+  }
 
-    private static TraceBuilder trace() {
-        return new TraceBuilder(EPOCH_MS, UTC_OFFSET);
-    }
+  @Test
+  void aCutInsideAChunkReportsThePartialPayloadAndTruncation() {
+    VisitLog r = new VisitLog();
+    byte[] cut = Arrays.copyOf(golden(), CHUNK_PAYLOAD_OFFSET + 3);
+    assertEquals(Outcome.TRUNCATED, TraceReader.read(cut, r));
+    assertEquals(
+        "chunk 7 100 " + Arrays.toString(Arrays.copyOf(bytes(PAYLOAD), 3)) + " partial",
+        r.calls.get(r.calls.size() - 1));
+  }
 
-    private static TraceBuilder varint(TraceBuilder w, long v) {
-        byte[] b = new byte[Varint.MAX_BYTES];
-        int n = Varint.put(b, 0, v);
-        int[] raw = new int[n];
-        for (int i = 0; i < n; i++) {
-            raw[i] = b[i] & 0xFF;
-        }
-        return w.rawBytes(raw);
-    }
+  @Test
+  void aTraceWithoutTheEndRecordIsTruncatedEvenWhenEveryRecordIsWhole() {
+    VisitLog r = new VisitLog();
+    assertEquals(
+        Outcome.TRUNCATED, TraceReader.read(Arrays.copyOf(golden(), GOLDEN.length - 1), r));
+    assertEquals(goldenCalls().subList(0, goldenCalls().size() - 1), r.calls);
+  }
 
-    private static void rejects(TraceBuilder w, String reason) {
-        CorruptTraceException e = assertThrows(CorruptTraceException.class,
-                () -> TraceReader.read(w.bytes(), new VisitLog()), reason);
-        assertTrue(e.getMessage().contains(reason), e.getMessage());
+  @Test
+  void theMagicAndTheVersionByteAreCheckedBeforeAnything() {
+    byte[] oldMagic = golden();
+    System.arraycopy(new byte[] {'v', 'a', 'f', '1'}, 0, oldMagic, 0, 4);
+    @Var
+    CorruptTraceException e =
+        assertThrows(CorruptTraceException.class, () -> TraceReader.read(oldMagic, new VisitLog()));
+    assertEquals(0, e.offset());
+    assertTrue(e.getMessage().contains("magic"), e.getMessage());
+
+    byte[] newer = golden();
+    newer[Vbtm.VERSION_OFFSET] = (byte) (Vbtm.VERSION + 1);
+    e = assertThrows(CorruptTraceException.class, () -> TraceReader.read(newer, new VisitLog()));
+    assertEquals(
+        Vbtm.VERSION_OFFSET,
+        e.offset(),
+        "the version is refused before the anchor is even looked at");
+    assertTrue(e.getMessage().contains("version " + (Vbtm.VERSION + 1)), e.getMessage());
+    assertTrue(e.getMessage().contains("version " + Vbtm.VERSION), e.getMessage());
+  }
+
+  @Test
+  void aCutInsideAnyRecordHeaderIsTruncatedNotCorrupt() {
+    for (int n = Vbtm.MAGIC_BYTES; n < GOLDEN.length; n++) {
+      byte[] cut = Arrays.copyOf(golden(), n);
+      assertEquals(Outcome.TRUNCATED, TraceReader.read(cut, new VisitLog()), "cut at " + n);
     }
+  }
+
+  @Test
+  void theReaderRejectsWhatTheViewerRejects() {
+    rejects(new TraceBuilder(EPOCH_MS, Vbtm.MAX_UTC_OFFSET_SECONDS + 1), "UTC offset");
+    rejects(new TraceBuilder(EPOCH_MS, Integer.MIN_VALUE), "UTC offset");
+    rejects(trace().clazz(Vbtm.METHOD_ID_LIMIT - 1, "a.B", "m()V", "n()V"), "2^22");
+    rejects(trace().clazz(Long.MAX_VALUE, "a.B", "m()V"), "2^22");
+    rejects(trace().exception(0, "x.E"), "exception id 0");
+    rejects(
+        trace().exception(Vbtm.EXCEPTION_ID_LIMIT, "x.E"),
+        "exception id " + Vbtm.EXCEPTION_ID_LIMIT);
+    rejects(
+        trace().gc(Vbtm.MAX_TICKS + 1, 0, Vbtm.GC_ACTION_MINOR, "G1", "Alloc"),
+        "ticks out of range");
+    rejects(
+        trace().gc(1, Vbtm.MAX_TICKS, Vbtm.GC_ACTION_MINOR, "G1", "Alloc"), "ticks out of range");
+    rejects(trace().gc(0, 0, Vbtm.GC_ACTION_MAJOR + 1, "G1", "Alloc"), "unknown GC action");
+    rejects(
+        trace().gc(0, 0, Vbtm.GC_ACTION_MINOR, "x".repeat(Vbtm.MAX_GC_LABEL_BYTES + 1), ""),
+        "collector name");
+    rejects(
+        trace().gc(0, 0, Vbtm.GC_ACTION_MINOR, "", "x".repeat(Vbtm.MAX_GC_LABEL_BYTES + 1)),
+        "GC cause");
+    rejects(
+        varint(trace().rawBytes(Vbtm.RECORD_CHUNK, 7, 0), Vbtm.MAX_CHUNK_PAYLOAD_BYTES + 1),
+        "payload length");
+    rejects(
+        varint(trace().rawBytes(Vbtm.RECORD_CHUNK, 7), Vbtm.MAX_TICKS + 1).rawBytes(0),
+        "base ticks");
+    rejects(varint(trace().rawBytes(Vbtm.RECORD_CHUNK_END, 7), -1L).rawBytes(0), "base ticks");
+    rejects(varint(trace().rawBytes(Vbtm.RECORD_THREAD, 7), -1L), "negative string length");
+    rejects(
+        varint(trace().rawBytes(Vbtm.RECORD_GC, 0, 0, Vbtm.GC_ACTION_MINOR), -1L),
+        "negative string length");
+    rejects(trace().rawBytes(0x7F), "unknown record type");
+    rejects(trace().end().rawBytes(Vbtm.RECORD_THREAD), "after the END record");
+    int[] tenContinuations = new int[Varint.MAX_BYTES];
+    Arrays.fill(tenContinuations, 0x80);
+    rejects(trace().rawBytes(Vbtm.RECORD_THREAD).rawBytes(tenContinuations), "varint too long");
+  }
+
+  @Test
+  void theReaderAcceptsValuesAtTheLimits() {
+    TraceBuilder w =
+        new TraceBuilder(EPOCH_MS, Vbtm.MAX_UTC_OFFSET_SECONDS)
+            .clazz(Vbtm.METHOD_ID_LIMIT - 1, "a.B", "m()V")
+            .exception(Vbtm.EXCEPTION_ID_LIMIT - 1, "x.E")
+            .gc(
+                1,
+                Vbtm.MAX_TICKS - 1,
+                Vbtm.GC_ACTION_MAJOR,
+                "x".repeat(Vbtm.MAX_GC_LABEL_BYTES),
+                "")
+            .chunk(7, Vbtm.MAX_TICKS, new byte[0], true)
+            .end();
+    VisitLog r = new VisitLog();
+    assertEquals(Outcome.CLEAN, TraceReader.read(w.bytes(), r));
+    assertEquals(6, r.calls.size());
+    VisitLog west = new VisitLog();
+    assertEquals(
+        Outcome.CLEAN,
+        TraceReader.read(
+            new TraceBuilder(EPOCH_MS, -Vbtm.MAX_UTC_OFFSET_SECONDS).end().bytes(), west));
+    assertEquals("anchor " + EPOCH_MS + " " + -Vbtm.MAX_UTC_OFFSET_SECONDS, west.calls.get(0));
+  }
+
+  private static TraceBuilder trace() {
+    return new TraceBuilder(EPOCH_MS, UTC_OFFSET);
+  }
+
+  private static TraceBuilder varint(TraceBuilder w, long v) {
+    byte[] b = new byte[Varint.MAX_BYTES];
+    int n = Varint.put(b, 0, v);
+    int[] raw = new int[n];
+    for (int i = 0; i < n; i++) {
+      raw[i] = b[i] & 0xFF;
+    }
+    return w.rawBytes(raw);
+  }
+
+  private static void rejects(TraceBuilder w, String reason) {
+    CorruptTraceException e =
+        assertThrows(
+            CorruptTraceException.class, () -> TraceReader.read(w.bytes(), new VisitLog()), reason);
+    assertTrue(e.getMessage().contains(reason), e.getMessage());
+  }
 }

@@ -4,29 +4,28 @@ import org.jspecify.annotations.Nullable;
 
 final class DecodeScratch {
 
-    private static final int MIN_BYTES = 1 << 16;
+  private static final int MIN_BYTES = 1 << 16;
 
-    private static final ThreadLocal<byte[]> FREE = new ThreadLocal<>();
+  private static final ThreadLocal<byte[]> FREE = new ThreadLocal<>();
 
-    private DecodeScratch() {
+  private DecodeScratch() {}
+
+  static byte[] take() {
+    byte[] b = FREE.get();
+    if (b == null) {
+      return new byte[MIN_BYTES];
     }
+    FREE.set(null);
+    return b;
+  }
 
-    static byte[] take() {
-        byte[] b = FREE.get();
-        if (b == null) {
-            return new byte[MIN_BYTES];
-        }
-        FREE.set(null);
-        return b;
-    }
+  static byte[] allocate(int len) {
+    return new byte[Math.max(Integer.highestOneBit(len) * 2, MIN_BYTES)];
+  }
 
-    static byte[] allocate(int len) {
-        return new byte[Math.max(Integer.highestOneBit(len) * 2, MIN_BYTES)];
+  static void give(byte @Nullable [] b) {
+    if (b != null) {
+      FREE.set(b);
     }
-
-    static void give(byte @Nullable [] b) {
-        if (b != null) {
-            FREE.set(b);
-        }
-    }
+  }
 }

@@ -7,105 +7,110 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.yagipass.verbatime.jmc.control.SpyView.FakeEditorHandle;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.junit.jupiter.api.Test;
-
-import io.github.yagipass.verbatime.jmc.control.SpyView.FakeEditorHandle;
 
 final class TransferStateTest {
 
-    private static final Transfer.Listener SILENT = new Transfer.Listener() {
+  private static final Transfer.Listener SILENT =
+      new Transfer.Listener() {
         @Override
-        public void progress(long bytes) {
-        }
-
-        @Override
-        public void finished(long bytes) {
-        }
+        public void progress(long bytes) {}
 
         @Override
-        public void failed(String message) {
-        }
+        public void finished(long bytes) {}
 
         @Override
-        public void stopped() {
-        }
-    };
+        public void failed(String message) {}
 
-    private static Transfer pull(long id) {
-        return new Transfer(new FakeAgent(), id, Path.of("/tmp/rec-" + id + ".vbtm"), 0, SILENT);
-    }
+        @Override
+        public void stopped() {}
+      };
 
-    @Test
-    void aPullCancelledByTheConnectionStaysStoppingUntilItReportsStopped() {
-        TransferState t = new TransferState();
-        List<String> cancelled = new ArrayList<>();
-        Transfer first = pull(1);
-        t.started(first, () -> cancelled.add("first"));
-        t.transferred(120);
+  private static Transfer pull(long id) {
+    return new Transfer(new FakeAgent(), id, Path.of("/tmp/rec-" + id + ".vbtm"), 0, SILENT);
+  }
 
-        t.cancelCurrent();
-        assertEquals(List.of("first"), cancelled, "cancelling runs the job's cancel action");
-        assertNull(t.current());
-        assertTrue(t.isStopping(), "the old transfer is still winding down");
-        assertEquals(120, t.transferredBytes(), "the byte count survives so the message can say where it stopped");
+  @Test
+  void aPullCancelledByTheConnectionStaysStoppingUntilItReportsStopped() {
+    TransferState t = new TransferState();
+    List<String> cancelled = new ArrayList<>();
+    Transfer first = pull(1);
+    t.started(first, () -> cancelled.add("first"));
+    t.transferred(120);
 
-        t.defer(2, Path.of("/tmp/rec-2.vbtm"));
-        assertEquals(2, t.transferringId(), "the parked recording counts as attached so status polls do not re-attach it");
-        assertTrue(t.isActive(), "a parked transfer still blocks Start");
-        assertNull(t.takeDeferred(), "the next transfer must not start while the old one is still stopping");
+    t.cancelCurrent();
+    assertEquals(List.of("first"), cancelled, "cancelling runs the job's cancel action");
+    assertNull(t.current());
+    assertTrue(t.isStopping(), "the old transfer is still winding down");
+    assertEquals(
+        120,
+        t.transferredBytes(),
+        "the byte count survives so the message can say where it stopped");
 
-        assertFalse(t.clearStopping(pull(9)), "a stranger's stopped() does not release the slot");
-        assertTrue(t.clearStopping(first));
-        TransferState.Deferred next = t.takeDeferred();
-        assertNotNull(next);
-        assertEquals(2, next.recordingId());
-        assertNull(t.takeDeferred(), "pending is handed out once");
-        assertFalse(t.isActive());
-        assertEquals(-1, t.transferringId());
-    }
+    t.defer(2, Path.of("/tmp/rec-2.vbtm"));
+    assertEquals(
+        2,
+        t.transferringId(),
+        "the parked recording counts as attached so status polls do not re-attach it");
+    assertTrue(t.isActive(), "a parked transfer still blocks Start");
+    assertNull(
+        t.takeDeferred(), "the next transfer must not start while the old one is still stopping");
 
-    @Test
-    void aCallbackFromAnUnknownPullClearsNothing() {
-        TransferState t = new TransferState();
-        Transfer current = pull(5);
-        FakeEditorHandle editor = new FakeEditorHandle();
-        t.started(current, () -> {
-        });
-        t.editorOpened(editor, 1_000);
+    assertFalse(t.clearStopping(pull(9)), "a stranger's stopped() does not release the slot");
+    assertTrue(t.clearStopping(first));
+    TransferState.Deferred next = t.takeDeferred();
+    assertNotNull(next);
+    assertEquals(2, next.recordingId());
+    assertNull(t.takeDeferred(), "pending is handed out once");
+    assertFalse(t.isActive());
+    assertEquals(-1, t.transferringId());
+  }
 
-        Transfer stale = pull(4);
-        assertFalse(t.isCurrent(stale));
-        assertFalse(t.clearCurrent(stale), "a late callback from an earlier transfer must not end the current one");
-        assertSame(current, t.current());
-        assertSame(editor, t.editor(), "the current transfer keeps its editor");
+  @Test
+  void aCallbackFromAnUnknownPullClearsNothing() {
+    TransferState t = new TransferState();
+    Transfer current = pull(5);
+    FakeEditorHandle editor = new FakeEditorHandle();
+    t.started(current, () -> {});
+    t.editorOpened(editor, 1_000);
 
-        assertTrue(t.clearCurrent(current));
-        assertNull(t.current());
-        assertNull(t.editor(), "the editor belongs to the transfer that opened it");
-    }
+    Transfer stale = pull(4);
+    assertFalse(t.isCurrent(stale));
+    assertFalse(
+        t.clearCurrent(stale),
+        "a late callback from an earlier transfer must not end the current one");
+    assertSame(current, t.current());
+    assertSame(editor, t.editor(), "the current transfer keeps its editor");
 
-    @Test
-    void reloadsAreThrottledFromTheLastReloadNotFromTheFirstByte() {
-        TransferState t = new TransferState();
-        t.editorOpened(new FakeEditorHandle(), 10_000);
-        assertFalse(t.reloadDue(10_000 + TransferState.RELOAD_THROTTLE_MS - 1));
-        assertTrue(t.reloadDue(10_000 + TransferState.RELOAD_THROTTLE_MS));
-        t.reloaded(12_000);
-        assertFalse(t.reloadDue(13_999), "the clock restarts at every reload");
-        assertTrue(t.reloadDue(14_000));
-    }
+    assertTrue(t.clearCurrent(current));
+    assertNull(t.current());
+    assertNull(t.editor(), "the editor belongs to the transfer that opened it");
+  }
 
-    @Test
-    void agentRateAveragesSuccessiveSamplesAndForgetsThemOnReset() {
-        TransferState t = new TransferState();
-        assertEquals(0, t.sampleAgentRate(1_000, 100), "one sample is not a rate yet");
-        assertEquals(100.0, t.sampleAgentRate(2_000, 200), "100 bytes in 1 s");
-        assertEquals(150.0, t.sampleAgentRate(3_000, 400), "(100 + 200) / 2: the new sample is averaged in");
-        t.resetAgentRate();
-        assertEquals(0, t.sampleAgentRate(4_000, 400), "after a reset the first sample is silent again");
-    }
+  @Test
+  void reloadsAreThrottledFromTheLastReloadNotFromTheFirstByte() {
+    TransferState t = new TransferState();
+    t.editorOpened(new FakeEditorHandle(), 10_000);
+    assertFalse(t.reloadDue(10_000 + TransferState.RELOAD_THROTTLE_MS - 1));
+    assertTrue(t.reloadDue(10_000 + TransferState.RELOAD_THROTTLE_MS));
+    t.reloaded(12_000);
+    assertFalse(t.reloadDue(13_999), "the clock restarts at every reload");
+    assertTrue(t.reloadDue(14_000));
+  }
+
+  @Test
+  void agentRateAveragesSuccessiveSamplesAndForgetsThemOnReset() {
+    TransferState t = new TransferState();
+    assertEquals(0, t.sampleAgentRate(1_000, 100), "one sample is not a rate yet");
+    assertEquals(100.0, t.sampleAgentRate(2_000, 200), "100 bytes in 1 s");
+    assertEquals(
+        150.0, t.sampleAgentRate(3_000, 400), "(100 + 200) / 2: the new sample is averaged in");
+    t.resetAgentRate();
+    assertEquals(
+        0, t.sampleAgentRate(4_000, 400), "after a reset the first sample is silent again");
+  }
 }

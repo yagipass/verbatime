@@ -1,86 +1,84 @@
 package io.github.yagipass.verbatime.jmc;
 
+import io.github.yagipass.verbatime.jmc.control.ControlPresenter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
 import org.jspecify.annotations.Nullable;
 
-import io.github.yagipass.verbatime.jmc.control.ControlPresenter;
-
 public final class Preferences extends ScopedPreferenceStore implements ControlPresenter.Settings {
 
-    private static final String QUALIFIER = "io.github.yagipass.verbatime.jmc";
+  private static final String QUALIFIER = "io.github.yagipass.verbatime.jmc";
 
-    public static final String AGENT_TARGET = "agentTarget";
+  public static final String AGENT_TARGET = "agentTarget";
 
-    public static final String RECORDINGS_DIR = "recordingsDir";
+  public static final String RECORDINGS_DIR = "recordingsDir";
 
-    private static final String ROOTS = "roots";
+  private static final String ROOTS = "roots";
 
-    private static final Path RECORDINGS_SUBDIR = Path.of("verbatime", "recordings");
+  private static final Path RECORDINGS_SUBDIR = Path.of("verbatime", "recordings");
 
-    private static @Nullable Preferences instance;
+  private static @Nullable Preferences instance;
 
-    public static synchronized Preferences get() {
-        if (instance == null) {
-            instance = new Preferences();
+  public static synchronized Preferences get() {
+    if (instance == null) {
+      instance = new Preferences();
+    }
+    return instance;
+  }
+
+  private Preferences() {
+    super(InstanceScope.INSTANCE, QUALIFIER);
+    setDefault(AGENT_TARGET, "localhost:7091");
+    setDefault(RECORDINGS_DIR, recordingsDirIn(workspaceDir()).toString());
+  }
+
+  @Override
+  public String roots() {
+    return getString(ROOTS);
+  }
+
+  @Override
+  public Path recordingsDir() {
+    return resolveRecordingsDir(getString(RECORDINGS_DIR), recordingsDirIn(workspaceDir()));
+  }
+
+  @Override
+  @SuppressWarnings("EmptyCatch")
+  public void save(String target, String roots) {
+    setValue(AGENT_TARGET, target);
+    setValue(ROOTS, roots);
+    try {
+      save();
+    } catch (IOException ignored) {
+    }
+  }
+
+  static Path resolveRecordingsDir(String pref, Path dflt) {
+    String s = pref == null ? "" : pref.trim();
+    return s.isEmpty() ? dflt : Path.of(s);
+  }
+
+  static Path recordingsDirIn(Path workspace) {
+    return workspace.resolve(RECORDINGS_SUBDIR);
+  }
+
+  @SuppressWarnings("EmptyCatch")
+  private static Path workspaceDir() {
+    try {
+      IPath ws = Platform.getLocation();
+      if (ws != null) {
+        Path p = ws.toFile().toPath();
+        if (Files.isDirectory(p)) {
+          return p;
         }
-        return instance;
+      }
+    } catch (IllegalStateException unset) {
     }
-
-    private Preferences() {
-        super(InstanceScope.INSTANCE, QUALIFIER);
-        setDefault(AGENT_TARGET, "localhost:7091");
-        setDefault(RECORDINGS_DIR, recordingsDirIn(workspaceDir()).toString());
-    }
-
-    @Override
-    public String roots() {
-        return getString(ROOTS);
-    }
-
-    @Override
-    public Path recordingsDir() {
-        return resolveRecordingsDir(getString(RECORDINGS_DIR), recordingsDirIn(workspaceDir()));
-    }
-
-    @Override
-    @SuppressWarnings("EmptyCatch")
-    public void save(String target, String roots) {
-        setValue(AGENT_TARGET, target);
-        setValue(ROOTS, roots);
-        try {
-            save();
-        } catch (IOException ignored) {
-        }
-    }
-
-    static Path resolveRecordingsDir(String pref, Path dflt) {
-        String s = pref == null ? "" : pref.trim();
-        return s.isEmpty() ? dflt : Path.of(s);
-    }
-
-    static Path recordingsDirIn(Path workspace) {
-        return workspace.resolve(RECORDINGS_SUBDIR);
-    }
-
-    @SuppressWarnings("EmptyCatch")
-    private static Path workspaceDir() {
-        try {
-            IPath ws = Platform.getLocation();
-            if (ws != null) {
-                Path p = ws.toFile().toPath();
-                if (Files.isDirectory(p)) {
-                    return p;
-                }
-            }
-        } catch (IllegalStateException unset) {
-        }
-        return Path.of(System.getProperty("user.home", "."));
-    }
+    return Path.of(System.getProperty("user.home", "."));
+  }
 }

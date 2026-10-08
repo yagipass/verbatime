@@ -1,27 +1,28 @@
 package io.github.yagipass.verbatime.examples.r2dbc;
 
+import io.github.yagipass.verbatime.examples.workload.OrderService;
+import io.github.yagipass.verbatime.examples.workload.Receipt;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
-import io.github.yagipass.verbatime.examples.workload.OrderService;
-import io.github.yagipass.verbatime.examples.workload.Receipt;
-
 @Component
 public class StartupRunner implements ApplicationRunner {
 
-    private final OrderService orders;
+  private final OrderService orders;
 
-    private final OrderRepository repository;
+  private final OrderRepository repository;
 
-    StartupRunner(OrderService orders, OrderRepository repository) {
-        this.orders = orders;
-        this.repository = repository;
-    }
+  StartupRunner(OrderService orders, OrderRepository repository) {
+    this.orders = orders;
+    this.repository = repository;
+  }
 
-    @Override
-    public void run(ApplicationArguments args) {
-        Receipt receipt = orders.placeOrder("warmup", 1);
-        repository.save(OrderEntity.of(receipt.sku(), receipt.qty(), receipt.cents(), receipt.txId())).block();
-    }
+  @Override
+  public void run(ApplicationArguments args) {
+    Receipt receipt = orders.placeOrder("warmup", 1);
+    repository
+        .save(OrderEntity.of(receipt.sku(), receipt.qty(), receipt.cents(), receipt.txId()))
+        .block();
+  }
 }

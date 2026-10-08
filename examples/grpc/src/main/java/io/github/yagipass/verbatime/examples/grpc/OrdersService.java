@@ -10,22 +10,29 @@ import io.grpc.stub.StreamObserver;
 
 public final class OrdersService extends OrdersGrpc.OrdersImplBase {
 
-    private final OrderService orders;
+  private final OrderService orders;
 
-    public OrdersService(OrderService orders) {
-        this.orders = orders;
-    }
+  public OrdersService(OrderService orders) {
+    this.orders = orders;
+  }
 
-    @Override
-    public void placeOrder(OrderRequest request, StreamObserver<Receipt> response) {
-        String sku = request.getSku().isEmpty() ? "widget" : request.getSku();
-        int qty = request.getQty() == 0 ? 1 : request.getQty();
-        try {
-            io.github.yagipass.verbatime.examples.workload.Receipt receipt = orders.placeOrder(sku, qty);
-            response.onNext(Receipt.newBuilder().setSku(receipt.sku()).setQty(receipt.qty()).setCents(receipt.cents()).setTxId(receipt.txId()).build());
-            response.onCompleted();
-        } catch (OutOfStockException e) {
-            response.onError(Status.FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
-        }
+  @Override
+  public void placeOrder(OrderRequest request, StreamObserver<Receipt> response) {
+    String sku = request.getSku().isEmpty() ? "widget" : request.getSku();
+    int qty = request.getQty() == 0 ? 1 : request.getQty();
+    try {
+      io.github.yagipass.verbatime.examples.workload.Receipt receipt = orders.placeOrder(sku, qty);
+      response.onNext(
+          Receipt.newBuilder()
+              .setSku(receipt.sku())
+              .setQty(receipt.qty())
+              .setCents(receipt.cents())
+              .setTxId(receipt.txId())
+              .build());
+      response.onCompleted();
+    } catch (OutOfStockException e) {
+      response.onError(
+          Status.FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException());
     }
+  }
 }

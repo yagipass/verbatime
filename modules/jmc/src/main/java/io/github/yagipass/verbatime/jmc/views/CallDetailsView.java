@@ -1,9 +1,11 @@
 package io.github.yagipass.verbatime.jmc.views;
 
+import io.github.yagipass.verbatime.jmc.Formats;
+import io.github.yagipass.verbatime.jmc.SelectedCall;
+import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
@@ -18,233 +20,260 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
-import io.github.yagipass.verbatime.jmc.Formats;
-import io.github.yagipass.verbatime.jmc.SelectedCall;
-import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
-
 public final class CallDetailsView extends EditorBoundView {
 
-    private static final int WRAP_WIDTH_HINT = 120;
+  private static final int WRAP_WIDTH_HINT = 120;
 
-    private static final int WHEEL_STEP = 20;
+  private static final int WHEEL_STEP = 20;
 
-    private Composite root;
+  private Composite root;
 
-    private StackLayout rootLayout;
+  private StackLayout rootLayout;
 
-    private Label emptyLabel;
+  private Label emptyLabel;
 
-    private ScrolledComposite factsScroller;
+  private ScrolledComposite factsScroller;
 
-    private Composite facts;
+  private Composite facts;
 
-    private Text sigText;
+  private Text sigText;
 
-    private Text fullText;
+  private Text fullText;
 
-    private Label row1Label;
+  private Label row1Label;
 
-    private Text atText;
+  private Text atText;
 
-    private Label row2Label;
+  private Label row2Label;
 
-    private Label gcLabel;
+  private Label gcLabel;
 
-    private Label marksLabel;
+  private Label marksLabel;
 
-    private Label ancestorsHead;
+  private Label ancestorsHead;
 
-    private AncestorTable ancestors;
+  private AncestorTable ancestors;
 
-    @Override
-    protected void createContent(Composite parent) {
-        root = new Composite(parent, SWT.NONE);
-        rootLayout = new StackLayout();
-        root.setLayout(rootLayout);
-        emptyLabel = new Label(root, SWT.WRAP | SWT.CENTER);
-        createFacts(root);
-        rootLayout.topControl = emptyLabel;
-    }
+  @Override
+  protected void createContent(Composite parent) {
+    root = new Composite(parent, SWT.NONE);
+    rootLayout = new StackLayout();
+    root.setLayout(rootLayout);
+    emptyLabel = new Label(root, SWT.WRAP | SWT.CENTER);
+    createFacts(root);
+    rootLayout.topControl = emptyLabel;
+  }
 
-    private void createFacts(Composite parent) {
-        factsScroller = new ScrolledComposite(parent, SWT.V_SCROLL);
-        factsScroller.setExpandHorizontal(true);
-        factsScroller.setExpandVertical(true);
-        factsScroller.addListener(SWT.Resize, e -> fitFacts());
-        facts = new Composite(factsScroller, SWT.NONE);
-        facts.setLayout(new GridLayout(1, false));
-        factsScroller.setContent(facts);
-        sigText = readOnlyText(facts);
-        sigText.setFont(JFaceResources.getFontRegistry().getBold(JFaceResources.DEFAULT_FONT));
-        fullText = readOnlyText(facts);
-        fullText.setForeground(facts.getDisplay().getSystemColor(SWT.COLOR_WIDGET_DISABLED_FOREGROUND));
-        row1Label = wrapLabel(facts);
-        atText = readOnlyText(facts);
-        row2Label = wrapLabel(facts);
-        row2Label.setForeground(facts.getDisplay().getSystemColor(SWT.COLOR_WIDGET_DISABLED_FOREGROUND));
-        gcLabel = wrapLabel(facts);
-        gcLabel.setForeground(facts.getDisplay().getSystemColor(SWT.COLOR_DARK_MAGENTA));
-        marksLabel = wrapLabel(facts);
-        marksLabel.setForeground(facts.getDisplay().getSystemColor(SWT.COLOR_DARK_YELLOW));
+  private void createFacts(Composite parent) {
+    factsScroller = new ScrolledComposite(parent, SWT.V_SCROLL);
+    factsScroller.setExpandHorizontal(true);
+    factsScroller.setExpandVertical(true);
+    factsScroller.addListener(SWT.Resize, e -> fitFacts());
+    facts = new Composite(factsScroller, SWT.NONE);
+    facts.setLayout(new GridLayout(1, false));
+    factsScroller.setContent(facts);
+    sigText = readOnlyText(facts);
+    sigText.setFont(JFaceResources.getFontRegistry().getBold(JFaceResources.DEFAULT_FONT));
+    fullText = readOnlyText(facts);
+    fullText.setForeground(facts.getDisplay().getSystemColor(SWT.COLOR_WIDGET_DISABLED_FOREGROUND));
+    row1Label = wrapLabel(facts);
+    atText = readOnlyText(facts);
+    row2Label = wrapLabel(facts);
+    row2Label.setForeground(
+        facts.getDisplay().getSystemColor(SWT.COLOR_WIDGET_DISABLED_FOREGROUND));
+    gcLabel = wrapLabel(facts);
+    gcLabel.setForeground(facts.getDisplay().getSystemColor(SWT.COLOR_DARK_MAGENTA));
+    marksLabel = wrapLabel(facts);
+    marksLabel.setForeground(facts.getDisplay().getSystemColor(SWT.COLOR_DARK_YELLOW));
 
-        Composite actions = new Composite(facts, SWT.NONE);
-        actions.setLayout(new RowLayout());
-        Button zoom = new Button(actions, SWT.PUSH);
-        zoom.setText("Zoom to this call");
-        zoom.addListener(SWT.Selection, e -> {
-            if (editor() != null) {
-                editor().zoomTo(editor().selection());
-            }
+    Composite actions = new Composite(facts, SWT.NONE);
+    actions.setLayout(new RowLayout());
+    Button zoom = new Button(actions, SWT.PUSH);
+    zoom.setText("Zoom to this call");
+    zoom.addListener(
+        SWT.Selection,
+        e -> {
+          if (editor() != null) {
+            editor().zoomTo(editor().selection());
+          }
         });
-        Button highlight = new Button(actions, SWT.PUSH);
-        highlight.setText("Highlight this method");
-        highlight.addListener(SWT.Selection, e -> {
-            SelectedCall f = selection();
-            if (f != null) {
-                Objects.requireNonNull(editor()).searchFor(f.methodId());
-            }
+    Button highlight = new Button(actions, SWT.PUSH);
+    highlight.setText("Highlight this method");
+    highlight.addListener(
+        SWT.Selection,
+        e -> {
+          SelectedCall f = selection();
+          if (f != null) {
+            Objects.requireNonNull(editor()).searchFor(f.methodId());
+          }
         });
-        Button export = new Button(actions, SWT.PUSH);
-        export.setText("Export session…");
-        export.addListener(SWT.Selection, e -> {
-            if (editor() != null) {
-                editor().openExportDialog();
-            }
+    Button export = new Button(actions, SWT.PUSH);
+    export.setText("Export session…");
+    export.addListener(
+        SWT.Selection,
+        e -> {
+          if (editor() != null) {
+            editor().openExportDialog();
+          }
         });
 
-        ancestorsHead = HeaderWithCopyButton.create(facts,
-                "Copy the ancestor chain as text, one call per line with full method names", () -> {
-                    TraceSnapshot d = trace();
-                    SelectedCall f = selection();
-                    if (d != null && f != null) {
-                        Clipboards.copyText(facts.getDisplay(), CopyTexts.ancestorText(d, f));
-                    }
-                }).label();
+    ancestorsHead =
+        HeaderWithCopyButton.create(
+                facts,
+                "Copy the ancestor chain as text, one call per line with full method names",
+                () -> {
+                  TraceSnapshot d = trace();
+                  SelectedCall f = selection();
+                  if (d != null && f != null) {
+                    Clipboards.copyText(facts.getDisplay(), CopyTexts.ancestorText(d, f));
+                  }
+                })
+            .label();
 
-        ancestors = new AncestorTable(facts);
-        GridData ancestorsData = new GridData(SWT.FILL, SWT.TOP, true, false);
-        ancestorsData.widthHint = WRAP_WIDTH_HINT;
-        ancestors.setLayoutData(ancestorsData);
+    ancestors = new AncestorTable(facts);
+    GridData ancestorsData = new GridData(SWT.FILL, SWT.TOP, true, false);
+    ancestorsData.widthHint = WRAP_WIDTH_HINT;
+    ancestors.setLayoutData(ancestorsData);
 
-        forwardWheel(sigText);
-        forwardWheel(fullText);
-        forwardWheel(atText);
-    }
+    forwardWheel(sigText);
+    forwardWheel(fullText);
+    forwardWheel(atText);
+  }
 
-    private void forwardWheel(Control c) {
-        c.addListener(SWT.MouseWheel, e -> {
-            if (facts.getSize().y <= factsScroller.getClientArea().height) {
-                return;
-            }
-            Point origin = factsScroller.getOrigin();
-            factsScroller.setOrigin(origin.x, origin.y - e.count * WHEEL_STEP);
-            e.doit = false;
+  private void forwardWheel(Control c) {
+    c.addListener(
+        SWT.MouseWheel,
+        e -> {
+          if (facts.getSize().y <= factsScroller.getClientArea().height) {
+            return;
+          }
+          Point origin = factsScroller.getOrigin();
+          factsScroller.setOrigin(origin.x, origin.y - e.count * WHEEL_STEP);
+          e.doit = false;
         });
+  }
+
+  private static Text readOnlyText(Composite parent) {
+    Text t = new Text(parent, SWT.MULTI | SWT.READ_ONLY | SWT.WRAP);
+    t.setBackground(parent.getBackground());
+    t.setLayoutData(wrapData());
+    return t;
+  }
+
+  private static Label wrapLabel(Composite parent) {
+    Label l = new Label(parent, SWT.WRAP);
+    l.setLayoutData(wrapData());
+    return l;
+  }
+
+  private static GridData wrapData() {
+    GridData gd = new GridData(SWT.FILL, SWT.TOP, true, false);
+    gd.widthHint = WRAP_WIDTH_HINT;
+    return gd;
+  }
+
+  @Override
+  protected String selectHint() {
+    return "Click a call in the chart to show its details";
+  }
+
+  @Override
+  protected void refresh() {
+    if (root == null || root.isDisposed()) {
+      return;
     }
-
-    private static Text readOnlyText(Composite parent) {
-        Text t = new Text(parent, SWT.MULTI | SWT.READ_ONLY | SWT.WRAP);
-        t.setBackground(parent.getBackground());
-        t.setLayoutData(wrapData());
-        return t;
+    TraceSnapshot d = trace();
+    SelectedCall f = selection();
+    String empty = emptyReason(d, f);
+    if (empty != null) {
+      showEmpty(empty);
+      return;
     }
-
-    private static Label wrapLabel(Composite parent) {
-        Label l = new Label(parent, SWT.WRAP);
-        l.setLayoutData(wrapData());
-        return l;
+    String name = Objects.requireNonNull(d).methodName(Objects.requireNonNull(f).methodId());
+    sigText.setText(Formats.signature(name));
+    fullText.setText(name);
+    row1Label.setText(
+        "total "
+            + Formats.fmtDur(f.durNs())
+            + ", self "
+            + Formats.fmtDur(f.effectiveSelfNs())
+            + ", start "
+            + Formats.fmtTs(f.startNs()));
+    atText.setText("at " + Formats.fmtWall(d.wallClock(f.startNs())));
+    row2Label.setText(
+        "depth "
+            + f.depth()
+            + ", on "
+            + d.threadName(f.tid())
+            + ", "
+            + CopyTexts.sessionText(d, f.tid(), f.startNs()));
+    List<String> marks = new ArrayList<>();
+    if (f.thrown()) {
+      marks.add("ended by throw: " + d.exceptionName(f.exceptionId()));
     }
-
-    private static GridData wrapData() {
-        GridData gd = new GridData(SWT.FILL, SWT.TOP, true, false);
-        gd.widthHint = WRAP_WIDTH_HINT;
-        return gd;
+    if (f.unclosed()) {
+      marks.add("unclosed: the log ended before close");
     }
+    marksLabel.setText(String.join("\n", marks));
+    ((GridData) marksLabel.getLayoutData()).exclude = marks.isEmpty();
+    marksLabel.setVisible(!marks.isEmpty());
+    String gc = CopyTexts.gcText(d.gc.overlap(f.startNs(), f.durNs()), f.durNs());
+    gcLabel.setText(gc == null ? "" : gc);
+    ((GridData) gcLabel.getLayoutData()).exclude = gc == null;
+    gcLabel.setVisible(gc != null);
 
-    @Override
-    protected String selectHint() {
-        return "Click a call in the chart to show its details";
+    long sessionDurNs = CopyTexts.sessionDurNs(d, f.tid(), f.startNs());
+    List<SelectedCall.Ancestor> chain = f.pathFromRoot();
+    int top = chain.get(0).depth();
+    ancestorsHead.setText(
+        top == 0
+            ? "Ancestors, root first"
+            : "Ancestors from depth " + top + ", the calls above are outside the loaded window");
+    List<AncestorTable.Row> rows = new ArrayList<>(chain.size());
+    for (SelectedCall.Ancestor a : chain) {
+      String full = d.methodName(a.methodId());
+      rows.add(
+          new AncestorTable.Row(
+              a.depth(),
+              Formats.shortName(full),
+              full,
+              Formats.fmtDur(a.durNs()),
+              CopyTexts.pctOfSession(a.durNs(), sessionDurNs),
+              a.depth() == f.depth() && a.startNs() == f.startNs()));
     }
+    ancestors.setRows(rows);
 
-    @Override
-    protected void refresh() {
-        if (root == null || root.isDisposed()) {
-            return;
-        }
-        TraceSnapshot d = trace();
-        SelectedCall f = selection();
-        String empty = emptyReason(d, f);
-        if (empty != null) {
-            showEmpty(empty);
-            return;
-        }
-        String name = Objects.requireNonNull(d).methodName(Objects.requireNonNull(f).methodId());
-        sigText.setText(Formats.signature(name));
-        fullText.setText(name);
-        row1Label.setText("total " + Formats.fmtDur(f.durNs()) + ", self " + Formats.fmtDur(f.effectiveSelfNs())
-                + ", start " + Formats.fmtTs(f.startNs()));
-        atText.setText("at " + Formats.fmtWall(d.wallClock(f.startNs())));
-        row2Label.setText("depth " + f.depth() + ", on " + d.threadName(f.tid()) + ", "
-                + CopyTexts.sessionText(d, f.tid(), f.startNs()));
-        List<String> marks = new ArrayList<>();
-        if (f.thrown()) {
-            marks.add("ended by throw: " + d.exceptionName(f.exceptionId()));
-        }
-        if (f.unclosed()) {
-            marks.add("unclosed: the log ended before close");
-        }
-        marksLabel.setText(String.join("\n", marks));
-        ((GridData) marksLabel.getLayoutData()).exclude = marks.isEmpty();
-        marksLabel.setVisible(!marks.isEmpty());
-        String gc = CopyTexts.gcText(d.gc.overlap(f.startNs(), f.durNs()), f.durNs());
-        gcLabel.setText(gc == null ? "" : gc);
-        ((GridData) gcLabel.getLayoutData()).exclude = gc == null;
-        gcLabel.setVisible(gc != null);
+    rootLayout.topControl = factsScroller;
+    facts.layout(true, true);
+    root.layout();
+    fitFacts();
+  }
 
-        long sessionDurNs = CopyTexts.sessionDurNs(d, f.tid(), f.startNs());
-        List<SelectedCall.Ancestor> chain = f.pathFromRoot();
-        int top = chain.get(0).depth();
-        ancestorsHead.setText(top == 0 ? "Ancestors, root first"
-                : "Ancestors from depth " + top + ", the calls above are outside the loaded window");
-        List<AncestorTable.Row> rows = new ArrayList<>(chain.size());
-        for (SelectedCall.Ancestor a : chain) {
-            String full = d.methodName(a.methodId());
-            rows.add(new AncestorTable.Row(a.depth(), Formats.shortName(full), full, Formats.fmtDur(a.durNs()),
-                    CopyTexts.pctOfSession(a.durNs(), sessionDurNs), a.depth() == f.depth() && a.startNs() == f.startNs()));
-        }
-        ancestors.setRows(rows);
-
-        rootLayout.topControl = factsScroller;
-        facts.layout(true, true);
-        root.layout();
-        fitFacts();
+  private void fitFacts() {
+    if (factsScroller == null || factsScroller.isDisposed()) {
+      return;
     }
+    int width = factsScroller.getClientArea().width;
+    factsScroller.setMinSize(facts.computeSize(width > 0 ? width : SWT.DEFAULT, SWT.DEFAULT));
+  }
 
-    private void fitFacts() {
-        if (factsScroller == null || factsScroller.isDisposed()) {
-            return;
-        }
-        int width = factsScroller.getClientArea().width;
-        factsScroller.setMinSize(facts.computeSize(width > 0 ? width : SWT.DEFAULT, SWT.DEFAULT));
-    }
+  private void showEmpty(String text) {
+    ancestors.setRows(List.of());
+    emptyLabel.setText(text);
+    rootLayout.topControl = emptyLabel;
+    root.layout();
+  }
 
-    private void showEmpty(String text) {
-        ancestors.setRows(List.of());
-        emptyLabel.setText(text);
-        rootLayout.topControl = emptyLabel;
-        root.layout();
+  @SuppressWarnings("ReferenceEquality")
+  @Override
+  public void setFocus() {
+    if (root == null || root.isDisposed()) {
+      return;
     }
-
-    @SuppressWarnings("ReferenceEquality")
-    @Override
-    public void setFocus() {
-        if (root == null || root.isDisposed()) {
-            return;
-        }
-        if (rootLayout.topControl == factsScroller) {
-            factsScroller.setFocus();
-        } else {
-            root.setFocus();
-        }
+    if (rootLayout.topControl == factsScroller) {
+      factsScroller.setFocus();
+    } else {
+      root.setFocus();
     }
+  }
 }

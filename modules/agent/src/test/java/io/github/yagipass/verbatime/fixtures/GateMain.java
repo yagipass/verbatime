@@ -2,16 +2,15 @@ package io.github.yagipass.verbatime.fixtures;
 
 public final class GateMain {
 
-    private static final long INIT_NANOS = System.nanoTime();
+  private static final long INIT_NANOS = System.nanoTime();
 
-    static {
-        GateHarness.startReleaser();
-    }
+  static {
+    GateHarness.startReleaser();
+  }
 
-    private GateMain() {
-    }
+  private GateMain() {}
 
-    public static void main(String[] args) throws Exception {
-        GateHarness.verify(INIT_NANOS);
-    }
+  public static void main(String[] args) throws Exception {
+    GateHarness.verify(INIT_NANOS);
+  }
 }

@@ -5,26 +5,26 @@ import java.util.Map;
 
 interface Agent extends AutoCloseable {
 
-    interface Dialer {
-        Agent dial(String target) throws IOException;
-    }
+  interface Dialer {
+    Agent dial(String target) throws IOException;
+  }
 
-    Map<String, String> status() throws IOException;
+  Map<String, String> status() throws IOException;
 
-    String[] searchMethods(String query, int max) throws IOException;
+  String[] searchMethods(String query, int max) throws IOException;
 
-    void replaceRoots(String[] specs) throws IOException;
+  void replaceRoots(String[] specs) throws IOException;
 
-    long startRecording() throws IOException;
+  long startRecording() throws IOException;
 
-    void stopRecording() throws IOException;
+  void stopRecording() throws IOException;
 
-    long openStream(long recordingId, long fromOffset) throws IOException;
+  long openStream(long recordingId, long fromOffset) throws IOException;
 
-    byte[] readStream(long streamId) throws IOException;
+  byte[] readStream(long streamId) throws IOException;
 
-    void closeStream(long streamId) throws IOException;
+  void closeStream(long streamId) throws IOException;
 
-    @Override
-    void close() throws IOException;
+  @Override
+  void close() throws IOException;
 }

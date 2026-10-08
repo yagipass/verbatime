@@ -7,14 +7,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class StartupRunner implements ApplicationRunner {
 
-    private final PersistentOrderService orders;
+  private final PersistentOrderService orders;
 
-    StartupRunner(PersistentOrderService orders) {
-        this.orders = orders;
-    }
+  StartupRunner(PersistentOrderService orders) {
+    this.orders = orders;
+  }
 
-    @Override
-    public void run(ApplicationArguments args) {
-        orders.place("warmup", 1);
-    }
+  @Override
+  public void run(ApplicationArguments args) {
+    orders.place("warmup", 1);
+  }
 }
