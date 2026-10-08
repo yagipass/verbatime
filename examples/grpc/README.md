@@ -14,7 +14,7 @@ docker compose up --build
 
 The JVM pauses at `main()` until JMC starts a recording. That flow, the `load` profile, and the
 shutdown are the same for every example and are described once in
-[Running an example](../README.md#running-an-example). Exercise it with the commands below. The
+[Try one](../README.md#try-one). Exercise it with the commands below. The
 last one runs 30 seconds of calls in a loop.
 
 ```sh

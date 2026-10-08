@@ -15,7 +15,7 @@ docker compose up --build
 Compose starts Postgres first and waits for its healthcheck. The application JVM then pauses at
 `main()` until JMC starts a recording. That flow, the `load` profile, and the shutdown are the
 same for every example and are described once in
-[Running an example](../README.md#running-an-example). Exercise it with:
+[Try one](../README.md#try-one). Exercise it with:
 
 ```sh
 curl 'http://localhost:8080/orders?sku=widget&qty=3'

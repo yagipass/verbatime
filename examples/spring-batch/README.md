@@ -16,7 +16,7 @@ docker compose up --build
 Compose starts Postgres first and waits for its healthcheck. The application JVM starts recording in
 the agent's `premain`, the job runs to completion within a few seconds, and the agent's shutdown
 hook closes the recording as the JVM exits, leaving it in the file below, as described in
-[Examples whose JVM exits on its own](../README.md#examples-whose-jvm-exits-on-its-own):
+[Recording tests and batch jobs](../README.md#recording-tests-and-batch-jobs):
 
 ```text
 recordings/spring-batch.vbtm
