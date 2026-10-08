@@ -99,6 +99,7 @@
               packages = [
                 jdk
                 (pkgs.maven.override { jdk_headless = jdk; })
+                pkgs.mvnd
                 pkgs.git
                 inputs'.ajmx.packages.ajmx
               ]
