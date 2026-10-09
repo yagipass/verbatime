@@ -43,15 +43,15 @@ public final class Recording {
     return closed;
   }
 
-  void markClosed() {
-    closed = true;
-  }
-
   public boolean delivered() {
     return delivered;
   }
 
   public void markDelivered() {
     delivered = true;
+  }
+
+  void markClosed() {
+    closed = true;
   }
 }

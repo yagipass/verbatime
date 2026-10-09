@@ -63,6 +63,11 @@ final class BelowFloorCounts {
     size = 0;
   }
 
+  private static int mix(int x) {
+    int h = x * 0x9E3779B9;
+    return h ^ (h >>> 16);
+  }
+
   private void allocate() {
     int[] oldKeys = keys;
     int[] oldCounts = counts;
@@ -80,10 +85,5 @@ final class BelowFloorCounts {
       counts[slot] = oldCounts[from];
       touched[i] = slot;
     }
-  }
-
-  private static int mix(int x) {
-    int h = x * 0x9E3779B9;
-    return h ^ (h >>> 16);
   }
 }

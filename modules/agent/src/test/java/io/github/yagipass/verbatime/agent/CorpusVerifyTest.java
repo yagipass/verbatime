@@ -80,6 +80,12 @@ final class CorpusVerifyTest {
     }
   }
 
+  static String majors(Map<Integer, Integer> majors) {
+    StringBuilder sb = new StringBuilder();
+    majors.forEach((k, v) -> sb.append(sb.isEmpty() ? "" : " ").append(k).append(':').append(v));
+    return sb.toString();
+  }
+
   private static void print(List<CorpusVerifier.JarReport> reports, long millis, int threads) {
     @Var int classes = 0;
     @Var int linked = 0;
@@ -213,12 +219,6 @@ final class CorpusVerifyTest {
               + " classes link only when transformed (not a failure, but unexpected):");
       differs.stream().limit(20).forEach(d -> System.err.println("[corpus]   " + d));
     }
-  }
-
-  static String majors(Map<Integer, Integer> majors) {
-    StringBuilder sb = new StringBuilder();
-    majors.forEach((k, v) -> sb.append(sb.isEmpty() ? "" : " ").append(k).append(':').append(v));
-    return sb.toString();
   }
 
   private static long metaspacePeakMb() {

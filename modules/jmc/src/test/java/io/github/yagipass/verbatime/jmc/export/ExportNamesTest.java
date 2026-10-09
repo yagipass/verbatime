@@ -12,13 +12,6 @@ import org.junit.jupiter.api.Test;
 
 final class ExportNamesTest {
 
-  private static TraceSnapshot trace() throws IOException {
-    TraceBuilder w = TestTraces.writer();
-    w.clazz(1, "pkg.a.X", "m()V", "m(I)V", "other()V");
-    w.clazz(4, "pkg.b.X", "m()V");
-    return TestTraces.index(w);
-  }
-
   @Test
   void collidingShortNamesAreNumberedInFirstUseOrder() throws IOException {
     ExportNames names = new ExportNames(trace());
@@ -57,5 +50,12 @@ final class ExportNamesTest {
     assertEquals("Cls.m", ExportNames.shortName("Cls.m"));
     assertEquals("m", ExportNames.shortName("m()V"));
     assertEquals("<no enter>", ExportNames.shortName("<no enter>"));
+  }
+
+  private static TraceSnapshot trace() throws IOException {
+    TraceBuilder w = TestTraces.writer();
+    w.clazz(1, "pkg.a.X", "m()V", "m(I)V", "other()V");
+    w.clazz(4, "pkg.b.X", "m()V");
+    return TestTraces.index(w);
   }
 }

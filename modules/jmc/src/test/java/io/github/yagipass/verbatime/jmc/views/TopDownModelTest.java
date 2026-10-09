@@ -15,25 +15,6 @@ import org.junit.jupiter.api.Test;
 
 final class TopDownModelTest {
 
-  private static TraceSnapshot trace() throws IOException {
-    TraceBuilder w = TestTraces.writer();
-    w.thread(1, "main");
-    w.clazz(0, "pkg.Root", "root()V", "a()V", "b()V");
-    TraceBuilder.Payload p = new TraceBuilder.Payload(100);
-    p.enter(100, 0).enter(110, 2).exit(120).enter(120, 1).exit(160).exit(200);
-    w.chunk(1, 100, p.bytes(), true);
-    return TestTraces.index(w);
-  }
-
-  private static SubtreeAggregate rootOf(TraceSnapshot d) {
-    return SubtreeAggregate.compute(d, 1, 10_000, 10_000, 0, 0);
-  }
-
-  private static TopDownModel fixture() throws IOException {
-    TraceSnapshot d = trace();
-    return TopDownModel.of(d, rootOf(d));
-  }
-
   @Test
   void aggregateIsTheOneItWasBuiltFromSoTheViewCanSkipARebuild() throws IOException {
     TraceSnapshot d = trace();
@@ -90,5 +71,24 @@ final class TopDownModelTest {
                    1.00 µs     1.00 µs     10%         1    pkg.Root.b()V""",
         CopyTexts.topDownText(m, r -> true),
         "the fully expanded tree is copied with two spaces of indent per level");
+  }
+
+  private static TraceSnapshot trace() throws IOException {
+    TraceBuilder w = TestTraces.writer();
+    w.thread(1, "main");
+    w.clazz(0, "pkg.Root", "root()V", "a()V", "b()V");
+    TraceBuilder.Payload p = new TraceBuilder.Payload(100);
+    p.enter(100, 0).enter(110, 2).exit(120).enter(120, 1).exit(160).exit(200);
+    w.chunk(1, 100, p.bytes(), true);
+    return TestTraces.index(w);
+  }
+
+  private static SubtreeAggregate rootOf(TraceSnapshot d) {
+    return SubtreeAggregate.compute(d, 1, 10_000, 10_000, 0, 0);
+  }
+
+  private static TopDownModel fixture() throws IOException {
+    TraceSnapshot d = trace();
+    return TopDownModel.of(d, rootOf(d));
   }
 }

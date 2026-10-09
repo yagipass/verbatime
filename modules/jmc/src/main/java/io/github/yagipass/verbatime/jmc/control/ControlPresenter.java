@@ -261,6 +261,101 @@ public final class ControlPresenter {
     }
   }
 
+  void disconnect() {
+    teardown(State.DISCONNECTED, "Disconnected");
+  }
+
+  void search(String query) {
+    searchGeneration++;
+    int gen = searchGeneration;
+    String q = query.trim();
+    if (q.length() < 2 || connection == null || !searchSupported) {
+      view.rootCandidates(new String[0]);
+      return;
+    }
+    uiThread.postAfter(
+        SEARCH_DEBOUNCE_MS,
+        () -> {
+          if (gen == searchGeneration) {
+            runSearch(gen, q);
+          }
+        });
+  }
+
+  void addRoot(String spec) {
+    String[] arr = RootSpecs.with(appliedRoots, spec);
+    replaceRoots(
+        arr,
+        true,
+        "Applied " + Formats.plural(arr.length, "root"),
+        "Failed to apply roots: ",
+        view::rootAccepted);
+  }
+
+  void removeRoot(String spec) {
+    String[] arr = RootSpecs.without(appliedRoots, spec);
+    replaceRoots(
+        arr,
+        true,
+        "Applied " + Formats.plural(arr.length, "root"),
+        "Failed to apply roots: ",
+        () -> {});
+  }
+
+  void startRecording() {
+    Connection conn = connection;
+    if (conn == null || startPending) {
+      return;
+    }
+    startPending = true;
+    renderPending();
+    call(
+        conn,
+        conn.agent()::startRecording,
+        id -> view.message("Started recording #" + id),
+        msg -> {
+          startPending = false;
+          renderPending();
+          view.message("Failed to start: " + msg);
+        });
+  }
+
+  void stopRecording() {
+    Connection conn = connection;
+    if (conn == null || stopPending) {
+      return;
+    }
+    stopPending = true;
+    renderPending();
+    call(
+        conn,
+        () -> {
+          conn.agent().stopRecording();
+          return null;
+        },
+        v -> view.message("Stopped. Waiting for the transfer to complete…"),
+        msg -> {
+          stopPending = false;
+          renderPending();
+          view.message("Failed to stop: " + msg);
+        });
+  }
+
+  void dispose() {
+    disposed = true;
+    transfer.cancelCurrent();
+    transfer.dropDeferred();
+    releaseClient();
+  }
+
+  @SuppressWarnings("EmptyCatch")
+  private static void closeQuietly(Agent c) {
+    try {
+      c.close();
+    } catch (IOException ignored) {
+    }
+  }
+
   private boolean isAttempt(int a) {
     return !disposed && state == State.CONNECTING && a == attempt.get();
   }
@@ -312,10 +407,6 @@ public final class ControlPresenter {
   @SuppressWarnings("ReferenceEquality")
   private boolean isCurrent(Connection conn) {
     return connection == conn;
-  }
-
-  void disconnect() {
-    teardown(State.DISCONNECTED, "Disconnected");
   }
 
   private void lost(String msg) {
@@ -442,23 +533,6 @@ public final class ControlPresenter {
         transferring);
   }
 
-  void search(String query) {
-    searchGeneration++;
-    int gen = searchGeneration;
-    String q = query.trim();
-    if (q.length() < 2 || connection == null || !searchSupported) {
-      view.rootCandidates(new String[0]);
-      return;
-    }
-    uiThread.postAfter(
-        SEARCH_DEBOUNCE_MS,
-        () -> {
-          if (gen == searchGeneration) {
-            runSearch(gen, q);
-          }
-        });
-  }
-
   private void runSearch(int gen, String query) {
     Connection conn = connection;
     if (conn == null) {
@@ -479,26 +553,6 @@ public final class ControlPresenter {
             view.message("Method search is not available on this agent: " + msg);
           }
         });
-  }
-
-  void addRoot(String spec) {
-    String[] arr = RootSpecs.with(appliedRoots, spec);
-    replaceRoots(
-        arr,
-        true,
-        "Applied " + Formats.plural(arr.length, "root"),
-        "Failed to apply roots: ",
-        view::rootAccepted);
-  }
-
-  void removeRoot(String spec) {
-    String[] arr = RootSpecs.without(appliedRoots, spec);
-    replaceRoots(
-        arr,
-        true,
-        "Applied " + Formats.plural(arr.length, "root"),
-        "Failed to apply roots: ",
-        () -> {});
   }
 
   private void reapplySavedRoots() {
@@ -537,45 +591,6 @@ public final class ControlPresenter {
           apply(conn, AgentStatus.parse(st));
         },
         msg -> view.message(failPrefix + msg));
-  }
-
-  void startRecording() {
-    Connection conn = connection;
-    if (conn == null || startPending) {
-      return;
-    }
-    startPending = true;
-    renderPending();
-    call(
-        conn,
-        conn.agent()::startRecording,
-        id -> view.message("Started recording #" + id),
-        msg -> {
-          startPending = false;
-          renderPending();
-          view.message("Failed to start: " + msg);
-        });
-  }
-
-  void stopRecording() {
-    Connection conn = connection;
-    if (conn == null || stopPending) {
-      return;
-    }
-    stopPending = true;
-    renderPending();
-    call(
-        conn,
-        () -> {
-          conn.agent().stopRecording();
-          return null;
-        },
-        v -> view.message("Stopped. Waiting for the transfer to complete…"),
-        msg -> {
-          stopPending = false;
-          renderPending();
-          view.message("Failed to stop: " + msg);
-        });
   }
 
   private void renderPending() {
@@ -771,13 +786,6 @@ public final class ControlPresenter {
     startDeferredTransfer();
   }
 
-  void dispose() {
-    disposed = true;
-    transfer.cancelCurrent();
-    transfer.dropDeferred();
-    releaseClient();
-  }
-
   private void releaseClient() {
     Connection conn = connection;
     connection = null;
@@ -785,14 +793,6 @@ public final class ControlPresenter {
     if (conn != null) {
       conn.background().execute(() -> closeQuietly(conn.agent()));
       conn.background().shutdown();
-    }
-  }
-
-  @SuppressWarnings("EmptyCatch")
-  private static void closeQuietly(Agent c) {
-    try {
-      c.close();
-    } catch (IOException ignored) {
     }
   }
 }

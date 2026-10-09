@@ -6,6 +6,11 @@ public enum RecordStart {
   ONDEMAND,
   STARTUP;
 
+  @Override
+  public String toString() {
+    return name().toLowerCase(Locale.ROOT);
+  }
+
   static RecordStart parse(String value) {
     return switch (value) {
       case "ondemand" -> ONDEMAND;
@@ -14,10 +19,5 @@ public enum RecordStart {
           throw new IllegalArgumentException(
               "record= needs startup or ondemand, got '" + value + "'");
     };
-  }
-
-  @Override
-  public String toString() {
-    return name().toLowerCase(Locale.ROOT);
   }
 }

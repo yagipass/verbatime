@@ -5,6 +5,19 @@ import java.util.function.IntUnaryOperator;
 
 public final class Fixture implements FixtureInterface {
 
+  public static final class Inner {
+    int inner(int x) {
+      return x + 100;
+    }
+  }
+
+  @SuppressWarnings("UnusedVariable")
+  private static Object[] live;
+
+  public static long stat(int a, long b) {
+    return a + b;
+  }
+
   @Marker("root")
   public String root() {
     StringBuilder sb = new StringBuilder();
@@ -29,9 +42,6 @@ public final class Fixture implements FixtureInterface {
     thrower();
   }
 
-  @SuppressWarnings("UnusedVariable")
-  private static Object[] live;
-
   public int rootAllocates() {
     Object[] keep = new Object[1 << 21];
     for (int i = 0; i < keep.length; i++) {
@@ -47,6 +57,11 @@ public final class Fixture implements FixtureInterface {
     return n;
   }
 
+  @Override
+  public String abstractMethod() {
+    return "impl";
+  }
+
   int churn(int i) {
     byte[][] junk = new byte[16][];
     for (int k = 0; k < junk.length; k++) {
@@ -57,10 +72,6 @@ public final class Fixture implements FixtureInterface {
 
   void collect() {
     System.gc();
-  }
-
-  public static long stat(int a, long b) {
-    return a + b;
   }
 
   double inst(double a, float b) {
@@ -160,15 +171,4 @@ public final class Fixture implements FixtureInterface {
   }
 
   void voidMethod() {}
-
-  @Override
-  public String abstractMethod() {
-    return "impl";
-  }
-
-  public static final class Inner {
-    int inner(int x) {
-      return x + 100;
-    }
-  }
 }

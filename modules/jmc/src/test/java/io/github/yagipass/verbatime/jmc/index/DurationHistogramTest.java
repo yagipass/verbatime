@@ -8,18 +8,6 @@ import org.junit.jupiter.api.Test;
 
 final class DurationHistogramTest {
 
-  private static long pyBucket(long durNs) {
-    if (durNs < 1000) {
-      return durNs;
-    }
-    int digits = Long.toString(durNs).length();
-    @Var long k = 1;
-    for (int i = 0; i < digits - 3; i++) {
-      k *= 10;
-    }
-    return durNs / k * k;
-  }
-
   @Test
   void bucketIndexMatchesPythonBucketing() {
     for (long v = 0; v < 5000; v++) {
@@ -53,5 +41,17 @@ final class DurationHistogramTest {
     assertEquals(5000, DurationHistogram.chooseThreshold(hist, 108, 7));
     assertEquals(90_000, DurationHistogram.chooseThreshold(hist, 108, 3));
     assertEquals(100, DurationHistogram.chooseThreshold(hist, 108, 50));
+  }
+
+  private static long pyBucket(long durNs) {
+    if (durNs < 1000) {
+      return durNs;
+    }
+    int digits = Long.toString(durNs).length();
+    @Var long k = 1;
+    for (int i = 0; i < digits - 3; i++) {
+      k *= 10;
+    }
+    return durNs / k * k;
   }
 }

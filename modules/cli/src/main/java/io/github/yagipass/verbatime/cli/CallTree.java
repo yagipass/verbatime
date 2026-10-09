@@ -9,6 +9,168 @@ import org.jspecify.annotations.Nullable;
 
 final class CallTree {
 
+  private static final class Line {
+
+    final long ordinal;
+
+    final int depth;
+
+    final int methodId;
+
+    final long startTicks;
+
+    long durTicks;
+
+    long selfTicks;
+
+    int children;
+
+    int exceptionId = SessionWalker.NO_EXCEPTION;
+
+    boolean unclosed;
+
+    @Nullable Fold fold;
+
+    long floorTicks;
+
+    Line(long ordinal, int depth, int methodId, long startTicks) {
+      this.ordinal = ordinal;
+      this.depth = depth;
+      this.methodId = methodId;
+      this.startTicks = startTicks;
+    }
+  }
+
+  private static final class Lines extends SubtreeVisitor {
+
+    final List<Line> lines = new ArrayList<>();
+
+    long more;
+
+    long subtreeCalls;
+
+    long rootOrdinal = -1;
+
+    private final long floorTicks;
+
+    private final int maxDepth;
+
+    private final int limit;
+
+    private boolean recording = true;
+
+    private long closed;
+
+    private int[] lineIndex = new int[64];
+
+    private long[] subtree = new long[64];
+
+    private int[] children = new int[64];
+
+    private Fold[] folds = new Fold[64];
+
+    Lines(SessionWalker walker, long at, long floorTicks, int maxDepth, int limit) {
+      super(walker, at);
+      this.floorTicks = floorTicks;
+      this.maxDepth = maxDepth;
+      this.limit = limit;
+    }
+
+    @Override
+    void onEnter(long ordinal, int level, int depth, int methodId, long startTicks) {
+      if (level == lineIndex.length) {
+        allocate(level * 2);
+      }
+      if (level > 0) {
+        children[level - 1]++;
+      } else if (rootOrdinal < 0) {
+        rootOrdinal = ordinal;
+      }
+      lineIndex[level] = -1;
+      subtree[level] = 0;
+      children[level] = 0;
+      if (folds[level] == null) {
+        folds[level] = new Fold();
+      } else {
+        folds[level].reset();
+      }
+      if (level <= maxDepth && recording) {
+        lineIndex[level] = lines.size();
+        lines.add(new Line(ordinal, depth, methodId, startTicks));
+      }
+    }
+
+    @Override
+    void onExit(
+        long ordinal,
+        int level,
+        int depth,
+        int methodId,
+        long startTicks,
+        long durTicks,
+        long selfTicks,
+        int exceptionId,
+        boolean unclosed) {
+      subtree[level]++;
+      if (level > 0) {
+        subtree[level - 1] += subtree[level];
+      } else {
+        subtreeCalls += subtree[level];
+      }
+      int index = lineIndex[level];
+      boolean shown = level == 0 || (level <= maxDepth && durTicks >= floorTicks);
+      if (!shown) {
+        if (index >= 0) {
+          lines.subList(index, lines.size()).clear();
+        }
+        if (level > 0 && level - 1 <= maxDepth) {
+          Fold parent = folds[level - 1];
+          parent.add(
+              methodId,
+              startTicks,
+              durTicks,
+              subtree[level],
+              exceptionId != SessionWalker.NO_EXCEPTION);
+          parent.byDepth = level > maxDepth;
+        }
+        return;
+      }
+      Fold fold = folds[level];
+      if (index < 0) {
+        more += fold.count > 0 ? 2 : 1;
+        return;
+      }
+      Line l = lines.get(index);
+      l.durTicks = durTicks;
+      l.selfTicks = selfTicks;
+      l.children = children[level];
+      l.exceptionId = exceptionId;
+      l.unclosed = unclosed;
+      closed++;
+      if (fold.count > 0) {
+        if (recording) {
+          Line folded = new Line(ordinal, depth + 1, -1, fold.firstStartTicks);
+          folded.fold = fold.copy();
+          folded.floorTicks = floorTicks;
+          lines.add(folded);
+          closed++;
+        } else {
+          more++;
+        }
+      }
+      if (closed >= limit) {
+        recording = false;
+      }
+    }
+
+    private void allocate(int capacity) {
+      lineIndex = Arrays.copyOf(lineIndex, capacity);
+      subtree = Arrays.copyOf(subtree, capacity);
+      children = Arrays.copyOf(children, capacity);
+      folds = Arrays.copyOf(folds, capacity);
+    }
+  }
+
   private final TreeCommand tree;
 
   private final Out out;
@@ -185,167 +347,5 @@ final class CallTree {
             + next);
     out.json(
         new Json("hint").put("fold_under", parent).ms("fold_ms", fold.ticks).put("next", next));
-  }
-
-  private static final class Line {
-
-    final long ordinal;
-
-    final int depth;
-
-    final int methodId;
-
-    final long startTicks;
-
-    long durTicks;
-
-    long selfTicks;
-
-    int children;
-
-    int exceptionId = SessionWalker.NO_EXCEPTION;
-
-    boolean unclosed;
-
-    @Nullable Fold fold;
-
-    long floorTicks;
-
-    Line(long ordinal, int depth, int methodId, long startTicks) {
-      this.ordinal = ordinal;
-      this.depth = depth;
-      this.methodId = methodId;
-      this.startTicks = startTicks;
-    }
-  }
-
-  private static final class Lines extends SubtreeVisitor {
-
-    final List<Line> lines = new ArrayList<>();
-
-    long more;
-
-    long subtreeCalls;
-
-    long rootOrdinal = -1;
-
-    private final long floorTicks;
-
-    private final int maxDepth;
-
-    private final int limit;
-
-    private boolean recording = true;
-
-    private long closed;
-
-    private int[] lineIndex = new int[64];
-
-    private long[] subtree = new long[64];
-
-    private int[] children = new int[64];
-
-    private Fold[] folds = new Fold[64];
-
-    Lines(SessionWalker walker, long at, long floorTicks, int maxDepth, int limit) {
-      super(walker, at);
-      this.floorTicks = floorTicks;
-      this.maxDepth = maxDepth;
-      this.limit = limit;
-    }
-
-    @Override
-    void onEnter(long ordinal, int level, int depth, int methodId, long startTicks) {
-      if (level == lineIndex.length) {
-        allocate(level * 2);
-      }
-      if (level > 0) {
-        children[level - 1]++;
-      } else if (rootOrdinal < 0) {
-        rootOrdinal = ordinal;
-      }
-      lineIndex[level] = -1;
-      subtree[level] = 0;
-      children[level] = 0;
-      if (folds[level] == null) {
-        folds[level] = new Fold();
-      } else {
-        folds[level].reset();
-      }
-      if (level <= maxDepth && recording) {
-        lineIndex[level] = lines.size();
-        lines.add(new Line(ordinal, depth, methodId, startTicks));
-      }
-    }
-
-    @Override
-    void onExit(
-        long ordinal,
-        int level,
-        int depth,
-        int methodId,
-        long startTicks,
-        long durTicks,
-        long selfTicks,
-        int exceptionId,
-        boolean unclosed) {
-      subtree[level]++;
-      if (level > 0) {
-        subtree[level - 1] += subtree[level];
-      } else {
-        subtreeCalls += subtree[level];
-      }
-      int index = lineIndex[level];
-      boolean shown = level == 0 || (level <= maxDepth && durTicks >= floorTicks);
-      if (!shown) {
-        if (index >= 0) {
-          lines.subList(index, lines.size()).clear();
-        }
-        if (level > 0 && level - 1 <= maxDepth) {
-          Fold parent = folds[level - 1];
-          parent.add(
-              methodId,
-              startTicks,
-              durTicks,
-              subtree[level],
-              exceptionId != SessionWalker.NO_EXCEPTION);
-          parent.byDepth = level > maxDepth;
-        }
-        return;
-      }
-      Fold fold = folds[level];
-      if (index < 0) {
-        more += fold.count > 0 ? 2 : 1;
-        return;
-      }
-      Line l = lines.get(index);
-      l.durTicks = durTicks;
-      l.selfTicks = selfTicks;
-      l.children = children[level];
-      l.exceptionId = exceptionId;
-      l.unclosed = unclosed;
-      closed++;
-      if (fold.count > 0) {
-        if (recording) {
-          Line folded = new Line(ordinal, depth + 1, -1, fold.firstStartTicks);
-          folded.fold = fold.copy();
-          folded.floorTicks = floorTicks;
-          lines.add(folded);
-          closed++;
-        } else {
-          more++;
-        }
-      }
-      if (closed >= limit) {
-        recording = false;
-      }
-    }
-
-    private void allocate(int capacity) {
-      lineIndex = Arrays.copyOf(lineIndex, capacity);
-      subtree = Arrays.copyOf(subtree, capacity);
-      children = Arrays.copyOf(children, capacity);
-      folds = Arrays.copyOf(folds, capacity);
-    }
   }
 }

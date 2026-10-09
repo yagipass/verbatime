@@ -35,6 +35,87 @@ import org.jspecify.annotations.Nullable;
 
 final class TracingPlan {
 
+  private static final class ProbeCalls implements CodeTransform {
+
+    private final int id;
+
+    private final boolean gate;
+
+    private final @Nullable List<StackMapFrameInfo> frames;
+
+    private final int declaredLocals;
+
+    private int touchedLocals;
+
+    private Label bodyStart;
+
+    ProbeCalls(
+        int id,
+        boolean gate,
+        @Nullable List<StackMapFrameInfo> frames,
+        int declaredLocals,
+        int parameterSlots) {
+      this.id = id;
+      this.gate = gate;
+      this.frames = frames;
+      this.declaredLocals = declaredLocals;
+      this.touchedLocals = parameterSlots;
+    }
+
+    @Override
+    public void atStart(CodeBuilder cob) {
+      if (gate) {
+        StartupGateTransform.emitAwait(cob);
+      }
+      cob.loadConstant(id);
+      cob.invokestatic(PROBE, "enter", VOID_INT);
+      bodyStart = cob.newBoundLabel();
+    }
+
+    @Override
+    public void accept(CodeBuilder cob, CodeElement ce) {
+      if (ce instanceof StackMapTableAttribute) {
+        return;
+      }
+      switch (ce) {
+        case ReturnInstruction _ -> {
+          cob.loadConstant(id);
+          cob.invokestatic(PROBE, "exit", VOID_INT);
+        }
+        case LoadInstruction i -> touch(i.slot() + i.typeKind().slotSize());
+        case StoreInstruction i -> touch(i.slot() + i.typeKind().slotSize());
+        case IncrementInstruction i -> touch(i.slot() + 1);
+        case DiscontinuedInstruction.RetInstruction i -> touch(i.slot() + 1);
+        default -> {}
+      }
+      cob.with(ce);
+    }
+
+    @Override
+    public void atEnd(CodeBuilder cob) {
+      Label handler = cob.newBoundLabel();
+      if (touchedLocals < declaredLocals) {
+        cob.aconst_null();
+        cob.astore(declaredLocals - 1);
+      }
+      cob.dup();
+      cob.loadConstant(id);
+      cob.invokestatic(PROBE, "exitThrow", VOID_THROWABLE_INT);
+      cob.athrow();
+      cob.exceptionCatchAll(bodyStart, handler, handler);
+      if (frames != null) {
+        List<StackMapFrameInfo> all = new ArrayList<>(frames.size() + 1);
+        all.addAll(frames);
+        all.add(StackMapFrameInfo.of(handler, List.of(), THROWABLE_ON_STACK));
+        cob.with(StackMapTableAttribute.of(all));
+      }
+    }
+
+    private void touch(int slots) {
+      touchedLocals = Math.max(touchedLocals, slots);
+    }
+  }
+
   static final ClassFile INLINING =
       ClassFile.of(
           ClassFile.StackMapsOption.DROP_STACK_MAPS,
@@ -195,86 +276,5 @@ final class TracingPlan {
       }
     }
     return n;
-  }
-
-  private static final class ProbeCalls implements CodeTransform {
-
-    private final int id;
-
-    private final boolean gate;
-
-    private final @Nullable List<StackMapFrameInfo> frames;
-
-    private final int declaredLocals;
-
-    private int touchedLocals;
-
-    private Label bodyStart;
-
-    ProbeCalls(
-        int id,
-        boolean gate,
-        @Nullable List<StackMapFrameInfo> frames,
-        int declaredLocals,
-        int parameterSlots) {
-      this.id = id;
-      this.gate = gate;
-      this.frames = frames;
-      this.declaredLocals = declaredLocals;
-      this.touchedLocals = parameterSlots;
-    }
-
-    @Override
-    public void atStart(CodeBuilder cob) {
-      if (gate) {
-        StartupGateTransform.emitAwait(cob);
-      }
-      cob.loadConstant(id);
-      cob.invokestatic(PROBE, "enter", VOID_INT);
-      bodyStart = cob.newBoundLabel();
-    }
-
-    @Override
-    public void accept(CodeBuilder cob, CodeElement ce) {
-      if (ce instanceof StackMapTableAttribute) {
-        return;
-      }
-      switch (ce) {
-        case ReturnInstruction _ -> {
-          cob.loadConstant(id);
-          cob.invokestatic(PROBE, "exit", VOID_INT);
-        }
-        case LoadInstruction i -> touch(i.slot() + i.typeKind().slotSize());
-        case StoreInstruction i -> touch(i.slot() + i.typeKind().slotSize());
-        case IncrementInstruction i -> touch(i.slot() + 1);
-        case DiscontinuedInstruction.RetInstruction i -> touch(i.slot() + 1);
-        default -> {}
-      }
-      cob.with(ce);
-    }
-
-    private void touch(int slots) {
-      touchedLocals = Math.max(touchedLocals, slots);
-    }
-
-    @Override
-    public void atEnd(CodeBuilder cob) {
-      Label handler = cob.newBoundLabel();
-      if (touchedLocals < declaredLocals) {
-        cob.aconst_null();
-        cob.astore(declaredLocals - 1);
-      }
-      cob.dup();
-      cob.loadConstant(id);
-      cob.invokestatic(PROBE, "exitThrow", VOID_THROWABLE_INT);
-      cob.athrow();
-      cob.exceptionCatchAll(bodyStart, handler, handler);
-      if (frames != null) {
-        List<StackMapFrameInfo> all = new ArrayList<>(frames.size() + 1);
-        all.addAll(frames);
-        all.add(StackMapFrameInfo.of(handler, List.of(), THROWABLE_ON_STACK));
-        cob.with(StackMapTableAttribute.of(all));
-      }
-    }
   }
 }

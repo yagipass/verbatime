@@ -4,6 +4,12 @@ public final class Json {
 
   private Json() {}
 
+  public static String quote(String s) {
+    StringBuilder sb = new StringBuilder(s.length() + 16);
+    appendQuoted(sb, s);
+    return sb.toString();
+  }
+
   static void appendQuoted(StringBuilder sb, String s) {
     sb.append('"');
     for (int i = 0; i < s.length(); i++) {
@@ -25,11 +31,5 @@ public final class Json {
       }
     }
     sb.append('"');
-  }
-
-  public static String quote(String s) {
-    StringBuilder sb = new StringBuilder(s.length() + 16);
-    appendQuoted(sb, s);
-    return sb.toString();
   }
 }

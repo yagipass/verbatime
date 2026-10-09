@@ -8,28 +8,6 @@ import org.jspecify.annotations.Nullable;
 
 final class ViewerBridge {
 
-  static final int MAX_RESPONSE_CHARS = 2 * 1024 * 1024;
-
-  static final List<String> HOST_FUNCTIONS =
-      List.of(
-          "vbtmHostReady",
-          "vbtmHostRequestWindow",
-          "vbtmHostReload",
-          "vbtmHostSelect",
-          "vbtmHostRequestSearch",
-          "vbtmHostRequestMatch",
-          "vbtmHostExportSession");
-
-  static final List<String> PAGE_FUNCTIONS =
-      List.of(
-          "vbtmPageUpdate",
-          "vbtmPageWindow",
-          "vbtmPageWindowError",
-          "vbtmPageSearch",
-          "vbtmPageMatch",
-          "vbtmPageZoomTo",
-          "vbtmPageSearchFor");
-
   interface Page {
 
     void define(String name, Consumer<Object[]> body);
@@ -61,6 +39,28 @@ final class ViewerBridge {
 
     void exportSession();
   }
+
+  static final int MAX_RESPONSE_CHARS = 2 * 1024 * 1024;
+
+  static final List<String> HOST_FUNCTIONS =
+      List.of(
+          "vbtmHostReady",
+          "vbtmHostRequestWindow",
+          "vbtmHostReload",
+          "vbtmHostSelect",
+          "vbtmHostRequestSearch",
+          "vbtmHostRequestMatch",
+          "vbtmHostExportSession");
+
+  static final List<String> PAGE_FUNCTIONS =
+      List.of(
+          "vbtmPageUpdate",
+          "vbtmPageWindow",
+          "vbtmPageWindowError",
+          "vbtmPageSearch",
+          "vbtmPageMatch",
+          "vbtmPageZoomTo",
+          "vbtmPageSearchFor");
 
   private final UiThread ui;
 
@@ -157,6 +157,10 @@ final class ViewerBridge {
     execute("vbtmPageSearchFor(" + methodId + "," + Json.quote(name) + ")");
   }
 
+  private static Number num(Object o) {
+    return (Number) o;
+  }
+
   private void execute(String js) {
     if (isOpen()) {
       Objects.requireNonNull(page).execute(js);
@@ -208,9 +212,5 @@ final class ViewerBridge {
     }
     host.requestMatch(
         num(args[0]).longValue(), num(args[1]).doubleValue() >= 0, num(args[2]).longValue());
-  }
-
-  private static Number num(Object o) {
-    return (Number) o;
   }
 }

@@ -19,10 +19,6 @@ public final class TransferJob extends Job {
     setPriority(LONG);
   }
 
-  private Path file() {
-    return pull.file();
-  }
-
   public static boolean isTransferring(Path file) {
     Path wanted = file.toAbsolutePath();
     for (Job j : Job.getJobManager().find(FAMILY)) {
@@ -31,6 +27,11 @@ public final class TransferJob extends Job {
       }
     }
     return false;
+  }
+
+  @Override
+  public boolean belongsTo(Object family) {
+    return FAMILY.equals(family);
   }
 
   @Override
@@ -52,8 +53,7 @@ public final class TransferJob extends Job {
     }
   }
 
-  @Override
-  public boolean belongsTo(Object family) {
-    return FAMILY.equals(family);
+  private Path file() {
+    return pull.file();
   }
 }

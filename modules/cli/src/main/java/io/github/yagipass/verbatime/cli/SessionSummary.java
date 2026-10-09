@@ -26,20 +26,6 @@ final class SessionSummary implements SessionWalker.Visitor {
     this.session = session;
   }
 
-  static SessionSummary of(SessionWalker walker, TraceFile.Session s) {
-    SessionSummary summary = new SessionSummary(s);
-    walker.walk(s, summary);
-    summary.throwCount = summary.thrown.count;
-    summary.startTicks = walker.startTicks;
-    summary.durTicks = walker.endTicks - walker.startTicks;
-    summary.unclosed |= !s.ended;
-    return summary;
-  }
-
-  long endTicks() {
-    return startTicks + durTicks;
-  }
-
   @Override
   public void enter(long ordinal, int depth, int methodId, long startTicks) {
     if (depth == 0) {
@@ -67,5 +53,19 @@ final class SessionSummary implements SessionWalker.Visitor {
     calls++;
     thrown.exit(ordinal, depth, methodId, durTicks, exceptionId);
     this.unclosed |= unclosed;
+  }
+
+  static SessionSummary of(SessionWalker walker, TraceFile.Session s) {
+    SessionSummary summary = new SessionSummary(s);
+    walker.walk(s, summary);
+    summary.throwCount = summary.thrown.count;
+    summary.startTicks = walker.startTicks;
+    summary.durTicks = walker.endTicks - walker.startTicks;
+    summary.unclosed |= !s.ended;
+    return summary;
+  }
+
+  long endTicks() {
+    return startTicks + durTicks;
   }
 }

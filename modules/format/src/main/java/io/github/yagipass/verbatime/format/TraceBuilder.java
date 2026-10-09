@@ -6,57 +6,6 @@ import java.util.List;
 
 public final class TraceBuilder {
 
-  private final ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-  public TraceBuilder(long startEpochMs, int utcOffsetSeconds) {
-    out.writeBytes(RecordEncoder.header(startEpochMs, utcOffsetSeconds));
-  }
-
-  public TraceBuilder thread(long tid, String name) {
-    out.writeBytes(RecordEncoder.thread(tid, name));
-    return this;
-  }
-
-  public TraceBuilder exception(long id, String className) {
-    out.writeBytes(RecordEncoder.exception(id, className));
-    return this;
-  }
-
-  public TraceBuilder gc(
-      long startTicks, long durTicks, int action, String collector, String cause) {
-    out.writeBytes(RecordEncoder.gc(startTicks, durTicks, action, collector, cause));
-    return this;
-  }
-
-  public TraceBuilder clazz(long baseId, String className, String... sigs) {
-    out.writeBytes(RecordEncoder.clazz(baseId, className, List.of(sigs)));
-    return this;
-  }
-
-  public TraceBuilder chunk(long tid, long baseTicks, byte[] payload, boolean sessionEnd) {
-    byte[] head = new byte[RecordEncoder.MAX_CHUNK_HEADER_BYTES];
-    int n = RecordEncoder.chunkHeader(head, 0, tid, baseTicks, payload.length, sessionEnd);
-    out.write(head, 0, n);
-    out.writeBytes(payload);
-    return this;
-  }
-
-  public TraceBuilder end() {
-    out.writeBytes(RecordEncoder.end());
-    return this;
-  }
-
-  public TraceBuilder rawBytes(int... bytes) {
-    for (int b : bytes) {
-      out.write(b);
-    }
-    return this;
-  }
-
-  public byte[] bytes() {
-    return out.toByteArray();
-  }
-
   public static final class Payload {
 
     private byte[] buf = new byte[64];
@@ -118,5 +67,56 @@ public final class TraceBuilder {
       }
       return buf;
     }
+  }
+
+  private final ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+  public TraceBuilder(long startEpochMs, int utcOffsetSeconds) {
+    out.writeBytes(RecordEncoder.header(startEpochMs, utcOffsetSeconds));
+  }
+
+  public TraceBuilder thread(long tid, String name) {
+    out.writeBytes(RecordEncoder.thread(tid, name));
+    return this;
+  }
+
+  public TraceBuilder exception(long id, String className) {
+    out.writeBytes(RecordEncoder.exception(id, className));
+    return this;
+  }
+
+  public TraceBuilder gc(
+      long startTicks, long durTicks, int action, String collector, String cause) {
+    out.writeBytes(RecordEncoder.gc(startTicks, durTicks, action, collector, cause));
+    return this;
+  }
+
+  public TraceBuilder clazz(long baseId, String className, String... sigs) {
+    out.writeBytes(RecordEncoder.clazz(baseId, className, List.of(sigs)));
+    return this;
+  }
+
+  public TraceBuilder chunk(long tid, long baseTicks, byte[] payload, boolean sessionEnd) {
+    byte[] head = new byte[RecordEncoder.MAX_CHUNK_HEADER_BYTES];
+    int n = RecordEncoder.chunkHeader(head, 0, tid, baseTicks, payload.length, sessionEnd);
+    out.write(head, 0, n);
+    out.writeBytes(payload);
+    return this;
+  }
+
+  public TraceBuilder end() {
+    out.writeBytes(RecordEncoder.end());
+    return this;
+  }
+
+  public TraceBuilder rawBytes(int... bytes) {
+    for (int b : bytes) {
+      out.write(b);
+    }
+    return this;
+  }
+
+  public byte[] bytes() {
+    return out.toByteArray();
   }
 }

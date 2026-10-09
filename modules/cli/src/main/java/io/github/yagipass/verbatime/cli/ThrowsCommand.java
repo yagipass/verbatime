@@ -12,27 +12,6 @@ import org.jspecify.annotations.Nullable;
 
 final class ThrowsCommand {
 
-  static final String HELP =
-      """
-            vbtm throws <file> [SESSION] [--by class|thrower|catcher] [--sort total|calls] [--limit N] [--json]
-
-            Lists the exceptions thrown in one session, or in every session when SESSION is left out: their class, the
-            method that threw each and the method that caught it. Use it to see whether failed attempts, such as retries
-            or lookups that throw when nothing is found, cost time, before reading a tree.
-
-              --by KEY    class, thrower or catcher: one row per exception class, per throwing method or per catching
-                          method. Without it, one row per distinct class, thrower and catcher
-              --sort KEY  total, the default: time of the calls that threw. calls: number of throws
-              --limit N   rows to print, 30 by default
-
-            An exception counts once, not once per call it unwinds through. The recording has no catch event: the catcher
-            is the first method the exception did not leave, or - when it left the session's root. calls is the number of
-            throws, total_ms the time of the throwing calls, that is the failed attempts, and slowest the id of the longest
-            of them, for tree --at. An exception whose class the recording does not name is printed as unknown.
-            """;
-
-  private ThrowsCommand() {}
-
   private record Key(int exceptionId, int throwerId, int catcherId) {
 
     static Key of(@Nullable String by, int exceptionId, int throwerId, int catcherId) {
@@ -125,6 +104,27 @@ final class ThrowsCommand {
           .add(session, throwerOrdinal, throwerDurTicks);
     }
   }
+
+  static final String HELP =
+      """
+            vbtm throws <file> [SESSION] [--by class|thrower|catcher] [--sort total|calls] [--limit N] [--json]
+
+            Lists the exceptions thrown in one session, or in every session when SESSION is left out: their class, the
+            method that threw each and the method that caught it. Use it to see whether failed attempts, such as retries
+            or lookups that throw when nothing is found, cost time, before reading a tree.
+
+              --by KEY    class, thrower or catcher: one row per exception class, per throwing method or per catching
+                          method. Without it, one row per distinct class, thrower and catcher
+              --sort KEY  total, the default: time of the calls that threw. calls: number of throws
+              --limit N   rows to print, 30 by default
+
+            An exception counts once, not once per call it unwinds through. The recording has no catch event: the catcher
+            is the first method the exception did not leave, or - when it left the session's root. calls is the number of
+            throws, total_ms the time of the throwing calls, that is the failed attempts, and slowest the id of the longest
+            of them, for tree --at. An exception whose class the recording does not name is printed as unknown.
+            """;
+
+  private ThrowsCommand() {}
 
   static int run(List<String> argv, PrintStream stdout) {
     Args args = Args.parse("throws", argv, Set.of("by", "sort", "limit"), Set.of("json"));

@@ -12,6 +12,24 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 public final class VerbatimePreferencePage extends FieldEditorPreferencePage
     implements IWorkbenchPreferencePage {
 
+  private static final class RecordingsDirEditor extends DirectoryFieldEditor {
+
+    private RecordingsDirEditor(String name, String label, Composite parent) {
+      super(name, label, parent);
+      setErrorMessage("Not a directory");
+    }
+
+    @Override
+    protected boolean doCheckState() {
+      try {
+        Path p = Path.of(getTextControl().getText().trim());
+        return !Files.exists(p) || Files.isDirectory(p);
+      } catch (InvalidPathException e) {
+        return false;
+      }
+    }
+  }
+
   public VerbatimePreferencePage() {
     super(GRID);
     setPreferenceStore(Preferences.get());
@@ -30,23 +48,5 @@ public final class VerbatimePreferencePage extends FieldEditorPreferencePage
     addField(
         new RecordingsDirEditor(
             Preferences.RECORDINGS_DIR, "&Recordings directory:", getFieldEditorParent()));
-  }
-
-  private static final class RecordingsDirEditor extends DirectoryFieldEditor {
-
-    private RecordingsDirEditor(String name, String label, Composite parent) {
-      super(name, label, parent);
-      setErrorMessage("Not a directory");
-    }
-
-    @Override
-    protected boolean doCheckState() {
-      try {
-        Path p = Path.of(getTextControl().getText().trim());
-        return !Files.exists(p) || Files.isDirectory(p);
-      } catch (InvalidPathException e) {
-        return false;
-      }
-    }
   }
 }

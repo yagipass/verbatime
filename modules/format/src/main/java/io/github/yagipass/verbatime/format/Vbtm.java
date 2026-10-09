@@ -4,8 +4,6 @@ import java.nio.charset.StandardCharsets;
 
 public final class Vbtm {
 
-  private Vbtm() {}
-
   public static final String MAGIC = "vbtm";
 
   public static final int MAGIC_BYTES = 4;
@@ -59,6 +57,8 @@ public final class Vbtm {
   public static final int EXCEPTION_ID_LIMIT = 1 << 22;
 
   public static final long MAX_CHUNK_PAYLOAD_BYTES = 1L << 28;
+
+  private Vbtm() {}
 
   public static byte[] magic() {
     return MAGIC.getBytes(StandardCharsets.US_ASCII);

@@ -66,21 +66,6 @@ final class StartupGateSetup {
     return head;
   }
 
-  private static String mainClassFromManifest(String jarPath) {
-    try (JarFile jar = new JarFile(jarPath)) {
-      Manifest mf = jar.getManifest();
-      String mainClass =
-          mf == null ? null : mf.getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
-      if (mainClass == null || mainClass.isBlank()) {
-        throw new IllegalArgumentException(
-            "waitstart: " + jarPath + " has no Main-Class in its manifest");
-      }
-      return mainClass.trim();
-    } catch (IOException e) {
-      throw new IllegalArgumentException("waitstart: cannot read " + jarPath + ": " + e);
-    }
-  }
-
   static void arm(String gateClass, long waitStartMs) {
     StartupGate.arm(waitStartMs);
     startWatchdog(gateClass, waitStartMs);
@@ -93,6 +78,33 @@ final class StartupGateSetup {
     if (System.getProperty("com.sun.management.jmxremote.port") == null) {
       Log.warn(
           "waitstart is set but com.sun.management.jmxremote.port is not, so only local attach JMX clients can reach the gate in time");
+    }
+  }
+
+  static @Nullable String neverReachedWarning(
+      @Nullable String gateState, String gateClass, long waitStartMs) {
+    if (!"armed".equals(gateState)) {
+      return null;
+    }
+    return "waitstart: "
+        + gateClass.replace('/', '.')
+        + ".main was not entered within "
+        + (waitStartMs / 1000)
+        + " s, so this JVM was never paused. The main class may have been resolved incorrectly";
+  }
+
+  private static String mainClassFromManifest(String jarPath) {
+    try (JarFile jar = new JarFile(jarPath)) {
+      Manifest mf = jar.getManifest();
+      String mainClass =
+          mf == null ? null : mf.getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
+      if (mainClass == null || mainClass.isBlank()) {
+        throw new IllegalArgumentException(
+            "waitstart: " + jarPath + " has no Main-Class in its manifest");
+      }
+      return mainClass.trim();
+    } catch (IOException e) {
+      throw new IllegalArgumentException("waitstart: cannot read " + jarPath + ": " + e);
     }
   }
 
@@ -113,17 +125,5 @@ final class StartupGateSetup {
             "verbatime-waitstart-watchdog");
     watchdog.setDaemon(true);
     watchdog.start();
-  }
-
-  static @Nullable String neverReachedWarning(
-      @Nullable String gateState, String gateClass, long waitStartMs) {
-    if (!"armed".equals(gateState)) {
-      return null;
-    }
-    return "waitstart: "
-        + gateClass.replace('/', '.')
-        + ".main was not entered within "
-        + (waitStartMs / 1000)
-        + " s, so this JVM was never paused. The main class may have been resolved incorrectly";
   }
 }

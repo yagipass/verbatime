@@ -49,14 +49,6 @@ public final class ChunkCursor {
     return len;
   }
 
-  int openDepthAtStart() {
-    return m.chunks.openDepthAtStart[c];
-  }
-
-  boolean endsSession() {
-    return m.chunks.endsSession[c];
-  }
-
   public void open(EventCursor cursor) {
     cursor.reset(Objects.requireNonNull(scratch), 0, len, m.chunks.baseTicks[c]);
   }
@@ -69,5 +61,13 @@ public final class ChunkCursor {
     DecodeScratch.give(scratch);
     scratch = null;
     buf.release();
+  }
+
+  int openDepthAtStart() {
+    return m.chunks.openDepthAtStart[c];
+  }
+
+  boolean endsSession() {
+    return m.chunks.endsSession[c];
   }
 }

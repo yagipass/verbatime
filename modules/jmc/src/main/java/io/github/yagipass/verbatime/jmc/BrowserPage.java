@@ -15,12 +15,6 @@ final class BrowserPage implements ViewerBridge.Page {
     this.browser = browser;
   }
 
-  static BrowserPage create(Composite parent) {
-    Browser b = new Browser(parent, SWT.NONE);
-    b.addMenuDetectListener(e -> e.doit = false);
-    return new BrowserPage(b);
-  }
-
   @Override
   public void define(String name, Consumer<Object[]> body) {
     new BrowserFunction(browser, name) {
@@ -59,5 +53,11 @@ final class BrowserPage implements ViewerBridge.Page {
     if (!browser.isDisposed()) {
       browser.dispose();
     }
+  }
+
+  static BrowserPage create(Composite parent) {
+    Browser b = new Browser(parent, SWT.NONE);
+    b.addMenuDetectListener(e -> e.doit = false);
+    return new BrowserPage(b);
   }
 }

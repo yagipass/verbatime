@@ -20,34 +20,6 @@ import java.util.regex.Pattern;
 
 public final class ParsedExport {
 
-  static final Pattern BODY =
-      Pattern.compile(
-          "^(\\d+\\.\\d{4}) +(\\d+\\.\\d{4}) +(\\d+) +(?:·(\\d+) calls <(\\S+), "
-              + "(\\d+) incl\\. nested(?: \\[!(\\d+)\\])?: (.*)|(\\S+)(?: +self +(\\d+\\.\\d{4}))?( +!(?:e(\\d+))?)?( +~)?) *$");
-
-  static final Pattern OUTLINE =
-      Pattern.compile(
-          "^L(\\d+) +(\\d+\\.\\d{4}) +(\\d+\\.\\d{4}) +(\\d+\\.\\d)% {2}( *)(\\S+)"
-              + "(?: self (\\d+\\.\\d{4}))?(?: hidden (\\d+) calls (\\d+\\.\\d{4}))?( !(?:e(\\d+))?)?( ~)? {2}\\[(\\d+) lines\\]$");
-
-  static final Pattern HOT =
-      Pattern.compile("^ *(\\d+\\.\\d{4}) +(\\d+\\.\\d{4}) +(\\d+) {2}(\\S+)$");
-
-  static final Pattern CONTENTS = Pattern.compile("^L(\\d+)-L(\\d+) {2,}(\\S.*)$");
-
-  static final int LINE_FILE = 3;
-
-  static final int LINE_SESSION = 4;
-
-  static final int LINE_DURATION = 5;
-
-  static final int LINE_GC = 7;
-
-  static final int LINE_FLOOR = 8;
-
-  static final Pattern GC =
-      Pattern.compile("^(\\d+\\.\\d{4}) (\\d+\\.\\d{4}) (minor|major|pause) (\\S.*): (\\S.*)$");
-
   record GcRow(long start, long dur) {}
 
   record BodyLine(
@@ -90,6 +62,34 @@ public final class ParsedExport {
       String raw) {}
 
   record HotRow(long self, long total, long calls, String name) {}
+
+  static final Pattern BODY =
+      Pattern.compile(
+          "^(\\d+\\.\\d{4}) +(\\d+\\.\\d{4}) +(\\d+) +(?:·(\\d+) calls <(\\S+), "
+              + "(\\d+) incl\\. nested(?: \\[!(\\d+)\\])?: (.*)|(\\S+)(?: +self +(\\d+\\.\\d{4}))?( +!(?:e(\\d+))?)?( +~)?) *$");
+
+  static final Pattern OUTLINE =
+      Pattern.compile(
+          "^L(\\d+) +(\\d+\\.\\d{4}) +(\\d+\\.\\d{4}) +(\\d+\\.\\d)% {2}( *)(\\S+)"
+              + "(?: self (\\d+\\.\\d{4}))?(?: hidden (\\d+) calls (\\d+\\.\\d{4}))?( !(?:e(\\d+))?)?( ~)? {2}\\[(\\d+) lines\\]$");
+
+  static final Pattern HOT =
+      Pattern.compile("^ *(\\d+\\.\\d{4}) +(\\d+\\.\\d{4}) +(\\d+) {2}(\\S+)$");
+
+  static final Pattern CONTENTS = Pattern.compile("^L(\\d+)-L(\\d+) {2,}(\\S.*)$");
+
+  static final int LINE_FILE = 3;
+
+  static final int LINE_SESSION = 4;
+
+  static final int LINE_DURATION = 5;
+
+  static final int LINE_GC = 7;
+
+  static final int LINE_FLOOR = 8;
+
+  static final Pattern GC =
+      Pattern.compile("^(\\d+\\.\\d{4}) (\\d+\\.\\d{4}) (minor|major|pause) (\\S.*): (\\S.*)$");
 
   final List<String> lines;
 
@@ -251,21 +251,15 @@ public final class ParsedExport {
     }
   }
 
-  private void hot(long start, long end, String heading, List<HotRow> target) {
-    assertTrue(line(start).startsWith(heading), line(start));
-    assertEquals("", line(start + 1), "blank line after the heading at L" + start);
-    assertTrue(line(start + 2).trim().startsWith("self_ms "), line(start + 2));
-    for (long l = start + 3; l <= end; l++) {
-      Matcher m = HOT.matcher(line(l));
-      assertTrue(m.matches(), "hot row L" + l + ": " + line(l));
-      target.add(
-          new HotRow(ticks(m.group(1)), ticks(m.group(2)), Long.parseLong(m.group(3)), m.group(4)));
-    }
-    assertEquals("", line(end + 1), "blank line after the table ending at L" + end);
+  static ParsedExport read(Path file) throws IOException {
+    String text = Files.readString(file, StandardCharsets.UTF_8);
+    assertTrue(text.endsWith("\n"), "file ends with a newline");
+    assertEquals(-1, text.indexOf('?'), "no placeholder was left unpatched");
+    return new ParsedExport(List.of(text.substring(0, text.length() - 1).split("\n", -1)));
   }
 
-  private static String grouped(long v) {
-    return String.format(java.util.Locale.US, "%,d", v);
+  static long ticks(String ms) {
+    return Long.parseLong(ms.replace(".", ""));
   }
 
   long bodyLineOf(long anchor) {
@@ -276,19 +270,56 @@ public final class ParsedExport {
     return body.get((int) bodyLineOf(anchor) - 1);
   }
 
-  static ParsedExport read(Path file) throws IOException {
-    String text = Files.readString(file, StandardCharsets.UTF_8);
-    assertTrue(text.endsWith("\n"), "file ends with a newline");
-    assertEquals(-1, text.indexOf('?'), "no placeholder was left unpatched");
-    return new ParsedExport(List.of(text.substring(0, text.length() - 1).split("\n", -1)));
-  }
-
   String line(long oneBased) {
     return lines.get((int) (oneBased - 1));
   }
 
-  static long ticks(String ms) {
-    return Long.parseLong(ms.replace(".", ""));
+  String fullName(String display) {
+    String full = methods.get(display);
+    assertTrue(full != null, "display name in the methods table: " + display);
+    return full;
+  }
+
+  String exceptionClass(long excNo) {
+    if (excNo <= 0) {
+      return null;
+    }
+    String cls = exceptions.get("e" + excNo);
+    assertTrue(cls != null, "exception number in the exceptions table: e" + excNo);
+    return cls;
+  }
+
+  void checkInvariants(String ctx) {
+    Deque<long[]> stack = new ArrayDeque<>();
+    for (BodyLine b : body) {
+      while (!stack.isEmpty() && stack.peek()[0] >= b.depth) {
+        closeTop(stack, ctx);
+      }
+      if (b.accounting) {
+        assertTrue(
+            !stack.isEmpty() && stack.peek()[0] == b.depth - 1,
+            ctx + " accounting line under its parent: " + b.raw);
+        stack.peek()[3] += b.dur;
+        assertEquals(
+            stack.peek()[4], b.start, ctx + " accounting line starts with its parent: " + b.raw);
+        continue;
+      }
+      if (!stack.isEmpty()) {
+        assertEquals(stack.peek()[0] + 1, b.depth, ctx + " depth grows by one: " + b.raw);
+        stack.peek()[3] += b.dur;
+        assertTrue(b.start >= stack.peek()[4], ctx + " child starts after its parent: " + b.raw);
+      } else {
+        assertEquals(0, b.depth, ctx + " a top-level line has depth 0: " + b.raw);
+      }
+      stack.push(new long[] {b.depth, b.dur, b.self, 0, b.start, b.abs});
+    }
+    while (!stack.isEmpty()) {
+      closeTop(stack, ctx);
+    }
+  }
+
+  private static String grouped(long v) {
+    return String.format(java.util.Locale.US, "%,d", v);
   }
 
   private static BodyLine parseBody(long abs, String s) {
@@ -345,50 +376,6 @@ public final class ParsedExport {
         s);
   }
 
-  String fullName(String display) {
-    String full = methods.get(display);
-    assertTrue(full != null, "display name in the methods table: " + display);
-    return full;
-  }
-
-  String exceptionClass(long excNo) {
-    if (excNo <= 0) {
-      return null;
-    }
-    String cls = exceptions.get("e" + excNo);
-    assertTrue(cls != null, "exception number in the exceptions table: e" + excNo);
-    return cls;
-  }
-
-  void checkInvariants(String ctx) {
-    Deque<long[]> stack = new ArrayDeque<>();
-    for (BodyLine b : body) {
-      while (!stack.isEmpty() && stack.peek()[0] >= b.depth) {
-        closeTop(stack, ctx);
-      }
-      if (b.accounting) {
-        assertTrue(
-            !stack.isEmpty() && stack.peek()[0] == b.depth - 1,
-            ctx + " accounting line under its parent: " + b.raw);
-        stack.peek()[3] += b.dur;
-        assertEquals(
-            stack.peek()[4], b.start, ctx + " accounting line starts with its parent: " + b.raw);
-        continue;
-      }
-      if (!stack.isEmpty()) {
-        assertEquals(stack.peek()[0] + 1, b.depth, ctx + " depth grows by one: " + b.raw);
-        stack.peek()[3] += b.dur;
-        assertTrue(b.start >= stack.peek()[4], ctx + " child starts after its parent: " + b.raw);
-      } else {
-        assertEquals(0, b.depth, ctx + " a top-level line has depth 0: " + b.raw);
-      }
-      stack.push(new long[] {b.depth, b.dur, b.self, 0, b.start, b.abs});
-    }
-    while (!stack.isEmpty()) {
-      closeTop(stack, ctx);
-    }
-  }
-
   private static void closeTop(Deque<long[]> stack, String ctx) {
     long[] t = stack.pop();
     if (t[2] >= 0) {
@@ -396,5 +383,18 @@ public final class ParsedExport {
     } else {
       assertEquals(0, t[3], ctx + " L" + t[5] + ": a line without self has no children");
     }
+  }
+
+  private void hot(long start, long end, String heading, List<HotRow> target) {
+    assertTrue(line(start).startsWith(heading), line(start));
+    assertEquals("", line(start + 1), "blank line after the heading at L" + start);
+    assertTrue(line(start + 2).trim().startsWith("self_ms "), line(start + 2));
+    for (long l = start + 3; l <= end; l++) {
+      Matcher m = HOT.matcher(line(l));
+      assertTrue(m.matches(), "hot row L" + l + ": " + line(l));
+      target.add(
+          new HotRow(ticks(m.group(1)), ticks(m.group(2)), Long.parseLong(m.group(3)), m.group(4)));
+    }
+    assertEquals("", line(end + 1), "blank line after the table ending at L" + end);
   }
 }

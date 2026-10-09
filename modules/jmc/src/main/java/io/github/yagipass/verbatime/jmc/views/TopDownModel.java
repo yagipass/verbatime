@@ -26,14 +26,6 @@ final class TopDownModel implements AggregateTreeView.AggregateTreeModel<TopDown
     this.root = rowFor(0);
   }
 
-  static TopDownModel of(TraceSnapshot d, SubtreeAggregate a) {
-    return new TopDownModel(a, d);
-  }
-
-  Row root() {
-    return root;
-  }
-
   @Override
   public SubtreeAggregate aggregate() {
     return agg;
@@ -70,12 +62,29 @@ final class TopDownModel implements AggregateTreeView.AggregateTreeModel<TopDown
     return p < 0 ? null : rowFor(p);
   }
 
+  static TopDownModel of(TraceSnapshot d, SubtreeAggregate a) {
+    return new TopDownModel(a, d);
+  }
+
+  Row root() {
+    return root;
+  }
+
   int size() {
     return agg.nodeCount();
   }
 
   boolean truncated() {
     return agg.truncated();
+  }
+
+  Row child(int node, int i) {
+    return rowFor(sorted(node)[i]);
+  }
+
+  double pct(long ns) {
+    long base = agg.totalNs(0);
+    return base > 0 ? ns * 100.0 / base : 0;
   }
 
   private Row rowFor(int node) {
@@ -87,15 +96,6 @@ final class TopDownModel implements AggregateTreeView.AggregateTreeModel<TopDown
         agg.totalNs(node),
         agg.selfNs(node),
         agg.childCount(node));
-  }
-
-  Row child(int node, int i) {
-    return rowFor(sorted(node)[i]);
-  }
-
-  double pct(long ns) {
-    long base = agg.totalNs(0);
-    return base > 0 ? ns * 100.0 / base : 0;
   }
 
   private int[] sorted(int node) {

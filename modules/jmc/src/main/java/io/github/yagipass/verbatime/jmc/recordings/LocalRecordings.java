@@ -20,6 +20,8 @@ public final class LocalRecordings {
     }
   }
 
+  record DeleteResult(int failed, @Nullable String firstError) {}
+
   private LocalRecordings() {}
 
   public static Path localFile(
@@ -37,6 +39,11 @@ public final class LocalRecordings {
     return s.replaceAll("[^A-Za-z0-9._-]", "_");
   }
 
+  public static long prepareResume(Path local) throws IOException {
+    Files.createDirectories(local.getParent());
+    return Files.exists(local) ? Files.size(local) : 0;
+  }
+
   @SuppressWarnings("EmptyCatch")
   static List<Entry> scan(Path base) {
     List<Entry> out = new ArrayList<>();
@@ -49,13 +56,6 @@ public final class LocalRecordings {
     }
     out.sort(Comparator.comparingLong(Entry::modifiedMs).reversed().thenComparing(Entry::name));
     return out;
-  }
-
-  record DeleteResult(int failed, @Nullable String firstError) {}
-
-  public static long prepareResume(Path local) throws IOException {
-    Files.createDirectories(local.getParent());
-    return Files.exists(local) ? Files.size(local) : 0;
   }
 
   static List<Entry> deletable(List<Entry> chosen, Predicate<Path> transferring) {

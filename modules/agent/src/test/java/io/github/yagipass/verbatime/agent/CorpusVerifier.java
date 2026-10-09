@@ -28,8 +28,6 @@ import java.util.regex.Pattern;
 
 final class CorpusVerifier {
 
-  static final int BIG_METHOD = 32768;
-
   interface Sabotage {
     byte[] apply(String internalName, byte[] transformed);
   }
@@ -103,6 +101,44 @@ final class CorpusVerifier {
     }
   }
 
+  static final class RefusalLog extends PrintStream {
+
+    private static final String PREFIX = "[verbatime] WARN failed to instrument ";
+
+    private static final String SEPARATOR = ", loading it unchanged: ";
+
+    private final Map<String, String> reasons = new ConcurrentHashMap<>();
+
+    RefusalLog(PrintStream out) {
+      super(out, true, StandardCharsets.UTF_8);
+    }
+
+    @Override
+    public void println(String x) {
+      if (x != null && x.startsWith(PREFIX)) {
+        int sep = x.indexOf(SEPARATOR);
+        if (sep > 0) {
+          reasons.put(x.substring(PREFIX.length(), sep), x.substring(sep + SEPARATOR.length()));
+          return;
+        }
+      }
+      super.println(x);
+    }
+
+    String reason(String internalName) {
+      return reasons.getOrDefault(internalName, "(the Transformer logged no reason; see stderr)");
+    }
+  }
+
+  static final int BIG_METHOD = 32768;
+
+  private static final Pattern TYPE_CHECKER_LOCATION = Pattern.compile("Location:\\s+(\\S+) @");
+
+  private static final Pattern OLD_VERIFIER_LOCATION =
+      Pattern.compile("\\(class: (\\S+), method: (\\S+) signature: (\\S+)\\)");
+
+  static final String UNNAMED = "(not named by the error)";
+
   private CorpusVerifier() {}
 
   @SuppressWarnings("ReturnValueIgnored")
@@ -141,6 +177,37 @@ final class CorpusVerifier {
     } finally {
       System.setErr(realErr);
     }
+  }
+
+  static String method(Throwable t) {
+    String msg = String.valueOf(t.getMessage());
+    Matcher m = TYPE_CHECKER_LOCATION.matcher(msg);
+    if (m.find()) {
+      return m.group(1);
+    }
+    Matcher old = OLD_VERIFIER_LOCATION.matcher(msg);
+    if (old.find()) {
+      return old.group(1) + "." + old.group(2) + old.group(3);
+    }
+    return UNNAMED;
+  }
+
+  static String methodClass(String method) {
+    int paren = method.indexOf('(');
+    int dot = paren < 0 ? -1 : method.lastIndexOf('.', paren);
+    return dot < 0 ? UNNAMED : method.substring(0, dot);
+  }
+
+  static String summary(Throwable t) {
+    String msg = String.valueOf(t.getMessage());
+    int nl = msg.indexOf('\n');
+    String first =
+        (nl < 0 ? msg : msg.substring(0, nl))
+            .replaceAll("'corpus-[a-z]+'( @[0-9a-f]+)?", "<loader>")
+            .replaceAll("@[0-9a-f]{6,}", "@<id>");
+    return t.getClass().getSimpleName()
+        + ": "
+        + (first.length() > 160 ? first.substring(0, 160) + "..." : first);
   }
 
   private static JarReport verify(
@@ -243,74 +310,7 @@ final class CorpusVerifier {
     }
   }
 
-  private static final Pattern TYPE_CHECKER_LOCATION = Pattern.compile("Location:\\s+(\\S+) @");
-
-  private static final Pattern OLD_VERIFIER_LOCATION =
-      Pattern.compile("\\(class: (\\S+), method: (\\S+) signature: (\\S+)\\)");
-
-  static final String UNNAMED = "(not named by the error)";
-
-  static String method(Throwable t) {
-    String msg = String.valueOf(t.getMessage());
-    Matcher m = TYPE_CHECKER_LOCATION.matcher(msg);
-    if (m.find()) {
-      return m.group(1);
-    }
-    Matcher old = OLD_VERIFIER_LOCATION.matcher(msg);
-    if (old.find()) {
-      return old.group(1) + "." + old.group(2) + old.group(3);
-    }
-    return UNNAMED;
-  }
-
-  static String methodClass(String method) {
-    int paren = method.indexOf('(');
-    int dot = paren < 0 ? -1 : method.lastIndexOf('.', paren);
-    return dot < 0 ? UNNAMED : method.substring(0, dot);
-  }
-
-  static String summary(Throwable t) {
-    String msg = String.valueOf(t.getMessage());
-    int nl = msg.indexOf('\n');
-    String first =
-        (nl < 0 ? msg : msg.substring(0, nl))
-            .replaceAll("'corpus-[a-z]+'( @[0-9a-f]+)?", "<loader>")
-            .replaceAll("@[0-9a-f]{6,}", "@<id>");
-    return t.getClass().getSimpleName()
-        + ": "
-        + (first.length() > 160 ? first.substring(0, 160) + "..." : first);
-  }
-
   private static String indent(String s) {
     return String.valueOf(s).replace("\n", "\n      ");
-  }
-
-  static final class RefusalLog extends PrintStream {
-
-    private static final String PREFIX = "[verbatime] WARN failed to instrument ";
-
-    private static final String SEPARATOR = ", loading it unchanged: ";
-
-    private final Map<String, String> reasons = new ConcurrentHashMap<>();
-
-    RefusalLog(PrintStream out) {
-      super(out, true, StandardCharsets.UTF_8);
-    }
-
-    @Override
-    public void println(String x) {
-      if (x != null && x.startsWith(PREFIX)) {
-        int sep = x.indexOf(SEPARATOR);
-        if (sep > 0) {
-          reasons.put(x.substring(PREFIX.length(), sep), x.substring(sep + SEPARATOR.length()));
-          return;
-        }
-      }
-      super.println(x);
-    }
-
-    String reason(String internalName) {
-      return reasons.getOrDefault(internalName, "(the Transformer logged no reason; see stderr)");
-    }
   }
 }

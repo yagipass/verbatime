@@ -44,15 +44,25 @@
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
         <version>3.10.3</version>
+        <dependencies>
+          <dependency>
+            <groupId>io.github.yagipass</groupId>
+            <artifactId>spotless-member-order</artifactId>
+            <version>0.1.0</version>
+          </dependency>
+        </dependencies>
         <configuration>
           <upToDateChecking>
             <enabled>false</enabled>
           </upToDateChecking>
-          <java>
+          <java implementation="io.github.yagipass.memberorder.maven.Java">
             <includes>
               <include>*/src/main/java/**/*.java</include>
               <include>*/src/test/java/**/*.java</include>
             </includes>
+            <memberOrder>
+              <order>T,SF,F,C,SM:B,M:B,SM:R,M:R,SM:D,M:D,SM:V,M:V</order>
+            </memberOrder>
             <googleJavaFormat>
               <version>1.36.1</version>
               <reorderImports>true</reorderImports>

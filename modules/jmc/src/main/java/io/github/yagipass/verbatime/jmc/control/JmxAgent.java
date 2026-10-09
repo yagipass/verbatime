@@ -20,25 +20,6 @@ final class JmxAgent implements Agent {
 
   private final ObjectName objectName;
 
-  @SuppressWarnings("BanJNDI")
-  static JmxAgent dial(String target) throws IOException {
-    String url =
-        target.startsWith("service:jmx:")
-            ? target
-            : "service:jmx:rmi:///jndi/rmi://" + target + "/jmxrmi";
-    JMXConnector c = JMXConnectorFactory.connect(new JMXServiceURL(url));
-    try {
-      return new JmxAgent(c.getMBeanServerConnection(), c);
-    } catch (RuntimeException | IOException e) {
-      try {
-        c.close();
-      } catch (IOException closeError) {
-        e.addSuppressed(closeError);
-      }
-      throw e;
-    }
-  }
-
   private JmxAgent(MBeanServerConnection connection, AutoCloseable closer) {
     this.connection = connection;
     this.closer = closer;
@@ -97,14 +78,33 @@ final class JmxAgent implements Agent {
     invoke("closeStream", new Object[] {streamId}, new String[] {"long"});
   }
 
-  private Object invoke(String op, Object[] params, String[] sig) throws IOException {
+  @Override
+  public void close() throws IOException {
     try {
-      return connection.invoke(objectName, op, params, sig);
+      closer.close();
     } catch (IOException e) {
       throw e;
     } catch (Exception e) {
-      Throwable cause = e.getCause() != null ? e.getCause() : e;
-      throw new IOException(op + ": " + cause.getMessage(), cause);
+      throw new IOException(e);
+    }
+  }
+
+  @SuppressWarnings("BanJNDI")
+  static JmxAgent dial(String target) throws IOException {
+    String url =
+        target.startsWith("service:jmx:")
+            ? target
+            : "service:jmx:rmi:///jndi/rmi://" + target + "/jmxrmi";
+    JMXConnector c = JMXConnectorFactory.connect(new JMXServiceURL(url));
+    try {
+      return new JmxAgent(c.getMBeanServerConnection(), c);
+    } catch (RuntimeException | IOException e) {
+      try {
+        c.close();
+      } catch (IOException closeError) {
+        e.addSuppressed(closeError);
+      }
+      throw e;
     }
   }
 
@@ -119,14 +119,14 @@ final class JmxAgent implements Agent {
     return m;
   }
 
-  @Override
-  public void close() throws IOException {
+  private Object invoke(String op, Object[] params, String[] sig) throws IOException {
     try {
-      closer.close();
+      return connection.invoke(objectName, op, params, sig);
     } catch (IOException e) {
       throw e;
     } catch (Exception e) {
-      throw new IOException(e);
+      Throwable cause = e.getCause() != null ? e.getCause() : e;
+      throw new IOException(op + ": " + cause.getMessage(), cause);
     }
   }
 }

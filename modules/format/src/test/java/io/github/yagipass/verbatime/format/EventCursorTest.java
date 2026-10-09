@@ -17,36 +17,6 @@ final class EventCursorTest {
 
   private static final long BASE = 1_000;
 
-  private static byte[] threeEvents() {
-    return new TraceBuilder.Payload(BASE)
-        .enter(BASE, 5)
-        .enter(BASE + 300, 7)
-        .exitThrow(BASE + 1_000, 3)
-        .bytes();
-  }
-
-  private static void varint(ByteArrayOutputStream o, long v) {
-    byte[] b = new byte[Varint.MAX_BYTES];
-    o.write(b, 0, Varint.put(b, 0, v));
-  }
-
-  private static EventCursor over(byte[] b) {
-    EventCursor c = new EventCursor();
-    c.reset(b, 0, b.length, BASE);
-    return c;
-  }
-
-  private static List<Event> drain(EventCursor c) {
-    List<Event> seen = new ArrayList<>();
-    while (true) {
-      Event e = c.next();
-      seen.add(e);
-      if (e != Event.ENTER && e != Event.EXIT) {
-        return seen;
-      }
-    }
-  }
-
   @Test
   void aCleanPayloadYieldsEveryEventWithAbsoluteTicksAndThenEnd() {
     byte[] b =
@@ -338,5 +308,35 @@ final class EventCursorTest {
     assertEquals(9, c.methodId());
     assertEquals(1, c.decodedEvents());
     assertEquals(Event.END, c.next());
+  }
+
+  private static byte[] threeEvents() {
+    return new TraceBuilder.Payload(BASE)
+        .enter(BASE, 5)
+        .enter(BASE + 300, 7)
+        .exitThrow(BASE + 1_000, 3)
+        .bytes();
+  }
+
+  private static void varint(ByteArrayOutputStream o, long v) {
+    byte[] b = new byte[Varint.MAX_BYTES];
+    o.write(b, 0, Varint.put(b, 0, v));
+  }
+
+  private static EventCursor over(byte[] b) {
+    EventCursor c = new EventCursor();
+    c.reset(b, 0, b.length, BASE);
+    return c;
+  }
+
+  private static List<Event> drain(EventCursor c) {
+    List<Event> seen = new ArrayList<>();
+    while (true) {
+      Event e = c.next();
+      seen.add(e);
+      if (e != Event.ENTER && e != Event.EXIT) {
+        return seen;
+      }
+    }
   }
 }

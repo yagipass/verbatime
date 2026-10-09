@@ -52,11 +52,46 @@ final class AncestorTable extends Canvas {
         });
   }
 
+  @Override
+  public Point computeSize(int wHint, int hHint, boolean changed) {
+    GC gc = new GC(this);
+    try {
+      int h = rowHeight(gc) * (rows.size() + 1);
+      int[] widths = columnWidths(gc);
+      @Var int w = 2 * PAD_X + 3 * GAP;
+      for (int cw : widths) {
+        w += cw;
+      }
+      return new Point(wHint != SWT.DEFAULT ? wHint : w, hHint != SWT.DEFAULT ? hHint : h);
+    } finally {
+      gc.dispose();
+    }
+  }
+
   void setRows(List<Row> rows) {
     this.rows = List.copyOf(rows);
     hoverTip = null;
     setToolTipText(null);
     redraw();
+  }
+
+  private static int textY(GC gc, int rowY, int rowH) {
+    return rowY + (rowH - gc.getFontMetrics().getHeight()) / 2;
+  }
+
+  private static void drawRight(GC gc, String s, int x, int w, int rowY, int rowH) {
+    gc.drawText(s, x + w - gc.textExtent(s).x, textY(gc, rowY, rowH), true);
+  }
+
+  private static String clip(GC gc, String s, int w) {
+    if (gc.textExtent(s).x <= w) {
+      return s;
+    }
+    @Var int n = s.length();
+    while (n > 1 && gc.textExtent(s.substring(0, n) + "…").x > w) {
+      n--;
+    }
+    return s.substring(0, n) + "…";
   }
 
   private Font mono() {
@@ -85,22 +120,6 @@ final class AncestorTable extends Canvas {
     }
     int i = (y - h) / h;
     return y >= h && i < rows.size() ? i : -1;
-  }
-
-  @Override
-  public Point computeSize(int wHint, int hHint, boolean changed) {
-    GC gc = new GC(this);
-    try {
-      int h = rowHeight(gc) * (rows.size() + 1);
-      int[] widths = columnWidths(gc);
-      @Var int w = 2 * PAD_X + 3 * GAP;
-      for (int cw : widths) {
-        w += cw;
-      }
-      return new Point(wHint != SWT.DEFAULT ? wHint : w, hHint != SWT.DEFAULT ? hHint : h);
-    } finally {
-      gc.dispose();
-    }
   }
 
   private int[] columnWidths(GC gc) {
@@ -155,24 +174,5 @@ final class AncestorTable extends Canvas {
       gc.setClipping((Rectangle) null);
       y += h;
     }
-  }
-
-  private static int textY(GC gc, int rowY, int rowH) {
-    return rowY + (rowH - gc.getFontMetrics().getHeight()) / 2;
-  }
-
-  private static void drawRight(GC gc, String s, int x, int w, int rowY, int rowH) {
-    gc.drawText(s, x + w - gc.textExtent(s).x, textY(gc, rowY, rowH), true);
-  }
-
-  private static String clip(GC gc, String s, int w) {
-    if (gc.textExtent(s).x <= w) {
-      return s;
-    }
-    @Var int n = s.length();
-    while (n > 1 && gc.textExtent(s.substring(0, n) + "…").x > w) {
-      n--;
-    }
-    return s.substring(0, n) + "…";
   }
 }

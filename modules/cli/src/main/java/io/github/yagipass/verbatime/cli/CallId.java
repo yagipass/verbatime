@@ -2,6 +2,11 @@ package io.github.yagipass.verbatime.cli;
 
 record CallId(int session, long ordinal) {
 
+  @Override
+  public String toString() {
+    return session + "." + ordinal;
+  }
+
   static CallId parse(String ref) {
     int dot = ref.indexOf('.');
     if (dot > 0) {
@@ -22,10 +27,5 @@ record CallId(int session, long ordinal) {
     return CliException.usage(
         "'" + ref + "' is not a call id",
         "call ids look like 7.57, the 57th call entered in session 7, where 7.0 is the root");
-  }
-
-  @Override
-  public String toString() {
-    return session + "." + ordinal;
   }
 }

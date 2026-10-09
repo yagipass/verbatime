@@ -10,6 +10,17 @@ final class Json {
     put("type", type);
   }
 
+  @Override
+  public String toString() {
+    return sb + "}";
+  }
+
+  static String quote(String s) {
+    StringBuilder b = new StringBuilder(s.length() + 16);
+    appendQuoted(b, s);
+    return b.toString();
+  }
+
   Json put(String key, @Nullable String value) {
     key(key);
     if (value == null) {
@@ -44,25 +55,6 @@ final class Json {
     return this;
   }
 
-  @Override
-  public String toString() {
-    return sb + "}";
-  }
-
-  static String quote(String s) {
-    StringBuilder b = new StringBuilder(s.length() + 16);
-    appendQuoted(b, s);
-    return b.toString();
-  }
-
-  private void key(String key) {
-    if (sb.length() > 1) {
-      sb.append(',');
-    }
-    appendQuoted(sb, key);
-    sb.append(':');
-  }
-
   private static void appendQuoted(StringBuilder b, String s) {
     b.append('"');
     for (int i = 0; i < s.length(); i++) {
@@ -83,5 +75,13 @@ final class Json {
       }
     }
     b.append('"');
+  }
+
+  private void key(String key) {
+    if (sb.length() > 1) {
+      sb.append(',');
+    }
+    appendQuoted(sb, key);
+    sb.append(':');
   }
 }

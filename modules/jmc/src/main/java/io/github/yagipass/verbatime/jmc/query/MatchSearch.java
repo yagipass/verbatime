@@ -9,8 +9,6 @@ import org.jspecify.annotations.Nullable;
 
 public final class MatchSearch {
 
-  private MatchSearch() {}
-
   public static final class Match {
 
     public final long tid;
@@ -31,6 +29,8 @@ public final class MatchSearch {
       this.methodId = methodId;
     }
   }
+
+  private MatchSearch() {}
 
   public static @Nullable Match nextMatch(TraceSnapshot data, BitSet methods, long afterNs) {
     @Var Match best = null;

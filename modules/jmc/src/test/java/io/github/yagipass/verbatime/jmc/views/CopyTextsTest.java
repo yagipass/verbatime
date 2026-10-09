@@ -67,16 +67,6 @@ final class CopyTextsTest {
         "outside a session there is no denominator, so the share column stays blank");
   }
 
-  private static TraceSnapshot rootAndKid() throws IOException {
-    TraceBuilder w = TestTraces.writer();
-    w.thread(7, "main");
-    w.clazz(1, "pkg.Root", "root()V", "kid()V");
-    TraceBuilder.Payload p = new TraceBuilder.Payload(100);
-    p.enter(100, 1).enter(110, 2).exit(150).exit(300);
-    w.chunk(7, 100, p.bytes(), true);
-    return TestTraces.index(w);
-  }
-
   @Test
   void sessionTextNamesTheSessionTheFrameBelongsTo() throws IOException {
     TraceSnapshot d = rootAndKid();
@@ -94,5 +84,15 @@ final class CopyTextsTest {
         "not in a session",
         CopyTexts.sessionText(d, 8, 11_000),
         "another thread's frame is never attributed");
+  }
+
+  private static TraceSnapshot rootAndKid() throws IOException {
+    TraceBuilder w = TestTraces.writer();
+    w.thread(7, "main");
+    w.clazz(1, "pkg.Root", "root()V", "kid()V");
+    TraceBuilder.Payload p = new TraceBuilder.Payload(100);
+    p.enter(100, 1).enter(110, 2).exit(150).exit(300);
+    w.chunk(7, 100, p.bytes(), true);
+    return TestTraces.index(w);
   }
 }

@@ -6,12 +6,16 @@ public final class LegacyClassFile {
     return "a" + b(1) + c(2L, 3.0) + caught();
   }
 
-  int b(int x) {
-    return x + 1;
+  public synchronized int sync(int x) {
+    return x * 3;
   }
 
   static double c(long a, double b) {
     return a + b;
+  }
+
+  int b(int x) {
+    return x + 1;
   }
 
   int caught() {
@@ -25,9 +29,5 @@ public final class LegacyClassFile {
 
   void thrower() {
     throw new IllegalStateException("old");
-  }
-
-  public synchronized int sync(int x) {
-    return x * 3;
   }
 }

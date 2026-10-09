@@ -12,12 +12,6 @@ import java.util.List;
 
 public final class WindowExtractor {
 
-  public static final int DEFAULT_CALL_BUDGET = 60_000;
-
-  static final double PIXEL_FRACTION = 0.5;
-
-  private WindowExtractor() {}
-
   public static final class Window {
 
     long windowMinDurNs;
@@ -28,6 +22,12 @@ public final class WindowExtractor {
 
     private Window() {}
   }
+
+  public static final int DEFAULT_CALL_BUDGET = 60_000;
+
+  static final double PIXEL_FRACTION = 0.5;
+
+  private WindowExtractor() {}
 
   public static Window extract(
       TraceSnapshot data, @Var long t0Ns, @Var long t1Ns, @Var int px, int callBudget) {

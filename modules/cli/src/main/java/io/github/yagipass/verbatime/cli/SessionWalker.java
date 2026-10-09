@@ -123,6 +123,15 @@ final class SessionWalker {
     }
   }
 
+  private static String fault(EventCursor.Fault fault, long value) {
+    return switch (fault) {
+      case VARINT_TOO_LONG -> "varint too long";
+      case METHOD_ID_LIMIT -> "method id " + value + " is outside the 2^22 format range";
+      case EXCEPTION_ID_LIMIT -> "exception id " + value + " is outside the 2^22 format range";
+      case TICKS_LIMIT -> "tick delta " + value + " pushes the clock past the format limit";
+    };
+  }
+
   private void exit(Visitor v, int exceptionId, boolean unclosed) {
     int depth = stack.depth();
     v.exit(
@@ -134,14 +143,5 @@ final class SessionWalker {
         stack.selfNs() / Vbtm.NANOS_PER_TICK,
         exceptionId,
         unclosed);
-  }
-
-  private static String fault(EventCursor.Fault fault, long value) {
-    return switch (fault) {
-      case VARINT_TOO_LONG -> "varint too long";
-      case METHOD_ID_LIMIT -> "method id " + value + " is outside the 2^22 format range";
-      case EXCEPTION_ID_LIMIT -> "exception id " + value + " is outside the 2^22 format range";
-      case TICKS_LIMIT -> "tick delta " + value + " pushes the clock past the format limit";
-    };
   }
 }

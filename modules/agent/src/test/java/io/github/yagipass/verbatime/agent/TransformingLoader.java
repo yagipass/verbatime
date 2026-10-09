@@ -21,17 +21,6 @@ final class TransformingLoader extends ClassLoader {
     this.source = source;
   }
 
-  static byte[] classpathBytes(String binaryName) {
-    try (InputStream in =
-        TransformingLoader.class
-            .getClassLoader()
-            .getResourceAsStream(binaryName.replace('.', '/') + ".class")) {
-      return in == null ? null : in.readAllBytes();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
   @Override
   protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
     synchronized (getClassLoadingLock(name)) {
@@ -53,6 +42,17 @@ final class TransformingLoader extends ClassLoader {
         resolveClass(c);
       }
       return c;
+    }
+  }
+
+  static byte[] classpathBytes(String binaryName) {
+    try (InputStream in =
+        TransformingLoader.class
+            .getClassLoader()
+            .getResourceAsStream(binaryName.replace('.', '/') + ".class")) {
+      return in == null ? null : in.readAllBytes();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
     }
   }
 }

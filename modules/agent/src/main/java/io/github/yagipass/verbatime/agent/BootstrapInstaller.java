@@ -40,18 +40,6 @@ final class BootstrapInstaller {
     }
   }
 
-  private static Path selfLocation() {
-    CodeSource cs = BootstrapInstaller.class.getProtectionDomain().getCodeSource();
-    if (cs == null || cs.getLocation() == null) {
-      throw new IllegalStateException("cannot locate the agent jar");
-    }
-    try {
-      return Path.of(cs.getLocation().toURI());
-    } catch (URISyntaxException e) {
-      throw new IllegalStateException("cannot locate the agent jar: " + cs.getLocation(), e);
-    }
-  }
-
   static Path extractBootstrapJar(Path agentJar) throws IOException {
     Path tmp = Files.createTempFile("verbatime-probe-", ".jar");
     @Var int copied = 0;
@@ -76,6 +64,18 @@ final class BootstrapInstaller {
           "no " + PROBE_PREFIX + " or " + FORMAT_PREFIX + " entries in " + agentJar);
     }
     return tmp;
+  }
+
+  private static Path selfLocation() {
+    CodeSource cs = BootstrapInstaller.class.getProtectionDomain().getCodeSource();
+    if (cs == null || cs.getLocation() == null) {
+      throw new IllegalStateException("cannot locate the agent jar");
+    }
+    try {
+      return Path.of(cs.getLocation().toURI());
+    } catch (URISyntaxException e) {
+      throw new IllegalStateException("cannot locate the agent jar: " + cs.getLocation(), e);
+    }
   }
 
   private static boolean isBootstrapEntry(String name) {

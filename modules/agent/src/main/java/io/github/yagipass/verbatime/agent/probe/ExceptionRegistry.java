@@ -45,6 +45,15 @@ public final class ExceptionRegistry {
     return IDS.get(type);
   }
 
+  public static String name(int id) {
+    synchronized (LOCK) {
+      if (id < 1 || id > names.size()) {
+        return "<unknown#" + id + ">";
+      }
+      return names.get(id - 1);
+    }
+  }
+
   static void attach(TraceFileWriter w) {
     synchronized (LOCK) {
       sink = w;
@@ -57,15 +66,6 @@ public final class ExceptionRegistry {
   static void detach() {
     synchronized (LOCK) {
       sink = null;
-    }
-  }
-
-  public static String name(int id) {
-    synchronized (LOCK) {
-      if (id < 1 || id > names.size()) {
-        return "<unknown#" + id + ">";
-      }
-      return names.get(id - 1);
     }
   }
 }

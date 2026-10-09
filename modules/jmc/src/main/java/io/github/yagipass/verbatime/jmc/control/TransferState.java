@@ -6,9 +6,9 @@ import org.jspecify.annotations.Nullable;
 
 public final class TransferState {
 
-  static final long RELOAD_THROTTLE_MS = 2_000;
-
   record Deferred(long recordingId, Path file) {}
+
+  static final long RELOAD_THROTTLE_MS = 2_000;
 
   private @Nullable Transfer current;
 

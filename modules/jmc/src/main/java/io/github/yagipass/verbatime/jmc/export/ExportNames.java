@@ -39,6 +39,13 @@ public final class ExportNames {
     return prev < 0 ? head : head.substring(prev + 1);
   }
 
+  static String sanitize(String s) {
+    if (s.indexOf('\n') < 0 && s.indexOf('\r') < 0) {
+      return s;
+    }
+    return s.replace("\r", "").replace("\n", " ");
+  }
+
   String fullName(int methodId) {
     return sanitize(data.methodName(methodId));
   }
@@ -82,12 +89,5 @@ public final class ExportNames {
       display = Arrays.copyOf(display, n);
       utf8 = Arrays.copyOf(utf8, n);
     }
-  }
-
-  static String sanitize(String s) {
-    if (s.indexOf('\n') < 0 && s.indexOf('\r') < 0) {
-      return s;
-    }
-    return s.replace("\r", "").replace("\n", " ");
   }
 }

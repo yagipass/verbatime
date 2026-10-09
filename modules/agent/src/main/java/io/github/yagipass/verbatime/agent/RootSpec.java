@@ -29,12 +29,12 @@ public record RootSpec(String className, String methodName, @Nullable String des
     return className.replace('.', '/');
   }
 
-  boolean matches(String name, String desc) {
-    return methodName.equals(name) && (descriptor == null || descriptor.equals(desc));
-  }
-
   @Override
   public String toString() {
     return className + "::" + methodName + (descriptor == null ? "" : descriptor);
+  }
+
+  boolean matches(String name, String desc) {
+    return methodName.equals(name) && (descriptor == null || descriptor.equals(desc));
   }
 }

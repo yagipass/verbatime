@@ -134,49 +134,6 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
     roots.replaceRoots(parsed);
   }
 
-  private Path spoolFileFor(long id) {
-    return spoolDir().resolve("rec-" + id + "-" + FILE_STAMP.format(Instant.now()) + ".vbtm");
-  }
-
-  private Path spoolDir() {
-    if (spoolDir == null) {
-      try {
-        if (configuredSpoolDir != null) {
-          Files.createDirectories(configuredSpoolDir);
-          spoolDir = configuredSpoolDir;
-        } else {
-          spoolDir = Files.createTempDirectory("vbtm-" + ProcessHandle.current().pid() + "-");
-          spoolDirIsTemp = true;
-        }
-      } catch (IOException e) {
-        throw new UncheckedIOException("cannot create the spool directory", e);
-      }
-    }
-    return spoolDir;
-  }
-
-  private void discardLast() {
-    Recording r = lastRecording;
-    if (r == null) {
-      return;
-    }
-    streams.closeAllOf(r);
-    lastRecording = null;
-    if (r.spooled()) {
-      deleteSpoolFile(r);
-    }
-  }
-
-  private synchronized void discardIfDelivered(Recording r) {
-    if (!r.spooled() || !r.closed() || !r.delivered() || streams.hasStreamsOf(r)) {
-      return;
-    }
-    if (lastRecording == r) {
-      lastRecording = null;
-    }
-    deleteSpoolFile(r);
-  }
-
   @Override
   public synchronized String[] status() {
     List<String> l = new ArrayList<>();
@@ -234,17 +191,6 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
     return streams.open(recordingById(recordingId), fromOffset);
   }
 
-  private Recording recordingById(long recordingId) {
-    Recording current = recorder.current();
-    if (current != null && current.id() == recordingId) {
-      return current;
-    }
-    if (lastRecording != null && lastRecording.id() == recordingId) {
-      return lastRecording;
-    }
-    throw new IllegalArgumentException("unknown recording id " + recordingId);
-  }
-
   @Override
   public byte @Nullable [] readStream(long streamId) {
     return streams.read(streamId);
@@ -253,6 +199,10 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
   @Override
   public void closeStream(long streamId) {
     streams.close(streamId);
+  }
+
+  public void registerMBean() throws Exception {
+    ManagementFactory.getPlatformMBeanServer().registerMBean(this, new ObjectName(OBJECT_NAME));
   }
 
   private static void deleteSpoolFile(Recording r) {
@@ -267,7 +217,57 @@ public final class VerbatimeControl implements VerbatimeControlMBean {
     }
   }
 
-  public void registerMBean() throws Exception {
-    ManagementFactory.getPlatformMBeanServer().registerMBean(this, new ObjectName(OBJECT_NAME));
+  private Path spoolFileFor(long id) {
+    return spoolDir().resolve("rec-" + id + "-" + FILE_STAMP.format(Instant.now()) + ".vbtm");
+  }
+
+  private Path spoolDir() {
+    if (spoolDir == null) {
+      try {
+        if (configuredSpoolDir != null) {
+          Files.createDirectories(configuredSpoolDir);
+          spoolDir = configuredSpoolDir;
+        } else {
+          spoolDir = Files.createTempDirectory("vbtm-" + ProcessHandle.current().pid() + "-");
+          spoolDirIsTemp = true;
+        }
+      } catch (IOException e) {
+        throw new UncheckedIOException("cannot create the spool directory", e);
+      }
+    }
+    return spoolDir;
+  }
+
+  private void discardLast() {
+    Recording r = lastRecording;
+    if (r == null) {
+      return;
+    }
+    streams.closeAllOf(r);
+    lastRecording = null;
+    if (r.spooled()) {
+      deleteSpoolFile(r);
+    }
+  }
+
+  private synchronized void discardIfDelivered(Recording r) {
+    if (!r.spooled() || !r.closed() || !r.delivered() || streams.hasStreamsOf(r)) {
+      return;
+    }
+    if (lastRecording == r) {
+      lastRecording = null;
+    }
+    deleteSpoolFile(r);
+  }
+
+  private Recording recordingById(long recordingId) {
+    Recording current = recorder.current();
+    if (current != null && current.id() == recordingId) {
+      return current;
+    }
+    if (lastRecording != null && lastRecording.id() == recordingId) {
+      return lastRecording;
+    }
+    throw new IllegalArgumentException("unknown recording id " + recordingId);
   }
 }

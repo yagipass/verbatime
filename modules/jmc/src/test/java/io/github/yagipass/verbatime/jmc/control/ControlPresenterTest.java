@@ -54,134 +54,6 @@ final class ControlPresenterTest {
 
   final long[] now = {1_700_000_000_000L};
 
-  private ControlPresenter connection() {
-    ControlPresenter.Settings settings =
-        new ControlPresenter.Settings() {
-          @Override
-          public String roots() {
-            return initialRoots;
-          }
-
-          @Override
-          public Path recordingsDir() {
-            return recordings;
-          }
-
-          @Override
-          public void save(String target, String roots) {
-            saved.put("target", target);
-            saved.put("roots", roots);
-          }
-        };
-    return new ControlPresenter(
-        view,
-        uiThread,
-        () -> {
-          bg = new ManualExecutor();
-          executors.add(bg);
-          return bg;
-        },
-        target -> {
-          if (dialError != null) {
-            throw dialError;
-          }
-          return reconnectAgents.isEmpty() ? agent : reconnectAgents.poll();
-        },
-        settings,
-        () -> now[0],
-        p -> {
-          pulls.add(p);
-          return () -> cancelled.add(p);
-        });
-  }
-
-  private ControlPresenter connected() {
-    ControlPresenter c = connection();
-    c.connect(TARGET);
-    bg.runAll();
-    uiThread.runPosted();
-    return c;
-  }
-
-  private static Map<String, String> idleWithRoot() {
-    return Map.of("v", "4", "pid", "7", "state", "idle", "roots", "1", "root.0", "ok a.B::m");
-  }
-
-  private static Map<String, String> recording(long id, long startEpochMs, long agentBytes) {
-    Map<String, String> m =
-        new HashMap<>(
-            Map.of(
-                "v",
-                "4",
-                "pid",
-                "7",
-                "state",
-                "recording",
-                "roots",
-                "1",
-                "root.0",
-                "ok a.B::m",
-                "recording.id",
-                Long.toString(id),
-                "recording.name",
-                "run",
-                "recording.startEpochMs",
-                Long.toString(startEpochMs)));
-    if (agentBytes >= 0) {
-      m.put("recording.bytes", Long.toString(agentBytes));
-    }
-    return m;
-  }
-
-  private static Map<String, String> stopped(long lastBytes) {
-    return new HashMap<>(
-        Map.of(
-            "v",
-            "4",
-            "pid",
-            "7",
-            "state",
-            "idle",
-            "roots",
-            "1",
-            "root.0",
-            "ok a.B::m",
-            "lastRecording.bytes",
-            Long.toString(lastBytes)));
-  }
-
-  private static Map<String, String> stoppedAfter(long id, long startEpochMs, long lastBytes) {
-    Map<String, String> m = stopped(lastBytes);
-    m.put("lastRecording.id", Long.toString(id));
-    m.put("lastRecording.name", "run");
-    m.put("lastRecording.startEpochMs", Long.toString(startEpochMs));
-    return m;
-  }
-
-  private Path localCopy(long id, int bytes) throws IOException {
-    Path local =
-        LocalRecordings.localFile(
-            recordings, LocalRecordings.fileSafe(TARGET), "run", id, Long.toString(now[0]));
-    Files.createDirectories(local.getParent());
-    Files.write(local, new byte[bytes]);
-    return local;
-  }
-
-  private void poll() {
-    uiThread.advance(ControlPresenter.POLL_MS);
-    bg.runAll();
-    uiThread.runPosted();
-  }
-
-  private void runCancelledAfterOneChunk(Transfer p) {
-    NullProgressMonitor monitor = new NullProgressMonitor();
-    agent.onRead = () -> monitor.setCanceled(true);
-    agent.chunks.add(new byte[3]);
-    p.run(monitor);
-    agent.onRead = () -> {};
-    uiThread.runPosted();
-  }
-
   @Test
   void connectSavesTheTargetOnlyAfterTheAgentAnsweredStatus() {
     ControlPresenter c = connection();
@@ -973,5 +845,133 @@ final class ControlPresenterTest {
         ControlPresenter.ViewState.connected("x", false, roots, "", "Idle", false, false, false)
             .canStart(),
         "the same panel without a transfer in flight is startable, so the flag is what turned it off");
+  }
+
+  private static Map<String, String> idleWithRoot() {
+    return Map.of("v", "4", "pid", "7", "state", "idle", "roots", "1", "root.0", "ok a.B::m");
+  }
+
+  private static Map<String, String> recording(long id, long startEpochMs, long agentBytes) {
+    Map<String, String> m =
+        new HashMap<>(
+            Map.of(
+                "v",
+                "4",
+                "pid",
+                "7",
+                "state",
+                "recording",
+                "roots",
+                "1",
+                "root.0",
+                "ok a.B::m",
+                "recording.id",
+                Long.toString(id),
+                "recording.name",
+                "run",
+                "recording.startEpochMs",
+                Long.toString(startEpochMs)));
+    if (agentBytes >= 0) {
+      m.put("recording.bytes", Long.toString(agentBytes));
+    }
+    return m;
+  }
+
+  private static Map<String, String> stopped(long lastBytes) {
+    return new HashMap<>(
+        Map.of(
+            "v",
+            "4",
+            "pid",
+            "7",
+            "state",
+            "idle",
+            "roots",
+            "1",
+            "root.0",
+            "ok a.B::m",
+            "lastRecording.bytes",
+            Long.toString(lastBytes)));
+  }
+
+  private static Map<String, String> stoppedAfter(long id, long startEpochMs, long lastBytes) {
+    Map<String, String> m = stopped(lastBytes);
+    m.put("lastRecording.id", Long.toString(id));
+    m.put("lastRecording.name", "run");
+    m.put("lastRecording.startEpochMs", Long.toString(startEpochMs));
+    return m;
+  }
+
+  private ControlPresenter connection() {
+    ControlPresenter.Settings settings =
+        new ControlPresenter.Settings() {
+          @Override
+          public String roots() {
+            return initialRoots;
+          }
+
+          @Override
+          public Path recordingsDir() {
+            return recordings;
+          }
+
+          @Override
+          public void save(String target, String roots) {
+            saved.put("target", target);
+            saved.put("roots", roots);
+          }
+        };
+    return new ControlPresenter(
+        view,
+        uiThread,
+        () -> {
+          bg = new ManualExecutor();
+          executors.add(bg);
+          return bg;
+        },
+        target -> {
+          if (dialError != null) {
+            throw dialError;
+          }
+          return reconnectAgents.isEmpty() ? agent : reconnectAgents.poll();
+        },
+        settings,
+        () -> now[0],
+        p -> {
+          pulls.add(p);
+          return () -> cancelled.add(p);
+        });
+  }
+
+  private ControlPresenter connected() {
+    ControlPresenter c = connection();
+    c.connect(TARGET);
+    bg.runAll();
+    uiThread.runPosted();
+    return c;
+  }
+
+  private Path localCopy(long id, int bytes) throws IOException {
+    Path local =
+        LocalRecordings.localFile(
+            recordings, LocalRecordings.fileSafe(TARGET), "run", id, Long.toString(now[0]));
+    Files.createDirectories(local.getParent());
+    Files.write(local, new byte[bytes]);
+    return local;
+  }
+
+  private void poll() {
+    uiThread.advance(ControlPresenter.POLL_MS);
+    bg.runAll();
+    uiThread.runPosted();
+  }
+
+  private void runCancelledAfterOneChunk(Transfer p) {
+    NullProgressMonitor monitor = new NullProgressMonitor();
+    agent.onRead = () -> monitor.setCanceled(true);
+    agent.chunks.add(new byte[3]);
+    p.run(monitor);
+    agent.onRead = () -> {};
+    uiThread.runPosted();
   }
 }

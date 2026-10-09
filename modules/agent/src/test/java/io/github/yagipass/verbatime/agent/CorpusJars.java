@@ -20,8 +20,6 @@ import java.util.zip.ZipFile;
 
 final class CorpusJars implements AutoCloseable {
 
-  static final String DIRS_PROPERTY = "io.github.yagipass.verbatime.agent.test.corpus";
-
   record Jar(String name, Path path, JarFile file, List<String> classEntries) {
 
     byte[] read(String entryName) {
@@ -57,6 +55,8 @@ final class CorpusJars implements AutoCloseable {
     }
   }
 
+  static final String DIRS_PROPERTY = "io.github.yagipass.verbatime.agent.test.corpus";
+
   private final List<Jar> jars;
 
   private final Map<String, Jar> firstByEntry = new HashMap<>();
@@ -67,6 +67,13 @@ final class CorpusJars implements AutoCloseable {
       try (Stream<JarEntry> s = j.file().versionedStream()) {
         s.forEach(e -> firstByEntry.putIfAbsent(e.getName(), j));
       }
+    }
+  }
+
+  @Override
+  public void close() throws IOException {
+    for (Jar j : jars) {
+      j.file().close();
     }
   }
 
@@ -113,13 +120,6 @@ final class CorpusJars implements AutoCloseable {
     return new CorpusJars(jars);
   }
 
-  private static boolean isClassEntry(String name) {
-    return name.endsWith(".class")
-        && !name.startsWith("META-INF/")
-        && !name.endsWith("module-info.class")
-        && !name.startsWith("java/");
-  }
-
   List<Jar> jars() {
     return jars;
   }
@@ -144,10 +144,10 @@ final class CorpusJars implements AutoCloseable {
     return firstByEntry.get(entryName);
   }
 
-  @Override
-  public void close() throws IOException {
-    for (Jar j : jars) {
-      j.file().close();
-    }
+  private static boolean isClassEntry(String name) {
+    return name.endsWith(".class")
+        && !name.startsWith("META-INF/")
+        && !name.endsWith("module-info.class")
+        && !name.startsWith("java/");
   }
 }

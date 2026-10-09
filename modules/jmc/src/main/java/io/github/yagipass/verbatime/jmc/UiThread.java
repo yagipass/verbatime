@@ -6,27 +6,6 @@ import org.eclipse.swt.widgets.Widget;
 
 public interface UiThread {
 
-  void post(Runnable r);
-
-  void postAfter(int delayMs, Runnable r);
-
-  default void post(BooleanSupplier stillWanted, Runnable r) {
-    post(
-        () -> {
-          if (stillWanted.getAsBoolean()) {
-            r.run();
-          }
-        });
-  }
-
-  static UiThread of(Widget anchor) {
-    return new Guarded(anchor.getDisplay(), () -> !anchor.isDisposed());
-  }
-
-  static UiThread of(Display display) {
-    return new Guarded(display, () -> !display.isDisposed());
-  }
-
   final class Guarded implements UiThread {
 
     private final Display display;
@@ -73,5 +52,26 @@ public interface UiThread {
             });
       }
     }
+  }
+
+  static UiThread of(Widget anchor) {
+    return new Guarded(anchor.getDisplay(), () -> !anchor.isDisposed());
+  }
+
+  static UiThread of(Display display) {
+    return new Guarded(display, () -> !display.isDisposed());
+  }
+
+  void post(Runnable r);
+
+  void postAfter(int delayMs, Runnable r);
+
+  default void post(BooleanSupplier stillWanted, Runnable r) {
+    post(
+        () -> {
+          if (stillWanted.getAsBoolean()) {
+            r.run();
+          }
+        });
   }
 }

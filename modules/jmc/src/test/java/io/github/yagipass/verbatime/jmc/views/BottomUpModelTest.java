@@ -18,35 +18,6 @@ import org.junit.jupiter.api.Test;
 
 final class BottomUpModelTest {
 
-  private static TraceSnapshot fixture() throws IOException {
-    TraceBuilder w = TestTraces.writer();
-    w.thread(7, "main");
-    w.clazz(1, "pkg.Root", "root()V", "a()V", "b()V", "never()V");
-    TraceBuilder.Payload p = new TraceBuilder.Payload(100);
-    p.enter(100, 1)
-        .enter(110, 2)
-        .exit(150)
-        .enter(160, 2)
-        .exit(200)
-        .enter(210, 3)
-        .exit(220)
-        .exit(300);
-    w.chunk(7, 100, p.bytes(), true);
-    return TestTraces.index(w);
-  }
-
-  private static SubtreeAggregate rootOf(TraceSnapshot d) {
-    return SubtreeAggregate.compute(d, 7, 10_000, 20_000, 0, 1);
-  }
-
-  private static BottomUpModel model(TraceSnapshot d) {
-    return BottomUpModel.of(d, rootOf(d));
-  }
-
-  private static List<String> names(BottomUpModel m) {
-    return m.rows().stream().map(Row::name).map(Formats::shortName).toList();
-  }
-
   @Test
   void listsEveryMethodOfTheSubtreeAndMatchesTheIndexerOverTheWholeTrace() throws IOException {
     TraceSnapshot d = fixture();
@@ -128,37 +99,6 @@ final class BottomUpModelTest {
     assertEquals(names(before), names(after), "a live reload must not reset the user's sort");
   }
 
-  private static BottomUpModel diamond() throws IOException {
-    TraceBuilder w = TestTraces.writer();
-    w.thread(1, "main");
-    w.clazz(0, "pkg.Root", "root()V", "a()V", "b()V", "c()V");
-    TraceBuilder.Payload p = new TraceBuilder.Payload(100);
-    p.enter(100, 0).enter(110, 1).enter(120, 2).exit(130).exit(140);
-    p.enter(150, 3).enter(160, 2).exit(170).exit(180).exit(200);
-    w.chunk(1, 100, p.bytes(), true);
-    TraceSnapshot d = TestTraces.index(w);
-    SubtreeAggregate a = SubtreeAggregate.compute(d, 1, 10_000, 10_000, 0, 0);
-    return BottomUpModel.of(d, a);
-  }
-
-  private static Row named(BottomUpModel m, String shortName) {
-    for (Row r : m.rows()) {
-      if (Formats.shortName(r.name()).equals(shortName)) {
-        return r;
-      }
-    }
-    throw new AssertionError("no row " + shortName);
-  }
-
-  private static Row childNamed(Row r, String shortName) {
-    for (int i = 0; i < r.childCount(); i++) {
-      if (Formats.shortName(r.child(i).name()).equals(shortName)) {
-        return r.child(i);
-      }
-    }
-    throw new AssertionError("no child " + shortName + " of " + r.name());
-  }
-
   @Test
   void subtreeFlattensAMethodReachedThroughSeveralCallers() throws IOException {
     BottomUpModel m = diamond();
@@ -199,5 +139,65 @@ final class BottomUpModelTest {
         viaA,
         childNamed(b, "Root.a"),
         "re-sorting reorders the cached children in place so the tree keeps its expansion");
+  }
+
+  private static TraceSnapshot fixture() throws IOException {
+    TraceBuilder w = TestTraces.writer();
+    w.thread(7, "main");
+    w.clazz(1, "pkg.Root", "root()V", "a()V", "b()V", "never()V");
+    TraceBuilder.Payload p = new TraceBuilder.Payload(100);
+    p.enter(100, 1)
+        .enter(110, 2)
+        .exit(150)
+        .enter(160, 2)
+        .exit(200)
+        .enter(210, 3)
+        .exit(220)
+        .exit(300);
+    w.chunk(7, 100, p.bytes(), true);
+    return TestTraces.index(w);
+  }
+
+  private static SubtreeAggregate rootOf(TraceSnapshot d) {
+    return SubtreeAggregate.compute(d, 7, 10_000, 20_000, 0, 1);
+  }
+
+  private static BottomUpModel model(TraceSnapshot d) {
+    return BottomUpModel.of(d, rootOf(d));
+  }
+
+  private static List<String> names(BottomUpModel m) {
+    return m.rows().stream().map(Row::name).map(Formats::shortName).toList();
+  }
+
+  private static BottomUpModel diamond() throws IOException {
+    TraceBuilder w = TestTraces.writer();
+    w.thread(1, "main");
+    w.clazz(0, "pkg.Root", "root()V", "a()V", "b()V", "c()V");
+    TraceBuilder.Payload p = new TraceBuilder.Payload(100);
+    p.enter(100, 0).enter(110, 1).enter(120, 2).exit(130).exit(140);
+    p.enter(150, 3).enter(160, 2).exit(170).exit(180).exit(200);
+    w.chunk(1, 100, p.bytes(), true);
+    TraceSnapshot d = TestTraces.index(w);
+    SubtreeAggregate a = SubtreeAggregate.compute(d, 1, 10_000, 10_000, 0, 0);
+    return BottomUpModel.of(d, a);
+  }
+
+  private static Row named(BottomUpModel m, String shortName) {
+    for (Row r : m.rows()) {
+      if (Formats.shortName(r.name()).equals(shortName)) {
+        return r;
+      }
+    }
+    throw new AssertionError("no row " + shortName);
+  }
+
+  private static Row childNamed(Row r, String shortName) {
+    for (int i = 0; i < r.childCount(); i++) {
+      if (Formats.shortName(r.child(i).name()).equals(shortName)) {
+        return r.child(i);
+      }
+    }
+    throw new AssertionError("no child " + shortName + " of " + r.name());
   }
 }

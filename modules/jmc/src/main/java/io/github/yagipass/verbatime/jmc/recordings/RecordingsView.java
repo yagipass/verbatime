@@ -108,6 +108,20 @@ public final class RecordingsView extends ViewPart {
     refresh();
   }
 
+  @Override
+  public void setFocus() {
+    if (viewer != null && !viewer.getControl().isDisposed()) {
+      viewer.getControl().setFocus();
+      refresh();
+    }
+  }
+
+  @Override
+  public void dispose() {
+    Preferences.get().removePropertyChangeListener(settingsListener);
+    super.dispose();
+  }
+
   private void column(String title, int width, int style, Function<Entry, String> text) {
     Columns.addTable(
         viewer,
@@ -183,19 +197,5 @@ public final class RecordingsView extends ViewPart {
 
   private void open(Path file) {
     RecordingEditorInput.openOrReport(getSite().getPage(), file, this::setContentDescription);
-  }
-
-  @Override
-  public void setFocus() {
-    if (viewer != null && !viewer.getControl().isDisposed()) {
-      viewer.getControl().setFocus();
-      refresh();
-    }
-  }
-
-  @Override
-  public void dispose() {
-    Preferences.get().removePropertyChangeListener(settingsListener);
-    super.dispose();
   }
 }

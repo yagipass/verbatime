@@ -16,14 +16,6 @@ import java.util.Locale;
 
 public final class SessionExporter {
 
-  static final int OUTLINE_LIMIT = 300;
-
-  static final int HOT_BY_SELF_LIMIT = 40;
-
-  static final int HOT_BY_CALLS_LIMIT = 25;
-
-  static final int WRITE_BUFFER_BYTES = 8 << 20;
-
   public record Result(
       Path file,
       long bytes,
@@ -34,6 +26,14 @@ public final class SessionExporter {
       long belowFloorCalls,
       int maxDepth,
       long outlineThresholdNs) {}
+
+  static final int OUTLINE_LIMIT = 300;
+
+  static final int HOT_BY_SELF_LIMIT = 40;
+
+  static final int HOT_BY_CALLS_LIMIT = 25;
+
+  static final int WRITE_BUFFER_BYTES = 8 << 20;
 
   private final TraceSnapshot data;
 
@@ -79,6 +79,13 @@ public final class SessionExporter {
     return export(data, session, floorNs, dest, progress, OUTLINE_LIMIT, WRITE_BUFFER_BYTES);
   }
 
+  public static String floorLabel(long floorNs) {
+    if (floorNs <= 0) {
+      return "none";
+    }
+    return floorNs % 1000 == 0 ? floorNs / 1000 + " µs" : floorNs + " ns";
+  }
+
   static Result export(
       TraceSnapshot data,
       Session session,
@@ -92,13 +99,6 @@ public final class SessionExporter {
         .run();
   }
 
-  public static String floorLabel(long floorNs) {
-    if (floorNs <= 0) {
-      return "none";
-    }
-    return floorNs % 1000 == 0 ? floorNs / 1000 + " µs" : floorNs + " ns";
-  }
-
   static String floorLabelCompact(long floorNs) {
     return floorNs % 1000 == 0 ? floorNs / 1000 + "µs" : floorNs + "ns";
   }
@@ -106,6 +106,43 @@ public final class SessionExporter {
   static String msText(long ticks) {
     long t = Math.max(ticks, 0);
     return t / Vbtm.TICKS_PER_MS + "." + String.format(Locale.ROOT, "%04d", t % Vbtm.TICKS_PER_MS);
+  }
+
+  private static void copyRest(FileChannel in, FileChannel out, @Var long pos, long size)
+      throws IOException {
+    ByteBuffer bb = ByteBuffer.allocate(1 << 20);
+    while (pos < size) {
+      bb.clear();
+      int n = in.read(bb, pos);
+      if (n <= 0) {
+        throw new IOException("short read at " + pos + " of " + size);
+      }
+      bb.flip();
+      while (bb.hasRemaining()) {
+        out.write(bb);
+      }
+      pos += n;
+    }
+  }
+
+  private static int digits(long v) {
+    return Long.toString(Math.max(v, 0)).length();
+  }
+
+  @SuppressWarnings("EmptyCatch")
+  private static void deleteQuietly(Path p) {
+    try {
+      Files.deleteIfExists(p);
+    } catch (IOException e) {
+    }
+  }
+
+  @SuppressWarnings("EmptyCatch")
+  private static void closeQuietly(PatchableFileWriter w) {
+    try {
+      w.close();
+    } catch (IOException e) {
+    }
   }
 
   private Result run() throws IOException {
@@ -184,43 +221,6 @@ public final class SessionExporter {
         pos += n;
       }
       return out.size();
-    }
-  }
-
-  private static void copyRest(FileChannel in, FileChannel out, @Var long pos, long size)
-      throws IOException {
-    ByteBuffer bb = ByteBuffer.allocate(1 << 20);
-    while (pos < size) {
-      bb.clear();
-      int n = in.read(bb, pos);
-      if (n <= 0) {
-        throw new IOException("short read at " + pos + " of " + size);
-      }
-      bb.flip();
-      while (bb.hasRemaining()) {
-        out.write(bb);
-      }
-      pos += n;
-    }
-  }
-
-  private static int digits(long v) {
-    return Long.toString(Math.max(v, 0)).length();
-  }
-
-  @SuppressWarnings("EmptyCatch")
-  private static void deleteQuietly(Path p) {
-    try {
-      Files.deleteIfExists(p);
-    } catch (IOException e) {
-    }
-  }
-
-  @SuppressWarnings("EmptyCatch")
-  private static void closeQuietly(PatchableFileWriter w) {
-    try {
-      w.close();
-    } catch (IOException e) {
     }
   }
 }

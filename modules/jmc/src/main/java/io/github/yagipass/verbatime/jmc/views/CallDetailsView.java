@@ -54,6 +54,19 @@ public final class CallDetailsView extends EditorBoundView {
 
   private AncestorTable ancestors;
 
+  @SuppressWarnings("ReferenceEquality")
+  @Override
+  public void setFocus() {
+    if (root == null || root.isDisposed()) {
+      return;
+    }
+    if (rootLayout.topControl == factsScroller) {
+      factsScroller.setFocus();
+    } else {
+      root.setFocus();
+    }
+  }
+
   @Override
   protected void createContent(Composite parent) {
     root = new Composite(parent, SWT.NONE);
@@ -62,6 +75,102 @@ public final class CallDetailsView extends EditorBoundView {
     emptyLabel = new Label(root, SWT.WRAP | SWT.CENTER);
     createFacts(root);
     rootLayout.topControl = emptyLabel;
+  }
+
+  @Override
+  protected String selectHint() {
+    return "Click a call in the chart to show its details";
+  }
+
+  @Override
+  protected void refresh() {
+    if (root == null || root.isDisposed()) {
+      return;
+    }
+    TraceSnapshot d = trace();
+    SelectedCall f = selection();
+    String empty = emptyReason(d, f);
+    if (empty != null) {
+      showEmpty(empty);
+      return;
+    }
+    String name = Objects.requireNonNull(d).methodName(Objects.requireNonNull(f).methodId());
+    sigText.setText(Formats.signature(name));
+    fullText.setText(name);
+    row1Label.setText(
+        "total "
+            + Formats.fmtDur(f.durNs())
+            + ", self "
+            + Formats.fmtDur(f.effectiveSelfNs())
+            + ", start "
+            + Formats.fmtTs(f.startNs()));
+    atText.setText("at " + Formats.fmtWall(d.wallClock(f.startNs())));
+    row2Label.setText(
+        "depth "
+            + f.depth()
+            + ", on "
+            + d.threadName(f.tid())
+            + ", "
+            + CopyTexts.sessionText(d, f.tid(), f.startNs()));
+    List<String> marks = new ArrayList<>();
+    if (f.thrown()) {
+      marks.add("ended by throw: " + d.exceptionName(f.exceptionId()));
+    }
+    if (f.unclosed()) {
+      marks.add("unclosed: the log ended before close");
+    }
+    marksLabel.setText(String.join("\n", marks));
+    ((GridData) marksLabel.getLayoutData()).exclude = marks.isEmpty();
+    marksLabel.setVisible(!marks.isEmpty());
+    String gc = CopyTexts.gcText(d.gc.overlap(f.startNs(), f.durNs()), f.durNs());
+    gcLabel.setText(gc == null ? "" : gc);
+    ((GridData) gcLabel.getLayoutData()).exclude = gc == null;
+    gcLabel.setVisible(gc != null);
+
+    long sessionDurNs = CopyTexts.sessionDurNs(d, f.tid(), f.startNs());
+    List<SelectedCall.Ancestor> chain = f.pathFromRoot();
+    int top = chain.get(0).depth();
+    ancestorsHead.setText(
+        top == 0
+            ? "Ancestors, root first"
+            : "Ancestors from depth " + top + ", the calls above are outside the loaded window");
+    List<AncestorTable.Row> rows = new ArrayList<>(chain.size());
+    for (SelectedCall.Ancestor a : chain) {
+      String full = d.methodName(a.methodId());
+      rows.add(
+          new AncestorTable.Row(
+              a.depth(),
+              Formats.shortName(full),
+              full,
+              Formats.fmtDur(a.durNs()),
+              CopyTexts.pctOfSession(a.durNs(), sessionDurNs),
+              a.depth() == f.depth() && a.startNs() == f.startNs()));
+    }
+    ancestors.setRows(rows);
+
+    rootLayout.topControl = factsScroller;
+    facts.layout(true, true);
+    root.layout();
+    fitFacts();
+  }
+
+  private static Text readOnlyText(Composite parent) {
+    Text t = new Text(parent, SWT.MULTI | SWT.READ_ONLY | SWT.WRAP);
+    t.setBackground(parent.getBackground());
+    t.setLayoutData(wrapData());
+    return t;
+  }
+
+  private static Label wrapLabel(Composite parent) {
+    Label l = new Label(parent, SWT.WRAP);
+    l.setLayoutData(wrapData());
+    return l;
+  }
+
+  private static GridData wrapData() {
+    GridData gd = new GridData(SWT.FILL, SWT.TOP, true, false);
+    gd.widthHint = WRAP_WIDTH_HINT;
+    return gd;
   }
 
   private void createFacts(Composite parent) {
@@ -153,102 +262,6 @@ public final class CallDetailsView extends EditorBoundView {
         });
   }
 
-  private static Text readOnlyText(Composite parent) {
-    Text t = new Text(parent, SWT.MULTI | SWT.READ_ONLY | SWT.WRAP);
-    t.setBackground(parent.getBackground());
-    t.setLayoutData(wrapData());
-    return t;
-  }
-
-  private static Label wrapLabel(Composite parent) {
-    Label l = new Label(parent, SWT.WRAP);
-    l.setLayoutData(wrapData());
-    return l;
-  }
-
-  private static GridData wrapData() {
-    GridData gd = new GridData(SWT.FILL, SWT.TOP, true, false);
-    gd.widthHint = WRAP_WIDTH_HINT;
-    return gd;
-  }
-
-  @Override
-  protected String selectHint() {
-    return "Click a call in the chart to show its details";
-  }
-
-  @Override
-  protected void refresh() {
-    if (root == null || root.isDisposed()) {
-      return;
-    }
-    TraceSnapshot d = trace();
-    SelectedCall f = selection();
-    String empty = emptyReason(d, f);
-    if (empty != null) {
-      showEmpty(empty);
-      return;
-    }
-    String name = Objects.requireNonNull(d).methodName(Objects.requireNonNull(f).methodId());
-    sigText.setText(Formats.signature(name));
-    fullText.setText(name);
-    row1Label.setText(
-        "total "
-            + Formats.fmtDur(f.durNs())
-            + ", self "
-            + Formats.fmtDur(f.effectiveSelfNs())
-            + ", start "
-            + Formats.fmtTs(f.startNs()));
-    atText.setText("at " + Formats.fmtWall(d.wallClock(f.startNs())));
-    row2Label.setText(
-        "depth "
-            + f.depth()
-            + ", on "
-            + d.threadName(f.tid())
-            + ", "
-            + CopyTexts.sessionText(d, f.tid(), f.startNs()));
-    List<String> marks = new ArrayList<>();
-    if (f.thrown()) {
-      marks.add("ended by throw: " + d.exceptionName(f.exceptionId()));
-    }
-    if (f.unclosed()) {
-      marks.add("unclosed: the log ended before close");
-    }
-    marksLabel.setText(String.join("\n", marks));
-    ((GridData) marksLabel.getLayoutData()).exclude = marks.isEmpty();
-    marksLabel.setVisible(!marks.isEmpty());
-    String gc = CopyTexts.gcText(d.gc.overlap(f.startNs(), f.durNs()), f.durNs());
-    gcLabel.setText(gc == null ? "" : gc);
-    ((GridData) gcLabel.getLayoutData()).exclude = gc == null;
-    gcLabel.setVisible(gc != null);
-
-    long sessionDurNs = CopyTexts.sessionDurNs(d, f.tid(), f.startNs());
-    List<SelectedCall.Ancestor> chain = f.pathFromRoot();
-    int top = chain.get(0).depth();
-    ancestorsHead.setText(
-        top == 0
-            ? "Ancestors, root first"
-            : "Ancestors from depth " + top + ", the calls above are outside the loaded window");
-    List<AncestorTable.Row> rows = new ArrayList<>(chain.size());
-    for (SelectedCall.Ancestor a : chain) {
-      String full = d.methodName(a.methodId());
-      rows.add(
-          new AncestorTable.Row(
-              a.depth(),
-              Formats.shortName(full),
-              full,
-              Formats.fmtDur(a.durNs()),
-              CopyTexts.pctOfSession(a.durNs(), sessionDurNs),
-              a.depth() == f.depth() && a.startNs() == f.startNs()));
-    }
-    ancestors.setRows(rows);
-
-    rootLayout.topControl = factsScroller;
-    facts.layout(true, true);
-    root.layout();
-    fitFacts();
-  }
-
   private void fitFacts() {
     if (factsScroller == null || factsScroller.isDisposed()) {
       return;
@@ -262,18 +275,5 @@ public final class CallDetailsView extends EditorBoundView {
     emptyLabel.setText(text);
     rootLayout.topControl = emptyLabel;
     root.layout();
-  }
-
-  @SuppressWarnings("ReferenceEquality")
-  @Override
-  public void setFocus() {
-    if (root == null || root.isDisposed()) {
-      return;
-    }
-    if (rootLayout.topControl == factsScroller) {
-      factsScroller.setFocus();
-    } else {
-      root.setFocus();
-    }
   }
 }

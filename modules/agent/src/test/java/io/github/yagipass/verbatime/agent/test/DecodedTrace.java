@@ -15,12 +15,6 @@ import java.util.Map;
 
 public final class DecodedTrace {
 
-  public static final int TAG_ENTER = 0;
-
-  public static final int TAG_EXIT = 1;
-
-  public static final int TAG_EXIT_THROW = 2;
-
   public record Event(long ticks, int tag, int methodId, int exceptionId) {}
 
   public static final class DecodedSession {
@@ -39,6 +33,25 @@ public final class DecodedTrace {
     }
   }
 
+  public record GcPause(
+      long startTicks, long durTicks, int action, String collector, String cause) {
+    public long endTicks() {
+      return startTicks + durTicks;
+    }
+  }
+
+  public record Node(int methodId, int depth, int exceptionId, boolean unclosed) {
+    public boolean thrown() {
+      return exceptionId >= 0;
+    }
+  }
+
+  public static final int TAG_ENTER = 0;
+
+  public static final int TAG_EXIT = 1;
+
+  public static final int TAG_EXIT_THROW = 2;
+
   public final Map<Long, String> threadNames = new LinkedHashMap<>();
 
   public final Map<Integer, DecodedSession> sessions = new LinkedHashMap<>();
@@ -56,30 +69,6 @@ public final class DecodedTrace {
   public long startEpochMs;
 
   public int utcOffsetSeconds;
-
-  public String exceptionName(int exceptionId) {
-    if (exceptionId < 0) {
-      return null;
-    }
-    if (exceptionId == 0) {
-      return "<unknown>";
-    }
-    String n = exceptionNames.get(exceptionId);
-    return n == null ? "<unknown#" + exceptionId + ">" : n;
-  }
-
-  public record GcPause(
-      long startTicks, long durTicks, int action, String collector, String cause) {
-    public long endTicks() {
-      return startTicks + durTicks;
-    }
-  }
-
-  public record Node(int methodId, int depth, int exceptionId, boolean unclosed) {
-    public boolean thrown() {
-      return exceptionId >= 0;
-    }
-  }
 
   public static DecodedTrace decode(Path bin) throws IOException {
     return decode(Files.readAllBytes(bin));
@@ -196,5 +185,16 @@ public final class DecodedTrace {
       }
     }
     return out;
+  }
+
+  public String exceptionName(int exceptionId) {
+    if (exceptionId < 0) {
+      return null;
+    }
+    if (exceptionId == 0) {
+      return "<unknown>";
+    }
+    String n = exceptionNames.get(exceptionId);
+    return n == null ? "<unknown#" + exceptionId + ">" : n;
   }
 }

@@ -13,12 +13,12 @@ import java.util.Locale;
 
 final class ExportHead {
 
-  private static final DateTimeFormatter RECORDED =
-      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSxxx", Locale.ROOT);
-
   private record Section(String heading, List<String> rows) {}
 
   private record GcSection(List<String> rows, long ticks) {}
+
+  private static final DateTimeFormatter RECORDED =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSxxx", Locale.ROOT);
 
   private final TraceSnapshot data;
 
@@ -187,6 +187,35 @@ final class ExportHead {
       sb.append('\n');
     }
     return sb.toString().getBytes(StandardCharsets.UTF_8);
+  }
+
+  private static long newlines(CharSequence cs) {
+    @Var long n = 0;
+    for (int i = 0; i < cs.length(); i++) {
+      if (cs.charAt(i) == '\n') {
+        n++;
+      }
+    }
+    return n;
+  }
+
+  private static String grouped(long v) {
+    return String.format(Locale.US, "%,d", v);
+  }
+
+  private static int digits(long v) {
+    return Long.toString(Math.max(v, 0)).length();
+  }
+
+  private static void pad(StringBuilder sb, int n) {
+    for (int i = 0; i < n; i++) {
+      sb.append(' ');
+    }
+  }
+
+  private static void padLeft(StringBuilder sb, String s, int w) {
+    pad(sb, w - s.length());
+    sb.append(s);
   }
 
   private void header(StringBuilder sb, int methodsUsed, int gcPauses, long gcTicks) {
@@ -427,34 +456,5 @@ final class ExportHead {
       rows.add(sb.toString());
     }
     return rows;
-  }
-
-  private static long newlines(CharSequence cs) {
-    @Var long n = 0;
-    for (int i = 0; i < cs.length(); i++) {
-      if (cs.charAt(i) == '\n') {
-        n++;
-      }
-    }
-    return n;
-  }
-
-  private static String grouped(long v) {
-    return String.format(Locale.US, "%,d", v);
-  }
-
-  private static int digits(long v) {
-    return Long.toString(Math.max(v, 0)).length();
-  }
-
-  private static void pad(StringBuilder sb, int n) {
-    for (int i = 0; i < n; i++) {
-      sb.append(' ');
-    }
-  }
-
-  private static void padLeft(StringBuilder sb, String s, int w) {
-    pad(sb, w - s.length());
-    sb.append(s);
   }
 }

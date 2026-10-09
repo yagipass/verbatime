@@ -18,12 +18,12 @@ import java.util.Map;
 
 public final class TestTraces {
 
-  private TestTraces() {}
-
   public static final long DEFAULT_START_EPOCH_MS =
       OffsetDateTime.parse("2026-09-02T13:38:05+09:00").toInstant().toEpochMilli();
 
   public static final int DEFAULT_UTC_OFFSET_SECONDS = 9 * 3600;
+
+  private TestTraces() {}
 
   public static TraceBuilder writer() {
     return new TraceBuilder(DEFAULT_START_EPOCH_MS, DEFAULT_UTC_OFFSET_SECONDS);
@@ -48,6 +48,21 @@ public final class TestTraces {
   public static void append(Path f, byte[] all, int from, int to) throws IOException {
     Files.write(
         f, Arrays.copyOfRange(all, from, to), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+  }
+
+  public static Map<Long, List<ReferenceDecoder.Call>> byTid(List<ReferenceDecoder.Call> frames) {
+    Map<Long, List<ReferenceDecoder.Call>> out = new HashMap<>();
+    for (ReferenceDecoder.Call f : frames) {
+      out.computeIfAbsent(f.tid(), t -> new ArrayList<>()).add(f);
+    }
+    Comparator<ReferenceDecoder.Call> cmp =
+        Comparator.comparingLong(ReferenceDecoder.Call::startNs)
+            .thenComparingInt(ReferenceDecoder.Call::depth)
+            .thenComparingLong(ReferenceDecoder.Call::durNs);
+    for (List<ReferenceDecoder.Call> l : out.values()) {
+      l.sort(cmp);
+    }
+    return out;
   }
 
   static void assertSameTraceData(TraceSnapshot e, TraceSnapshot a, String ctx) {
@@ -172,30 +187,15 @@ public final class TestTraces {
     }
   }
 
-  private static long at(long[] a, int i) {
-    return i < a.length ? a[i] : 0;
-  }
-
-  public static Map<Long, List<ReferenceDecoder.Call>> byTid(List<ReferenceDecoder.Call> frames) {
-    Map<Long, List<ReferenceDecoder.Call>> out = new HashMap<>();
-    for (ReferenceDecoder.Call f : frames) {
-      out.computeIfAbsent(f.tid(), t -> new ArrayList<>()).add(f);
-    }
-    Comparator<ReferenceDecoder.Call> cmp =
-        Comparator.comparingLong(ReferenceDecoder.Call::startNs)
-            .thenComparingInt(ReferenceDecoder.Call::depth)
-            .thenComparingLong(ReferenceDecoder.Call::durNs);
-    for (List<ReferenceDecoder.Call> l : out.values()) {
-      l.sort(cmp);
-    }
-    return out;
-  }
-
   static long expectedThreshold(List<ReferenceDecoder.Call> frames, int budget) {
     long[] hist = new long[DurationHistogram.SIZE];
     for (ReferenceDecoder.Call f : frames) {
       hist[DurationHistogram.bucketIndex(f.durNs())]++;
     }
     return DurationHistogram.chooseThreshold(hist, frames.size(), budget);
+  }
+
+  private static long at(long[] a, int i) {
+    return i < a.length ? a[i] : 0;
   }
 }

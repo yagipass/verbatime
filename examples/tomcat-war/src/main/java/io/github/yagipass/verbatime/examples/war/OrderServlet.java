@@ -39,14 +39,14 @@ public final class OrderServlet extends HttpServlet {
     }
   }
 
-  private static String param(HttpServletRequest req, String name, String dflt) {
-    String v = req.getParameter(name);
-    return v == null || v.isEmpty() ? dflt : v;
-  }
-
   static void text(HttpServletResponse resp, int status, String body) throws IOException {
     resp.setStatus(status);
     resp.setContentType("text/plain;charset=UTF-8");
     resp.getWriter().println(body);
+  }
+
+  private static String param(HttpServletRequest req, String name, String dflt) {
+    String v = req.getParameter(name);
+    return v == null || v.isEmpty() ? dflt : v;
   }
 }

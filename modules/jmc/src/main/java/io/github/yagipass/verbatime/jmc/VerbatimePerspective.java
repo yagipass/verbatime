@@ -24,6 +24,22 @@ public final class VerbatimePerspective implements IPerspectiveFactory {
 
   private static final String BOTTOM_UP_VIEW = "io.github.yagipass.verbatime.jmc.bottomUpView";
 
+  public static void show(IWorkbenchWindow window) {
+    if (window == null) {
+      return;
+    }
+    IWorkbenchPage page = window.getActivePage();
+    IPerspectiveDescriptor current = page == null ? null : page.getPerspective();
+    if (current != null && ID.equals(current.getId())) {
+      return;
+    }
+    try {
+      window.getWorkbench().showPerspective(ID, window);
+    } catch (WorkbenchException e) {
+      ILog.get().warn("Cannot switch to the Verbatime perspective: " + e.getMessage());
+    }
+  }
+
   @Override
   public void createInitialLayout(IPageLayout layout) {
     String editorArea = layout.getEditorArea();
@@ -43,22 +59,6 @@ public final class VerbatimePerspective implements IPerspectiveFactory {
           CONTROL_VIEW, RECORDINGS_VIEW, CALL_DETAILS_VIEW, TOP_DOWN_VIEW, BOTTOM_UP_VIEW
         }) {
       layout.addShowViewShortcut(id);
-    }
-  }
-
-  public static void show(IWorkbenchWindow window) {
-    if (window == null) {
-      return;
-    }
-    IWorkbenchPage page = window.getActivePage();
-    IPerspectiveDescriptor current = page == null ? null : page.getPerspective();
-    if (current != null && ID.equals(current.getId())) {
-      return;
-    }
-    try {
-      window.getWorkbench().showPerspective(ID, window);
-    } catch (WorkbenchException e) {
-      ILog.get().warn("Cannot switch to the Verbatime perspective: " + e.getMessage());
     }
   }
 }

@@ -62,6 +62,27 @@ final class TraceFile {
     }
   }
 
+  private static final class Truncated extends RuntimeException {
+
+    private static final long serialVersionUID = 1L;
+
+    Truncated() {
+      super(null, null, false, false);
+    }
+  }
+
+  private static final class BadRecord extends RuntimeException {
+
+    private static final long serialVersionUID = 1L;
+
+    final long offset;
+
+    BadRecord(long offset, String message) {
+      super(message, null, false, false);
+      this.offset = offset;
+    }
+  }
+
   final Path path;
 
   final MappedTrace data;
@@ -424,26 +445,5 @@ final class TraceFile {
     data.copy(pos, b, b.length);
     pos += len;
     return Names.sanitize(new String(b, StandardCharsets.UTF_8));
-  }
-
-  private static final class Truncated extends RuntimeException {
-
-    private static final long serialVersionUID = 1L;
-
-    Truncated() {
-      super(null, null, false, false);
-    }
-  }
-
-  private static final class BadRecord extends RuntimeException {
-
-    private static final long serialVersionUID = 1L;
-
-    final long offset;
-
-    BadRecord(long offset, String message) {
-      super(message, null, false, false);
-      this.offset = offset;
-    }
   }
 }
