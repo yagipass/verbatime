@@ -11,6 +11,6 @@ docs/node_modules/
 docs/dist/
 docs/.wrangler/
 notes/
-.claude/skills/
-.agents/skills/
+**/.claude/skills/
+**/.agents/skills/
 .vscode/
