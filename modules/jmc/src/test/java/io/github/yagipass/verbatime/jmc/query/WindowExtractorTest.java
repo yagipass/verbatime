@@ -74,44 +74,6 @@ final class WindowExtractorTest {
     }
   }
 
-  private static void checkWindow(
-      TraceSnapshot data, ReferenceDecoder.Result ref, long t0, long t1, int px, String ctx) {
-    long thr = Math.max((long) ((t1 - t0) / (double) px * WindowExtractor.PIXEL_FRACTION), 100);
-    Window res = WindowExtractor.extract(data, t0, t1, px, Integer.MAX_VALUE);
-    assertEquals(thr, res.windowMinDurNs, ctx + " thr");
-
-    Map<Long, List<ReferenceDecoder.Call>> expected =
-        TestTraces.byTid(
-            ref.calls.stream()
-                .filter(
-                    f ->
-                        f.startNs() <= t1
-                            && f.startNs() + f.durNs() >= t0
-                            && (f.unclosed() || f.durNs() >= thr))
-                .toList());
-    Map<Long, Calls> actual = new java.util.HashMap<>();
-    for (Calls tf : res.callsByThread) {
-      actual.put(tf.tid, tf);
-    }
-    assertEquals(expected.keySet(), actual.keySet(), ctx + " tids");
-    for (Map.Entry<Long, List<ReferenceDecoder.Call>> e : expected.entrySet()) {
-      List<ReferenceDecoder.Call> exp = e.getValue();
-      Calls tf = actual.get(e.getKey());
-      assertEquals(exp.size(), tf.count, ctx + " tid " + e.getKey() + " frame count");
-      for (int i = 0; i < exp.size(); i++) {
-        ReferenceDecoder.Call f = exp.get(i);
-        String c = ctx + " tid " + e.getKey() + " frame " + i;
-        assertEquals(f.startNs(), tf.startNs[i], c + " start");
-        assertEquals(f.durNs(), tf.durNs[i], c + " dur");
-        assertEquals(f.methodId(), tf.methodId[i], c + " method");
-        assertEquals(f.depth(), tf.depth[i], c + " depth");
-        assertEquals(f.selfNs(), tf.selfNs[i], c + " self");
-        assertEquals(f.unclosed(), tf.unclosed[i], c + " unclosed");
-        assertEquals(f.exceptionId(), tf.exceptionId[i], c + " exc");
-      }
-    }
-  }
-
   @Test
   void frameBudgetRaisesThresholdConsistently() throws IOException {
     for (long seed = 1; seed <= 5; seed++) {
@@ -151,6 +113,44 @@ final class WindowExtractorTest {
                   + tf.depth[i]
                   + " has no parent in the response");
         }
+      }
+    }
+  }
+
+  private static void checkWindow(
+      TraceSnapshot data, ReferenceDecoder.Result ref, long t0, long t1, int px, String ctx) {
+    long thr = Math.max((long) ((t1 - t0) / (double) px * WindowExtractor.PIXEL_FRACTION), 100);
+    Window res = WindowExtractor.extract(data, t0, t1, px, Integer.MAX_VALUE);
+    assertEquals(thr, res.windowMinDurNs, ctx + " thr");
+
+    Map<Long, List<ReferenceDecoder.Call>> expected =
+        TestTraces.byTid(
+            ref.calls.stream()
+                .filter(
+                    f ->
+                        f.startNs() <= t1
+                            && f.startNs() + f.durNs() >= t0
+                            && (f.unclosed() || f.durNs() >= thr))
+                .toList());
+    Map<Long, Calls> actual = new java.util.HashMap<>();
+    for (Calls tf : res.callsByThread) {
+      actual.put(tf.tid, tf);
+    }
+    assertEquals(expected.keySet(), actual.keySet(), ctx + " tids");
+    for (Map.Entry<Long, List<ReferenceDecoder.Call>> e : expected.entrySet()) {
+      List<ReferenceDecoder.Call> exp = e.getValue();
+      Calls tf = actual.get(e.getKey());
+      assertEquals(exp.size(), tf.count, ctx + " tid " + e.getKey() + " frame count");
+      for (int i = 0; i < exp.size(); i++) {
+        ReferenceDecoder.Call f = exp.get(i);
+        String c = ctx + " tid " + e.getKey() + " frame " + i;
+        assertEquals(f.startNs(), tf.startNs[i], c + " start");
+        assertEquals(f.durNs(), tf.durNs[i], c + " dur");
+        assertEquals(f.methodId(), tf.methodId[i], c + " method");
+        assertEquals(f.depth(), tf.depth[i], c + " depth");
+        assertEquals(f.selfNs(), tf.selfNs[i], c + " self");
+        assertEquals(f.unclosed(), tf.unclosed[i], c + " unclosed");
+        assertEquals(f.exceptionId(), tf.exceptionId[i], c + " exc");
       }
     }
   }

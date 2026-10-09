@@ -10,15 +10,15 @@ import java.util.Objects;
 
 public final class Check {
 
+  public interface ThrowingRunnable {
+    void run() throws Exception;
+  }
+
   private static int passed;
 
   private static final List<String> FAILURES = new ArrayList<>();
 
   private Check() {}
-
-  public interface ThrowingRunnable {
-    void run() throws Exception;
-  }
 
   public static void that(boolean condition, String message) {
     if (condition) {

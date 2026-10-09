@@ -36,6 +36,10 @@ import java.util.Map;
 
 public final class TransformerTest {
 
+  private static final String MAIN_ARGS = "([Ljava/lang/String;)V";
+
+  private static final String MAIN_NOARG = "()V";
+
   private TransformerTest() {}
 
   public static void run() throws Exception {
@@ -385,10 +389,6 @@ public final class TransformerTest {
 
     gateInjection();
   }
-
-  private static final String MAIN_ARGS = "([Ljava/lang/String;)V";
-
-  private static final String MAIN_NOARG = "()V";
 
   private static void gateInjection() {
     byte[] demoBytes =

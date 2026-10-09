@@ -8,22 +8,6 @@ import java.util.TreeMap;
 
 public final class JacksonRoundTrip {
 
-  private JacksonRoundTrip() {}
-
-  public static String run() throws JsonProcessingException {
-    ObjectMapper mapper = new ObjectMapper();
-    Order in = new Order();
-    in.setId(7);
-    in.setItems(List.of("tea", "milk"));
-    Map<String, Double> totals = new TreeMap<>();
-    totals.put("net", 3.5);
-    totals.put("tax", 0.35);
-    in.setTotals(totals);
-    String json = mapper.writeValueAsString(in);
-    Order back = mapper.readValue(json, Order.class);
-    return json + " -> " + mapper.writeValueAsString(back);
-  }
-
   public static final class Order {
 
     private int id;
@@ -55,5 +39,21 @@ public final class JacksonRoundTrip {
     public void setTotals(Map<String, Double> totals) {
       this.totals = totals;
     }
+  }
+
+  private JacksonRoundTrip() {}
+
+  public static String run() throws JsonProcessingException {
+    ObjectMapper mapper = new ObjectMapper();
+    Order in = new Order();
+    in.setId(7);
+    in.setItems(List.of("tea", "milk"));
+    Map<String, Double> totals = new TreeMap<>();
+    totals.put("net", 3.5);
+    totals.put("tax", 0.35);
+    in.setTotals(totals);
+    String json = mapper.writeValueAsString(in);
+    Order back = mapper.readValue(json, Order.class);
+    return json + " -> " + mapper.writeValueAsString(back);
   }
 }

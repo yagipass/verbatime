@@ -55,6 +55,43 @@ final class Args {
     return a;
   }
 
+  static long parseTicks(String what, String v) {
+    String s = v.trim().toLowerCase(Locale.ROOT);
+    @Var int i = 0;
+    while (i < s.length() && (Character.isDigit(s.charAt(i)) || s.charAt(i) == '.')) {
+      i++;
+    }
+    String num = s.substring(0, i);
+    String unit = s.substring(i);
+    long nsPerUnit =
+        switch (unit) {
+          case "ns" -> 1L;
+          case "us", "µs" -> 1_000L;
+          case "", "ms" -> 1_000_000L;
+          case "s" -> 1_000_000_000L;
+          default -> -1L;
+        };
+    if (num.isEmpty() || nsPerUnit < 0) {
+      throw notADuration(what, v);
+    }
+    try {
+      BigDecimal ns = new BigDecimal(num).multiply(BigDecimal.valueOf(nsPerUnit));
+      return ns.divide(BigDecimal.valueOf(100), 0, RoundingMode.CEILING).longValueExact();
+    } catch (NumberFormatException | ArithmeticException e) {
+      throw notADuration(what, v);
+    }
+  }
+
+  static String shellQuote(String s) {
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      if (!(Character.isLetterOrDigit(c) || "-_./:=@,+%#".indexOf(c) >= 0)) {
+        return "'" + s.replace("'", "'\\''") + "'";
+      }
+    }
+    return s.isEmpty() ? "''" : s;
+  }
+
   boolean has(String name) {
     return options.containsKey(name);
   }
@@ -80,22 +117,6 @@ final class Args {
 
   int nonNegativeInt(String name, int def) {
     return integer(name, def, 0, "0 or a positive integer");
-  }
-
-  private int integer(String name, int def, int min, String what) {
-    String v = options.get(name);
-    if (v == null) {
-      return def;
-    }
-    try {
-      int n = Integer.parseInt(v);
-      if (n >= min) {
-        return n;
-      }
-    } catch (NumberFormatException notANumber) {
-      throw CliException.usage("--" + name + " must be " + what + ", not '" + v + "'", null);
-    }
-    throw CliException.usage("--" + name + " must be " + what + ", not '" + v + "'", null);
   }
 
   long ticks(String name, long def) {
@@ -146,49 +167,28 @@ final class Args {
     return sb.toString();
   }
 
-  private CliException usage(String message) {
-    return CliException.usage(message, "vbtm " + command + " --help");
-  }
-
-  static long parseTicks(String what, String v) {
-    String s = v.trim().toLowerCase(Locale.ROOT);
-    @Var int i = 0;
-    while (i < s.length() && (Character.isDigit(s.charAt(i)) || s.charAt(i) == '.')) {
-      i++;
-    }
-    String num = s.substring(0, i);
-    String unit = s.substring(i);
-    long nsPerUnit =
-        switch (unit) {
-          case "ns" -> 1L;
-          case "us", "µs" -> 1_000L;
-          case "", "ms" -> 1_000_000L;
-          case "s" -> 1_000_000_000L;
-          default -> -1L;
-        };
-    if (num.isEmpty() || nsPerUnit < 0) {
-      throw notADuration(what, v);
-    }
-    try {
-      BigDecimal ns = new BigDecimal(num).multiply(BigDecimal.valueOf(nsPerUnit));
-      return ns.divide(BigDecimal.valueOf(100), 0, RoundingMode.CEILING).longValueExact();
-    } catch (NumberFormatException | ArithmeticException e) {
-      throw notADuration(what, v);
-    }
-  }
-
   private static CliException notADuration(String what, String v) {
     return CliException.usage(
         what + " must be a duration such as 500us, 1ms or 2s, not '" + v + "'", null);
   }
 
-  static String shellQuote(String s) {
-    for (int i = 0; i < s.length(); i++) {
-      char c = s.charAt(i);
-      if (!(Character.isLetterOrDigit(c) || "-_./:=@,+%#".indexOf(c) >= 0)) {
-        return "'" + s.replace("'", "'\\''") + "'";
-      }
+  private int integer(String name, int def, int min, String what) {
+    String v = options.get(name);
+    if (v == null) {
+      return def;
     }
-    return s.isEmpty() ? "''" : s;
+    try {
+      int n = Integer.parseInt(v);
+      if (n >= min) {
+        return n;
+      }
+    } catch (NumberFormatException notANumber) {
+      throw CliException.usage("--" + name + " must be " + what + ", not '" + v + "'", null);
+    }
+    throw CliException.usage("--" + name + " must be " + what + ", not '" + v + "'", null);
+  }
+
+  private CliException usage(String message) {
+    return CliException.usage(message, "vbtm " + command + " --help");
   }
 }

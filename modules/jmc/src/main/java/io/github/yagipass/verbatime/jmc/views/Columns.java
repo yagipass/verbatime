@@ -14,26 +14,6 @@ import org.jspecify.annotations.Nullable;
 
 public final class Columns {
 
-  private Columns() {}
-
-  static <T> TreeColumn addTree(
-      TreeViewer viewer, String title, int width, int style, ColumnLabels<T> labels) {
-    TreeViewerColumn col = new TreeViewerColumn(viewer, style);
-    col.getColumn().setText(title);
-    col.getColumn().setWidth(width);
-    col.setLabelProvider(labels);
-    return col.getColumn();
-  }
-
-  public static <T> TableColumn addTable(
-      TableViewer viewer, String title, int width, int style, ColumnLabels<T> labels) {
-    TableViewerColumn col = new TableViewerColumn(viewer, style);
-    col.getColumn().setText(title);
-    col.getColumn().setWidth(width);
-    col.setLabelProvider(labels);
-    return col.getColumn();
-  }
-
   public static class ColumnLabels<T> extends ColumnLabelProvider {
 
     private final Class<T> type;
@@ -66,5 +46,25 @@ public final class Columns {
     public @Nullable Font getFont(Object element) {
       return mono ? JFaceResources.getTextFont() : null;
     }
+  }
+
+  private Columns() {}
+
+  public static <T> TableColumn addTable(
+      TableViewer viewer, String title, int width, int style, ColumnLabels<T> labels) {
+    TableViewerColumn col = new TableViewerColumn(viewer, style);
+    col.getColumn().setText(title);
+    col.getColumn().setWidth(width);
+    col.setLabelProvider(labels);
+    return col.getColumn();
+  }
+
+  static <T> TreeColumn addTree(
+      TreeViewer viewer, String title, int width, int style, ColumnLabels<T> labels) {
+    TreeViewerColumn col = new TreeViewerColumn(viewer, style);
+    col.getColumn().setText(title);
+    col.getColumn().setWidth(width);
+    col.setLabelProvider(labels);
+    return col.getColumn();
   }
 }

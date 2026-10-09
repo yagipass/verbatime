@@ -75,18 +75,6 @@ final class TraceReaderTest {
     }
   }
 
-  private static List<String> goldenCalls() {
-    return List.of(
-        "anchor " + EPOCH_MS + " " + UTC_OFFSET,
-        "thread 7 main",
-        "class 0 a.B [m()V, n(I)V]",
-        "exception 1 x.E",
-        "gc 300 20 1 G1 Alloc",
-        "chunk 7 100 " + Arrays.toString(bytes(PAYLOAD)),
-        "chunk 7 200 [] end",
-        "end");
-  }
-
   @Test
   void theReaderDecodesTheGoldenBytesIntoTheSameRecordsInOrder() {
     VisitLog r = new VisitLog();
@@ -204,6 +192,18 @@ final class TraceReaderTest {
         TraceReader.read(
             new TraceBuilder(EPOCH_MS, -Vbtm.MAX_UTC_OFFSET_SECONDS).end().bytes(), west));
     assertEquals("anchor " + EPOCH_MS + " " + -Vbtm.MAX_UTC_OFFSET_SECONDS, west.calls.get(0));
+  }
+
+  private static List<String> goldenCalls() {
+    return List.of(
+        "anchor " + EPOCH_MS + " " + UTC_OFFSET,
+        "thread 7 main",
+        "class 0 a.B [m()V, n(I)V]",
+        "exception 1 x.E",
+        "gc 300 20 1 G1 Alloc",
+        "chunk 7 100 " + Arrays.toString(bytes(PAYLOAD)),
+        "chunk 7 200 [] end",
+        "end");
   }
 
   private static TraceBuilder trace() {

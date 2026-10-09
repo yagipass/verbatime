@@ -21,6 +21,24 @@ final class ActiveEditorTracker implements IPartListener2 {
     this.onBind = onBind;
   }
 
+  @Override
+  public void partActivated(IWorkbenchPartReference ref) {
+    follow(ref);
+  }
+
+  @Override
+  public void partBroughtToTop(IWorkbenchPartReference ref) {
+    follow(ref);
+  }
+
+  @Override
+  public void partClosed(IWorkbenchPartReference ref) {
+    IWorkbenchPart part = ref.getPart(false);
+    if (bound != null && (part == bound || bound.isDisposed())) {
+      bind(null);
+    }
+  }
+
   void install() {
     page.addPartListener(this);
     bound = page.getActiveEditor() instanceof RecordingEditor e ? e : null;
@@ -45,24 +63,6 @@ final class ActiveEditorTracker implements IPartListener2 {
   private void follow(IWorkbenchPartReference ref) {
     if (ref.getPart(false) instanceof RecordingEditor e) {
       bind(e);
-    }
-  }
-
-  @Override
-  public void partActivated(IWorkbenchPartReference ref) {
-    follow(ref);
-  }
-
-  @Override
-  public void partBroughtToTop(IWorkbenchPartReference ref) {
-    follow(ref);
-  }
-
-  @Override
-  public void partClosed(IWorkbenchPartReference ref) {
-    IWorkbenchPart part = ref.getPart(false);
-    if (bound != null && (part == bound || bound.isDisposed())) {
-      bind(null);
     }
   }
 }

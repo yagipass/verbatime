@@ -63,6 +63,17 @@ final class CorpusLoader extends ClassLoader {
     }
   }
 
+  @Override
+  protected URL findResource(String name) {
+    List<URL> all = resources(name, true);
+    return all.isEmpty() ? null : all.get(0);
+  }
+
+  @Override
+  protected Enumeration<URL> findResources(String name) {
+    return Collections.enumeration(resources(name, false));
+  }
+
   byte[] bytesOf(String entryName) {
     for (Path dir : classDirs) {
       Path p = dir.resolve(entryName);
@@ -82,17 +93,6 @@ final class CorpusLoader extends ClassLoader {
     }
     CorpusJars.Jar j = corpus.find(entryName);
     return j == null ? null : j.read(entryName);
-  }
-
-  @Override
-  protected URL findResource(String name) {
-    List<URL> all = resources(name, true);
-    return all.isEmpty() ? null : all.get(0);
-  }
-
-  @Override
-  protected Enumeration<URL> findResources(String name) {
-    return Collections.enumeration(resources(name, false));
   }
 
   private List<URL> resources(String name, boolean firstOnly) {

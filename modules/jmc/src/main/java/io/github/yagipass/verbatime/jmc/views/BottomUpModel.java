@@ -83,10 +83,6 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
       return selfNs;
     }
 
-    private @Nullable Row parent() {
-      return parent;
-    }
-
     boolean hasChildren() {
       for (int node : pathHeads) {
         if (node != 0) {
@@ -102,6 +98,10 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
 
     Row child(int i) {
       return children()[i];
+    }
+
+    private @Nullable Row parent() {
+      return parent;
     }
 
     private Row[] children() {
@@ -152,6 +152,41 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
     this.descending = descending;
   }
 
+  @Override
+  public SubtreeAggregate aggregate() {
+    return agg;
+  }
+
+  @Override
+  public int rootCount() {
+    return size();
+  }
+
+  @Override
+  public Row root(int i) {
+    return row(i);
+  }
+
+  @Override
+  public boolean hasChildren(Row r) {
+    return r.hasChildren();
+  }
+
+  @Override
+  public int childCount(Row r) {
+    return r.childCount();
+  }
+
+  @Override
+  public Row child(Row r, int i) {
+    return r.child(i);
+  }
+
+  @Override
+  public @Nullable Row parent(Row r) {
+    return r.parent();
+  }
+
   static BottomUpModel of(TraceSnapshot d, SubtreeAggregate a) {
     return of(d, a, SortKey.SELF, true);
   }
@@ -184,6 +219,52 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
     }
     m.sort();
     return m;
+  }
+
+  double pct(long ns) {
+    return rootTotalNs > 0 ? ns * 100.0 / rootTotalNs : 0;
+  }
+
+  long rootTotalNs() {
+    return rootTotalNs;
+  }
+
+  String rootName() {
+    return data.methodName(agg.method(0));
+  }
+
+  boolean truncated() {
+    return truncated;
+  }
+
+  List<Row> rows() {
+    return List.copyOf(rows);
+  }
+
+  int size() {
+    return rows.size();
+  }
+
+  Row row(int i) {
+    return rows.get(i);
+  }
+
+  SortKey sortKey() {
+    return sortKey;
+  }
+
+  boolean descending() {
+    return descending;
+  }
+
+  void toggleSort(SortKey c) {
+    if (c == sortKey) {
+      descending = !descending;
+    } else {
+      sortKey = c;
+      descending = true;
+    }
+    sort();
   }
 
   private Row[] callersOf(Row r) {
@@ -230,57 +311,6 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
     return arr;
   }
 
-  double pct(long ns) {
-    return rootTotalNs > 0 ? ns * 100.0 / rootTotalNs : 0;
-  }
-
-  long rootTotalNs() {
-    return rootTotalNs;
-  }
-
-  String rootName() {
-    return data.methodName(agg.method(0));
-  }
-
-  @Override
-  public SubtreeAggregate aggregate() {
-    return agg;
-  }
-
-  boolean truncated() {
-    return truncated;
-  }
-
-  List<Row> rows() {
-    return List.copyOf(rows);
-  }
-
-  int size() {
-    return rows.size();
-  }
-
-  Row row(int i) {
-    return rows.get(i);
-  }
-
-  SortKey sortKey() {
-    return sortKey;
-  }
-
-  boolean descending() {
-    return descending;
-  }
-
-  void toggleSort(SortKey c) {
-    if (c == sortKey) {
-      descending = !descending;
-    } else {
-      sortKey = c;
-      descending = true;
-    }
-    sort();
-  }
-
   private void sort() {
     Row[] top = rows.toArray(new Row[0]);
     sortRows(top);
@@ -305,35 +335,5 @@ final class BottomUpModel implements AggregateTreeView.AggregateTreeModel<Bottom
     }
     Comparator<Row> stable = cmp.thenComparingInt(Row::methodId);
     Arrays.sort(arr, stable);
-  }
-
-  @Override
-  public int rootCount() {
-    return size();
-  }
-
-  @Override
-  public Row root(int i) {
-    return row(i);
-  }
-
-  @Override
-  public boolean hasChildren(Row r) {
-    return r.hasChildren();
-  }
-
-  @Override
-  public int childCount(Row r) {
-    return r.childCount();
-  }
-
-  @Override
-  public Row child(Row r, int i) {
-    return r.child(i);
-  }
-
-  @Override
-  public @Nullable Row parent(Row r) {
-    return r.parent();
   }
 }

@@ -21,10 +21,6 @@ import org.junit.jupiter.api.Test;
 
 final class TraceIndexerIncrementalTest {
 
-  private static TraceSnapshot fromScratch(Path f, int budget) throws IOException {
-    return TraceIndexer.index(f, budget, ProgressListener.NONE);
-  }
-
   @Test
   void growingFileMatchesFromScratchAtEveryByteBoundary() throws IOException {
     long[] seeds = {42, 1, 2};
@@ -220,20 +216,6 @@ final class TraceIndexerIncrementalTest {
         "a replaced file is a new recording whose seq numbers restart");
   }
 
-  private static byte[] withAnchor(byte[] trace, long epochMs, int utcOffsetSeconds) {
-    byte[] out = trace.clone();
-    System.arraycopy(
-        new TraceBuilder(epochMs, utcOffsetSeconds).bytes(), 0, out, 0, Vbtm.HEADER_BYTES);
-    return out;
-  }
-
-  private static byte[] corruptBytes() {
-    TraceBuilder w = TestTraces.writer();
-    w.chunk(3, 100, new TraceBuilder.Payload(100).enter(100, 1).exit(200).bytes(), true);
-    w.rawBytes(0x7E);
-    return w.bytes();
-  }
-
   @Test
   void aLargerFileWithAnotherAnchorIsANewRecordingNotAnAppend() throws IOException {
     byte[] first = RandomTraces.random(1);
@@ -298,5 +280,23 @@ final class TraceIndexerIncrementalTest {
     TraceSnapshot d = ix.snapshot();
     assertNull(d.corruption, "a shorter file is a new file even while the old one was corrupt");
     TestTraces.assertSameTraceData(fromScratch(f, 1 << 20), d, "corrupt, then shrunk");
+  }
+
+  private static TraceSnapshot fromScratch(Path f, int budget) throws IOException {
+    return TraceIndexer.index(f, budget, ProgressListener.NONE);
+  }
+
+  private static byte[] withAnchor(byte[] trace, long epochMs, int utcOffsetSeconds) {
+    byte[] out = trace.clone();
+    System.arraycopy(
+        new TraceBuilder(epochMs, utcOffsetSeconds).bytes(), 0, out, 0, Vbtm.HEADER_BYTES);
+    return out;
+  }
+
+  private static byte[] corruptBytes() {
+    TraceBuilder w = TestTraces.writer();
+    w.chunk(3, 100, new TraceBuilder.Payload(100).enter(100, 1).exit(200).bytes(), true);
+    w.rawBytes(0x7E);
+    return w.bytes();
   }
 }

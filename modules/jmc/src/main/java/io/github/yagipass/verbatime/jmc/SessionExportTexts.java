@@ -13,6 +13,10 @@ public final class SessionExportTexts {
 
   private SessionExportTexts() {}
 
+  public static String rootName(TraceSnapshot d, Session s) {
+    return s.rootMethodId >= 0 ? d.methodName(s.rootMethodId) : "<no enter>";
+  }
+
   static String exportFileName(String recordingFileName, int seq, int floorUs) {
     @Var String base = recordingFileName;
     if (base.length() > 5 && base.regionMatches(true, base.length() - 5, ".vbtm", 0, 5)) {
@@ -39,10 +43,6 @@ public final class SessionExportTexts {
       }
     }
     return best;
-  }
-
-  public static String rootName(TraceSnapshot d, Session s) {
-    return s.rootMethodId >= 0 ? d.methodName(s.rootMethodId) : "<no enter>";
   }
 
   static boolean isExportable(Session s) {

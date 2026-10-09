@@ -14,20 +14,6 @@ import org.junit.jupiter.api.Test;
 
 final class TraceIndexerEmptyEndChunkTest {
 
-  private static TraceSnapshot agentStyleTrace() throws IOException {
-    TraceBuilder w = TestTraces.writer();
-    w.thread(1, "main");
-    w.clazz(0, "pkg.A", "a()V");
-    TraceBuilder.Payload first = new TraceBuilder.Payload(100);
-    first.enter(100, 0).exit(120);
-    w.chunk(1, 100, first.bytes(), false);
-    w.chunk(1, 0, new byte[0], true);
-    TraceBuilder.Payload second = new TraceBuilder.Payload(300);
-    second.enter(300, 0).exit(310);
-    w.chunk(1, 300, second.bytes(), true);
-    return TestTraces.index(w);
-  }
-
   @Test
   void emptyEndChunkWithZeroBaseIsIndexedAtTheThreadsLastTick() throws IOException {
     TraceSnapshot d = agentStyleTrace();
@@ -64,5 +50,19 @@ final class TraceIndexerEmptyEndChunkTest {
     assertTrue(
         agg.found(),
         "the frame recorded before the empty END chunk is still reachable by a range query");
+  }
+
+  private static TraceSnapshot agentStyleTrace() throws IOException {
+    TraceBuilder w = TestTraces.writer();
+    w.thread(1, "main");
+    w.clazz(0, "pkg.A", "a()V");
+    TraceBuilder.Payload first = new TraceBuilder.Payload(100);
+    first.enter(100, 0).exit(120);
+    w.chunk(1, 100, first.bytes(), false);
+    w.chunk(1, 0, new byte[0], true);
+    TraceBuilder.Payload second = new TraceBuilder.Payload(300);
+    second.enter(300, 0).exit(310);
+    w.chunk(1, 300, second.bytes(), true);
+    return TestTraces.index(w);
   }
 }

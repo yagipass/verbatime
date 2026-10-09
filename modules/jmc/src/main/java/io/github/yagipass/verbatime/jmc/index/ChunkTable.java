@@ -33,6 +33,10 @@ public final class ChunkTable {
     endsSession = new boolean[capacity];
   }
 
+  public long payloadLen(int i) {
+    return payloadEnd[i] - payloadOffset[i];
+  }
+
   void append(
       long payloadOffset, long payloadEnd, long baseTicks, long endTicks, int openDepthAtStart) {
     int i = count;
@@ -56,10 +60,6 @@ public final class ChunkTable {
 
   void markSessionEnd(int i) {
     endsSession[i] = true;
-  }
-
-  public long payloadLen(int i) {
-    return payloadEnd[i] - payloadOffset[i];
   }
 
   ChunkTable copy() {

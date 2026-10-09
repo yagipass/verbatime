@@ -2,12 +2,6 @@ package io.github.yagipass.verbatime.corpusfixtures;
 
 public final class DepthWalkFixture {
 
-  private DepthWalkFixture() {}
-
-  public static String callerFoundByDepth() {
-    return Library.caller().getName();
-  }
-
   static final class Library {
 
     private Library() {}
@@ -30,5 +24,11 @@ public final class DepthWalkFixture {
           .orElseThrow()
           .getDeclaringClass();
     }
+  }
+
+  private DepthWalkFixture() {}
+
+  public static String callerFoundByDepth() {
+    return Library.caller().getName();
   }
 }

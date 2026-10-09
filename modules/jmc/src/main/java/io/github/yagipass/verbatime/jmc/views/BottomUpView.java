@@ -43,42 +43,6 @@ public final class BottomUpView extends AggregateTreeView<BottomUpModel, Row> {
     column(SortKey.METHOD, "Method", 600, SWT.LEFT, Row::name, false);
   }
 
-  private void column(
-      @Nullable SortKey key,
-      String title,
-      int width,
-      int style,
-      Function<Row, String> text,
-      boolean mono) {
-    TreeColumn tc = column(title, width, style, text, mono);
-    if (key != null) {
-      tc.addListener(SWT.Selection, e -> toggleSort(key));
-      columns.put(key, tc);
-    }
-  }
-
-  private void toggleSort(SortKey key) {
-    BottomUpModel m = model();
-    if (m == null) {
-      return;
-    }
-    m.toggleSort(key);
-    applySortIndicator();
-    viewer().refresh();
-  }
-
-  private void applySortIndicator() {
-    Tree tree = viewer().getTree();
-    BottomUpModel m = model();
-    if (m == null) {
-      tree.setSortColumn(null);
-      tree.setSortDirection(SWT.NONE);
-      return;
-    }
-    tree.setSortColumn(columns.get(m.sortKey()));
-    tree.setSortDirection(m.descending() ? SWT.DOWN : SWT.UP);
-  }
-
   @Override
   protected int methodId(Row row) {
     return row.methodId();
@@ -130,5 +94,41 @@ public final class BottomUpView extends AggregateTreeView<BottomUpModel, Row> {
   @Override
   protected String copyText(BottomUpModel m, Predicate<Row> expanded) {
     return CopyTexts.bottomUpText(m, expanded);
+  }
+
+  private void column(
+      @Nullable SortKey key,
+      String title,
+      int width,
+      int style,
+      Function<Row, String> text,
+      boolean mono) {
+    TreeColumn tc = column(title, width, style, text, mono);
+    if (key != null) {
+      tc.addListener(SWT.Selection, e -> toggleSort(key));
+      columns.put(key, tc);
+    }
+  }
+
+  private void toggleSort(SortKey key) {
+    BottomUpModel m = model();
+    if (m == null) {
+      return;
+    }
+    m.toggleSort(key);
+    applySortIndicator();
+    viewer().refresh();
+  }
+
+  private void applySortIndicator() {
+    Tree tree = viewer().getTree();
+    BottomUpModel m = model();
+    if (m == null) {
+      tree.setSortColumn(null);
+      tree.setSortDirection(SWT.NONE);
+      return;
+    }
+    tree.setSortColumn(columns.get(m.sortKey()));
+    tree.setSortDirection(m.descending() ? SWT.DOWN : SWT.UP);
   }
 }

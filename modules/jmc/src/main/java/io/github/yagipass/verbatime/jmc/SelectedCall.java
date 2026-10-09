@@ -18,9 +18,9 @@ public record SelectedCall(
     @Nullable SubtreeAggregate subtree,
     @Nullable String subtreeError) {
 
-  static final String NOT_FOUND = "Selected call was not found in the recording";
-
   public record Ancestor(long startNs, long durNs, int depth, int methodId) {}
+
+  static final String NOT_FOUND = "Selected call was not found in the recording";
 
   // @Var on the reassigned component would also land on its final field, which Error Prone rejects.
   @SuppressWarnings("Var")
@@ -30,29 +30,6 @@ public record SelectedCall(
 
   public boolean thrown() {
     return exceptionId >= 0;
-  }
-
-  SelectedCall withSubtree(SubtreeAggregate a) {
-    if (!a.found()) {
-      return withSubtreeError(NOT_FOUND);
-    }
-    return new SelectedCall(
-        tid, startNs, durNs, selfNs, depth, methodId, exceptionId, unclosed, ancestors, a, null);
-  }
-
-  SelectedCall withSubtreeError(String error) {
-    return new SelectedCall(
-        tid,
-        startNs,
-        durNs,
-        selfNs,
-        depth,
-        methodId,
-        exceptionId,
-        unclosed,
-        ancestors,
-        null,
-        error);
   }
 
   public long effectiveSelfNs() {
@@ -83,5 +60,28 @@ public record SelectedCall(
               ts.longValue(), dur.longValue(), selectedDepth - (n - j), (int) nm.doubleValue()));
     }
     return out;
+  }
+
+  SelectedCall withSubtree(SubtreeAggregate a) {
+    if (!a.found()) {
+      return withSubtreeError(NOT_FOUND);
+    }
+    return new SelectedCall(
+        tid, startNs, durNs, selfNs, depth, methodId, exceptionId, unclosed, ancestors, a, null);
+  }
+
+  SelectedCall withSubtreeError(String error) {
+    return new SelectedCall(
+        tid,
+        startNs,
+        durNs,
+        selfNs,
+        depth,
+        methodId,
+        exceptionId,
+        unclosed,
+        ancestors,
+        null,
+        error);
   }
 }

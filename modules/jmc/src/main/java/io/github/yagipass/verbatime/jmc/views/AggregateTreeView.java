@@ -42,6 +42,13 @@ abstract class AggregateTreeView<M extends AggregateTreeView.AggregateTreeModel<
   }
 
   @Override
+  public final void setFocus() {
+    if (viewer != null && !viewer.getControl().isDisposed()) {
+      viewer.getControl().setFocus();
+    }
+  }
+
+  @Override
   protected final void createContent(Composite parent) {
     GridLayout layout = new GridLayout(1, false);
     layout.marginWidth = 4;
@@ -77,6 +84,29 @@ abstract class AggregateTreeView<M extends AggregateTreeView.AggregateTreeModel<
         });
   }
 
+  @Override
+  protected final void refresh() {
+    if (viewer == null || viewer.getControl().isDisposed()) {
+      return;
+    }
+    TraceSnapshot d = trace();
+    SelectedCall f = selection();
+    SubtreeAggregate agg = f != null ? f.subtree() : null;
+    if (d != null && agg != null && model != null && model.aggregate() == agg) {
+      return;
+    }
+    model = d == null || agg == null ? null : build(d, agg);
+    copyHead.copy().setEnabled(model != null);
+    setInput(model);
+    String empty = emptyReason(d, f);
+    setContentDescription(
+        empty != null
+            ? empty
+            : Objects.requireNonNull(f).subtreeError() != null
+                ? f.subtreeError()
+                : model == null ? "Aggregating…" : describe(Objects.requireNonNull(d), f, model));
+  }
+
   final TreeViewer viewer() {
     return viewer;
   }
@@ -104,34 +134,4 @@ abstract class AggregateTreeView<M extends AggregateTreeView.AggregateTreeModel<
   abstract String describe(TraceSnapshot d, SelectedCall f, M m);
 
   abstract String copyText(M m, Predicate<R> expanded);
-
-  @Override
-  protected final void refresh() {
-    if (viewer == null || viewer.getControl().isDisposed()) {
-      return;
-    }
-    TraceSnapshot d = trace();
-    SelectedCall f = selection();
-    SubtreeAggregate agg = f != null ? f.subtree() : null;
-    if (d != null && agg != null && model != null && model.aggregate() == agg) {
-      return;
-    }
-    model = d == null || agg == null ? null : build(d, agg);
-    copyHead.copy().setEnabled(model != null);
-    setInput(model);
-    String empty = emptyReason(d, f);
-    setContentDescription(
-        empty != null
-            ? empty
-            : Objects.requireNonNull(f).subtreeError() != null
-                ? f.subtreeError()
-                : model == null ? "Aggregating…" : describe(Objects.requireNonNull(d), f, model));
-  }
-
-  @Override
-  public final void setFocus() {
-    if (viewer != null && !viewer.getControl().isDisposed()) {
-      viewer.getControl().setFocus();
-    }
-  }
 }

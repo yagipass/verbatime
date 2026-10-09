@@ -8,8 +8,6 @@ import io.github.yagipass.verbatime.jmc.index.TraceSnapshot.ThreadIndex;
 
 public final class ChunkWalker {
 
-  private ChunkWalker() {}
-
   public interface Visitor {
 
     default boolean enter(long startNs, int methodId, int sessionDepth, int sp) {
@@ -22,6 +20,8 @@ public final class ChunkWalker {
     default void sessionEnd() {}
   }
 
+  private ChunkWalker() {}
+
   public static void walkRange(
       TraceSnapshot data, ThreadIndex m, long loNs, long hiNs, Visitor ev) {
     int c0 = firstChunkEndingAtOrAfter(m, loNs);
@@ -29,6 +29,25 @@ public final class ChunkWalker {
     if (c0 <= c1) {
       walk(data, m, c0, c1, ev);
     }
+  }
+
+  public static long saturatingAdd(long a, long b) {
+    long s = a + b;
+    return s < a ? Long.MAX_VALUE : s;
+  }
+
+  static int firstChunkEndingAtOrAfter(ThreadIndex m, long loNs) {
+    @Var int lo = 0;
+    @Var int hi = m.chunks.count;
+    while (lo < hi) {
+      int middle = (lo + hi) >>> 1;
+      if (m.chunks.endTicks[middle] * Vbtm.NANOS_PER_TICK < loNs) {
+        lo = middle + 1;
+      } else {
+        hi = middle;
+      }
+    }
+    return lo;
   }
 
   private static void walk(TraceSnapshot data, ThreadIndex m, int c0, int c1, Visitor ev) {
@@ -85,20 +104,6 @@ public final class ChunkWalker {
     }
   }
 
-  static int firstChunkEndingAtOrAfter(ThreadIndex m, long loNs) {
-    @Var int lo = 0;
-    @Var int hi = m.chunks.count;
-    while (lo < hi) {
-      int middle = (lo + hi) >>> 1;
-      if (m.chunks.endTicks[middle] * Vbtm.NANOS_PER_TICK < loNs) {
-        lo = middle + 1;
-      } else {
-        hi = middle;
-      }
-    }
-    return lo;
-  }
-
   private static int lastChunkStartingAtOrBefore(ThreadIndex m, int from, long hiNs) {
     @Var int best = -1;
     @Var int lo = from;
@@ -113,10 +118,5 @@ public final class ChunkWalker {
       }
     }
     return best;
-  }
-
-  public static long saturatingAdd(long a, long b) {
-    long s = a + b;
-    return s < a ? Long.MAX_VALUE : s;
   }
 }

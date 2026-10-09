@@ -12,12 +12,6 @@ import org.junit.jupiter.api.Test;
 
 final class MappedTraceTest {
 
-  private static Path fileWith(byte[] bytes) throws IOException {
-    Path f = TestTraces.tempFile();
-    Files.write(f, bytes);
-    return f;
-  }
-
   @Test
   void theLastReleaseUnmapsAndALaterRetainIsRefused() throws IOException {
     MappedTrace b = MappedTrace.open(fileWith(new byte[] {7, 8, 9}));
@@ -66,5 +60,11 @@ final class MappedTraceTest {
         data.buffer.isClosed(),
         "index() closed its indexer, so the snapshot held the last reference");
     Files.delete(f);
+  }
+
+  private static Path fileWith(byte[] bytes) throws IOException {
+    Path f = TestTraces.tempFile();
+    Files.write(f, bytes);
+    return f;
   }
 }

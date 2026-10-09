@@ -30,10 +30,6 @@ final class TransferStateTest {
         public void stopped() {}
       };
 
-  private static Transfer pull(long id) {
-    return new Transfer(new FakeAgent(), id, Path.of("/tmp/rec-" + id + ".vbtm"), 0, SILENT);
-  }
-
   @Test
   void aPullCancelledByTheConnectionStaysStoppingUntilItReportsStopped() {
     TransferState t = new TransferState();
@@ -112,5 +108,9 @@ final class TransferStateTest {
     t.resetAgentRate();
     assertEquals(
         0, t.sampleAgentRate(4_000, 400), "after a reset the first sample is silent again");
+  }
+
+  private static Transfer pull(long id) {
+    return new Transfer(new FakeAgent(), id, Path.of("/tmp/rec-" + id + ".vbtm"), 0, SILENT);
   }
 }

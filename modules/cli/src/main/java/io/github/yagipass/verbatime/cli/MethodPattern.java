@@ -28,6 +28,20 @@ final class MethodPattern {
     this.methodIds = List.copyOf(list);
   }
 
+  static MethodPattern resolve(TraceFile file, Names names, String pattern, boolean acceptSeveral) {
+    BitSet ids = match(file, names, pattern);
+    if (ids.isEmpty()) {
+      throw CliException.usage(
+          "no method matches '" + pattern + "'",
+          "use Class::method, pkg.Class::method, the name as printed such as Class.method, "
+              + "or part of the class and method name");
+    }
+    if (!acceptSeveral) {
+      rejectSeveral(file, pattern, ids);
+    }
+    return new MethodPattern(pattern, ids);
+  }
+
   boolean matches(int methodId) {
     return methodId >= 0 && ids.get(methodId);
   }
@@ -59,20 +73,6 @@ final class MethodPattern {
     return seen.size() <= 3
         ? String.join(", ", seen)
         : String.join(", ", seen.subList(0, 3)) + ", +" + (seen.size() - 3) + " more";
-  }
-
-  static MethodPattern resolve(TraceFile file, Names names, String pattern, boolean acceptSeveral) {
-    BitSet ids = match(file, names, pattern);
-    if (ids.isEmpty()) {
-      throw CliException.usage(
-          "no method matches '" + pattern + "'",
-          "use Class::method, pkg.Class::method, the name as printed such as Class.method, "
-              + "or part of the class and method name");
-    }
-    if (!acceptSeveral) {
-      rejectSeveral(file, pattern, ids);
-    }
-    return new MethodPattern(pattern, ids);
   }
 
   private static void rejectSeveral(TraceFile file, String pattern, BitSet ids) {

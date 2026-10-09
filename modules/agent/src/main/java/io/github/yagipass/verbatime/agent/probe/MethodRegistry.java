@@ -11,6 +11,8 @@ import org.jspecify.annotations.Nullable;
 
 public final class MethodRegistry {
 
+  public record CommittedClass(int baseId, String className, List<String> sigs) {}
+
   public static final int LIMIT_REACHED = -1;
 
   private static final Object LOCK = new Object();
@@ -20,8 +22,6 @@ public final class MethodRegistry {
   private static String[] sigs = new String[1024];
 
   private static int size;
-
-  public record CommittedClass(int baseId, String className, List<String> sigs) {}
 
   private static final Object SINK_LOCK = new Object();
 

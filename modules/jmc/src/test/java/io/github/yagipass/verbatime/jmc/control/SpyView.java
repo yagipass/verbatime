@@ -46,14 +46,6 @@ final class SpyView implements ControlPresenter.View {
 
   int recordingsChanged;
 
-  ViewState last() {
-    return states.get(states.size() - 1);
-  }
-
-  String lastMessage() {
-    return messages.get(messages.size() - 1);
-  }
-
   @Override
   public void render(ViewState p) {
     states.add(p);
@@ -83,5 +75,13 @@ final class SpyView implements ControlPresenter.View {
   @Override
   public void recordingsChanged() {
     recordingsChanged++;
+  }
+
+  ViewState last() {
+    return states.get(states.size() - 1);
+  }
+
+  String lastMessage() {
+    return messages.get(messages.size() - 1);
   }
 }

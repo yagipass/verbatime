@@ -20,6 +20,24 @@ abstract class EditorBoundView extends ViewPart implements RecordingEditor.Liste
     tracker.install();
   }
 
+  @Override
+  public final void selectionChanged() {
+    refresh();
+  }
+
+  @Override
+  public final void traceChanged() {
+    refresh();
+  }
+
+  @Override
+  public void dispose() {
+    if (tracker != null) {
+      tracker.dispose();
+    }
+    super.dispose();
+  }
+
   abstract void createContent(Composite parent);
 
   abstract void refresh();
@@ -60,23 +78,5 @@ abstract class EditorBoundView extends ViewPart implements RecordingEditor.Liste
       editor.addListener(this);
     }
     refresh();
-  }
-
-  @Override
-  public final void selectionChanged() {
-    refresh();
-  }
-
-  @Override
-  public final void traceChanged() {
-    refresh();
-  }
-
-  @Override
-  public void dispose() {
-    if (tracker != null) {
-      tracker.dispose();
-    }
-    super.dispose();
   }
 }

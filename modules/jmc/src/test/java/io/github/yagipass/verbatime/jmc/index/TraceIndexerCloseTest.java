@@ -15,24 +15,6 @@ import org.junit.jupiter.api.Test;
 
 final class TraceIndexerCloseTest {
 
-  private static long exits(TraceSnapshot data) {
-    @Var long n = 0;
-    for (ThreadIndex m : data.threads) {
-      long[] count = {0};
-      ChunkWalker.walkRange(
-          data,
-          m,
-          Long.MIN_VALUE,
-          Long.MAX_VALUE,
-          (startNs, durNs, childNs, methodId, sessionDepth, sp, exc) -> {
-            count[0]++;
-            return true;
-          });
-      n += count[0];
-    }
-    return n;
-  }
-
   @Test
   void closeCancelsLaterAdvancesAndSnapshots() throws IOException {
     Path f = TestTraces.tempFile();
@@ -141,5 +123,23 @@ final class TraceIndexerCloseTest {
         MappedTrace.ClosedException.class,
         () -> exits(data),
         "a stale extractor task must surface as an error the editor already reports");
+  }
+
+  private static long exits(TraceSnapshot data) {
+    @Var long n = 0;
+    for (ThreadIndex m : data.threads) {
+      long[] count = {0};
+      ChunkWalker.walkRange(
+          data,
+          m,
+          Long.MIN_VALUE,
+          Long.MAX_VALUE,
+          (startNs, durNs, childNs, methodId, sessionDepth, sp, exc) -> {
+            count[0]++;
+            return true;
+          });
+      n += count[0];
+    }
+    return n;
   }
 }

@@ -7,6 +7,50 @@ import java.util.Map;
 
 final class MergedTree {
 
+  private static final class Paths extends SubtreeVisitor {
+
+    final PathTrie trie = new PathTrie();
+
+    private final int maxDepth;
+
+    private final int session;
+
+    private int[] nodes = new int[64];
+
+    Paths(SessionWalker walker, long at, int maxDepth, int session) {
+      super(walker, at);
+      this.maxDepth = maxDepth;
+      this.session = session;
+    }
+
+    @Override
+    void onEnter(long ordinal, int level, int depth, int methodId, long startTicks) {
+      if (level == nodes.length) {
+        nodes = Arrays.copyOf(nodes, level * 2);
+      }
+      int parent = level == 0 ? 0 : nodes[level - 1];
+      nodes[level] = parent < 0 || level > maxDepth ? -1 : trie.child(parent, methodId, level);
+    }
+
+    @Override
+    void onExit(
+        long ordinal,
+        int level,
+        int depth,
+        int methodId,
+        long startTicks,
+        long durTicks,
+        long selfTicks,
+        int exceptionId,
+        boolean unclosed) {
+      int node = nodes[level];
+      if (node >= 0) {
+        trie.record(
+            node, session, ordinal, durTicks, selfTicks, exceptionId != SessionWalker.NO_EXCEPTION);
+      }
+    }
+  }
+
   private final TreeCommand tree;
 
   private final Out out;
@@ -167,49 +211,5 @@ final class MergedTree {
             .put("paths", hidden.length)
             .put("reason", byDepth ? "depth" : "floor")
             .put("methods", Fold.methodsText(countByMethod, tree.names, 20)));
-  }
-
-  private static final class Paths extends SubtreeVisitor {
-
-    final PathTrie trie = new PathTrie();
-
-    private final int maxDepth;
-
-    private final int session;
-
-    private int[] nodes = new int[64];
-
-    Paths(SessionWalker walker, long at, int maxDepth, int session) {
-      super(walker, at);
-      this.maxDepth = maxDepth;
-      this.session = session;
-    }
-
-    @Override
-    void onEnter(long ordinal, int level, int depth, int methodId, long startTicks) {
-      if (level == nodes.length) {
-        nodes = Arrays.copyOf(nodes, level * 2);
-      }
-      int parent = level == 0 ? 0 : nodes[level - 1];
-      nodes[level] = parent < 0 || level > maxDepth ? -1 : trie.child(parent, methodId, level);
-    }
-
-    @Override
-    void onExit(
-        long ordinal,
-        int level,
-        int depth,
-        int methodId,
-        long startTicks,
-        long durTicks,
-        long selfTicks,
-        int exceptionId,
-        boolean unclosed) {
-      int node = nodes[level];
-      if (node >= 0) {
-        trie.record(
-            node, session, ordinal, durTicks, selfTicks, exceptionId != SessionWalker.NO_EXCEPTION);
-      }
-    }
   }
 }

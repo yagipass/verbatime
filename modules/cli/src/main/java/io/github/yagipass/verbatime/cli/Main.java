@@ -10,6 +10,13 @@ import java.util.List;
 
 public final class Main {
 
+  private interface Runner {
+
+    int run(List<String> argv, PrintStream stdout);
+  }
+
+  private record Command(String help, Runner runner) {}
+
   static final String HELP =
       """
             vbtm - read .vbtm recordings of Verbatime, written for AI agents and scripts
@@ -52,13 +59,6 @@ public final class Main {
             Exit status: 0 success, 1 bad arguments, 2 the file cannot be read or is not a .vbtm recording,
             3 the file is corrupt. What could be read is still printed, followed by a "# status:" line.
             """;
-
-  private interface Runner {
-
-    int run(List<String> argv, PrintStream stdout);
-  }
-
-  private record Command(String help, Runner runner) {}
 
   private Main() {}
 

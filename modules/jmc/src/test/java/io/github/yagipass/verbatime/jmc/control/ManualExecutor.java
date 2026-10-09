@@ -21,16 +21,6 @@ final class ManualExecutor extends AbstractExecutorService {
     queue.add(r);
   }
 
-  int deferred() {
-    return queue.size();
-  }
-
-  void runAll() {
-    while (!queue.isEmpty()) {
-      queue.poll().run();
-    }
-  }
-
   @Override
   public void shutdown() {
     shutdown = true;
@@ -57,5 +47,15 @@ final class ManualExecutor extends AbstractExecutorService {
   @Override
   public boolean awaitTermination(long timeout, TimeUnit unit) {
     return isTerminated();
+  }
+
+  int deferred() {
+    return queue.size();
+  }
+
+  void runAll() {
+    while (!queue.isEmpty()) {
+      queue.poll().run();
+    }
   }
 }

@@ -19,10 +19,6 @@ import org.jspecify.annotations.Nullable;
 
 final class RecordingStreams {
 
-  private static final int READ_SIZE = 1 << 20;
-
-  private static final long IDLE_TIMEOUT_NANOS = 60_000_000_000L;
-
   private static final class Stream {
     private final long id;
 
@@ -41,6 +37,10 @@ final class RecordingStreams {
       this.offset = offset;
     }
   }
+
+  private static final int READ_SIZE = 1 << 20;
+
+  private static final long IDLE_TIMEOUT_NANOS = 60_000_000_000L;
 
   private final Consumer<Recording> onRetired;
 
@@ -97,24 +97,6 @@ final class RecordingStreams {
     return out;
   }
 
-  private static byte @Nullable [] readLocked(Stream s) throws IOException {
-    boolean closed = s.recording.closed();
-    long avail = s.recording.writer().committedBytes() - s.offset;
-    if (avail <= 0) {
-      return closed ? null : new byte[0];
-    }
-    byte[] out = new byte[(int) Math.min(avail, READ_SIZE)];
-    ByteBuffer buf = ByteBuffer.wrap(out);
-    while (buf.hasRemaining()) {
-      if (s.channel.read(buf, s.offset + buf.position()) < 0) {
-        break;
-      }
-    }
-    int read = buf.position();
-    s.offset += read;
-    return read == out.length ? out : Arrays.copyOf(out, read);
-  }
-
   void close(long streamId) {
     retireAll(s -> s.id == streamId, true);
   }
@@ -136,8 +118,34 @@ final class RecordingStreams {
     return false;
   }
 
+  private static byte @Nullable [] readLocked(Stream s) throws IOException {
+    boolean closed = s.recording.closed();
+    long avail = s.recording.writer().committedBytes() - s.offset;
+    if (avail <= 0) {
+      return closed ? null : new byte[0];
+    }
+    byte[] out = new byte[(int) Math.min(avail, READ_SIZE)];
+    ByteBuffer buf = ByteBuffer.wrap(out);
+    while (buf.hasRemaining()) {
+      if (s.channel.read(buf, s.offset + buf.position()) < 0) {
+        break;
+      }
+    }
+    int read = buf.position();
+    s.offset += read;
+    return read == out.length ? out : Arrays.copyOf(out, read);
+  }
+
   private static boolean isIdle(Stream s) {
     return System.nanoTime() - s.lastAccessNanos > IDLE_TIMEOUT_NANOS;
+  }
+
+  private static void closeChannel(Stream s) {
+    try {
+      s.channel.close();
+    } catch (IOException e) {
+      Log.warn("closing stream #" + s.id + ": " + e);
+    }
   }
 
   private void retire(Stream s, boolean delivered) {
@@ -170,14 +178,6 @@ final class RecordingStreams {
       for (Recording r : retired) {
         onRetired.accept(r);
       }
-    }
-  }
-
-  private static void closeChannel(Stream s) {
-    try {
-      s.channel.close();
-    } catch (IOException e) {
-      Log.warn("closing stream #" + s.id + ": " + e);
     }
   }
 }

@@ -41,6 +41,44 @@ public final class RecordingEditor extends EditorPart {
     void traceChanged();
   }
 
+  private final class PageHost implements ViewerBridge.Host {
+
+    @Override
+    public void ready() {
+      loadRunning = false;
+    }
+
+    @Override
+    public void requestWindow(long reqId, long t0Ns, long t1Ns, int px) {
+      serveWindow(reqId, t0Ns, t1Ns, px);
+    }
+
+    @Override
+    public void reload() {
+      bridge.postIfCurrent(bridge.generation(), () -> startLoad(false));
+    }
+
+    @Override
+    public void select(@Nullable SelectedCall frame) {
+      onSelect(frame);
+    }
+
+    @Override
+    public void requestSearch(long reqId, String query) {
+      serveSearch(reqId, query);
+    }
+
+    @Override
+    public void requestMatch(long reqId, boolean forward, long posNs) {
+      serveMatch(reqId, forward, posNs);
+    }
+
+    @Override
+    public void exportSession() {
+      bridge.postIfCurrent(bridge.generation(), RecordingEditor.this::openExportDialog);
+    }
+  }
+
   private static final AtomicBoolean UNMAP_WARNED = new AtomicBoolean();
 
   private final Function<Display, UiThread> uiThreads;
@@ -120,6 +158,119 @@ public final class RecordingEditor extends EditorPart {
               return t;
             });
     startLoad(false);
+  }
+
+  public boolean isLoading() {
+    return loadRunning;
+  }
+
+  public boolean isDisposed() {
+    return container == null || container.isDisposed();
+  }
+
+  public void reload(boolean live) {
+    if (!isDisposed() && !loadRunning) {
+      startLoad(live);
+    }
+  }
+
+  public @Nullable TraceSnapshot trace() {
+    return trace;
+  }
+
+  public @Nullable SelectedCall selection() {
+    return selection;
+  }
+
+  public void addListener(Listener l) {
+    listeners.add(l);
+  }
+
+  public void removeListener(Listener l) {
+    listeners.remove(l);
+  }
+
+  public void zoomTo(@Nullable SelectedCall f) {
+    if (f != null && trace != null) {
+      bridge.zoomTo(f);
+    }
+  }
+
+  public void searchFor(int methodId) {
+    TraceSnapshot data = trace;
+    if (data != null) {
+      bridge.searchFor(methodId, data.methodName(methodId));
+    }
+  }
+
+  public void openExportDialog() {
+    TraceSnapshot data = trace;
+    if (data == null || isDisposed()) {
+      return;
+    }
+    data.buffer.retain();
+    @Var boolean scheduled = false;
+    try {
+      scheduled = SessionExportDialog.openAndSchedule(getSite().getShell(), data, selection);
+    } finally {
+      if (!scheduled) {
+        data.buffer.release();
+      }
+    }
+  }
+
+  @Override
+  public void setFocus() {
+    if (!bridge.focus()) {
+      container.setFocus();
+    }
+  }
+
+  @Override
+  public void dispose() {
+    if (bridge != null) {
+      bridge.close();
+    }
+    loadRunning = false;
+    if (loadJob != null) {
+      loadJob.cancel();
+    }
+    TraceIndexer ix = indexer;
+    indexer = null;
+    if (ix != null) {
+      ix.close();
+    }
+    TraceSnapshot t = trace;
+    trace = null;
+    if (queryWorker != null) {
+      if (t != null) {
+        queryWorker.execute(t::release);
+      }
+      queryWorker.shutdown();
+    } else if (t != null) {
+      t.release();
+    }
+    selectionSeq++;
+    selection = null;
+    fireTraceChanged();
+    listeners.clear();
+    super.dispose();
+  }
+
+  @Override
+  public void doSave(IProgressMonitor monitor) {}
+
+  @Override
+  public void doSaveAs() {}
+
+  @Override
+  public boolean isDirty() {
+    return false;
+  }
+
+  @Override
+  public boolean isSaveAsAllowed() {
+    return false;
   }
 
   private void startLoad(boolean live) {
@@ -227,65 +378,6 @@ public final class RecordingEditor extends EditorPart {
     job.schedule();
   }
 
-  public boolean isLoading() {
-    return loadRunning;
-  }
-
-  public boolean isDisposed() {
-    return container == null || container.isDisposed();
-  }
-
-  public void reload(boolean live) {
-    if (!isDisposed() && !loadRunning) {
-      startLoad(live);
-    }
-  }
-
-  public @Nullable TraceSnapshot trace() {
-    return trace;
-  }
-
-  public @Nullable SelectedCall selection() {
-    return selection;
-  }
-
-  public void addListener(Listener l) {
-    listeners.add(l);
-  }
-
-  public void removeListener(Listener l) {
-    listeners.remove(l);
-  }
-
-  public void zoomTo(@Nullable SelectedCall f) {
-    if (f != null && trace != null) {
-      bridge.zoomTo(f);
-    }
-  }
-
-  public void searchFor(int methodId) {
-    TraceSnapshot data = trace;
-    if (data != null) {
-      bridge.searchFor(methodId, data.methodName(methodId));
-    }
-  }
-
-  public void openExportDialog() {
-    TraceSnapshot data = trace;
-    if (data == null || isDisposed()) {
-      return;
-    }
-    data.buffer.retain();
-    @Var boolean scheduled = false;
-    try {
-      scheduled = SessionExportDialog.openAndSchedule(getSite().getShell(), data, selection);
-    } finally {
-      if (!scheduled) {
-        data.buffer.release();
-      }
-    }
-  }
-
   private void closeViewerAndShow(String text) {
     bridge.close();
     if (statusLabel == null || statusLabel.isDisposed()) {
@@ -303,44 +395,6 @@ public final class RecordingEditor extends EditorPart {
     bridge.close();
     bridge.open(BrowserPage.create(container), html);
     container.layout(true);
-  }
-
-  private final class PageHost implements ViewerBridge.Host {
-
-    @Override
-    public void ready() {
-      loadRunning = false;
-    }
-
-    @Override
-    public void requestWindow(long reqId, long t0Ns, long t1Ns, int px) {
-      serveWindow(reqId, t0Ns, t1Ns, px);
-    }
-
-    @Override
-    public void reload() {
-      bridge.postIfCurrent(bridge.generation(), () -> startLoad(false));
-    }
-
-    @Override
-    public void select(@Nullable SelectedCall frame) {
-      onSelect(frame);
-    }
-
-    @Override
-    public void requestSearch(long reqId, String query) {
-      serveSearch(reqId, query);
-    }
-
-    @Override
-    public void requestMatch(long reqId, boolean forward, long posNs) {
-      serveMatch(reqId, forward, posNs);
-    }
-
-    @Override
-    public void exportSession() {
-      bridge.postIfCurrent(bridge.generation(), RecordingEditor.this::openExportDialog);
-    }
   }
 
   private void serveWindow(long reqId, long t0, long t1, int px) {
@@ -510,59 +564,5 @@ public final class RecordingEditor extends EditorPart {
           String reply = ViewerJson.matchJson(reqId, m);
           bridge.postIfCurrent(gen, () -> bridge.matchReply(reply));
         });
-  }
-
-  @Override
-  public void setFocus() {
-    if (!bridge.focus()) {
-      container.setFocus();
-    }
-  }
-
-  @Override
-  public void dispose() {
-    if (bridge != null) {
-      bridge.close();
-    }
-    loadRunning = false;
-    if (loadJob != null) {
-      loadJob.cancel();
-    }
-    TraceIndexer ix = indexer;
-    indexer = null;
-    if (ix != null) {
-      ix.close();
-    }
-    TraceSnapshot t = trace;
-    trace = null;
-    if (queryWorker != null) {
-      if (t != null) {
-        queryWorker.execute(t::release);
-      }
-      queryWorker.shutdown();
-    } else if (t != null) {
-      t.release();
-    }
-    selectionSeq++;
-    selection = null;
-    fireTraceChanged();
-    listeners.clear();
-    super.dispose();
-  }
-
-  @Override
-  public void doSave(IProgressMonitor monitor) {}
-
-  @Override
-  public void doSaveAs() {}
-
-  @Override
-  public boolean isDirty() {
-    return false;
-  }
-
-  @Override
-  public boolean isSaveAsAllowed() {
-    return false;
   }
 }

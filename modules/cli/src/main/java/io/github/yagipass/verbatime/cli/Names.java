@@ -33,21 +33,6 @@ final class Names {
     }
   }
 
-  String displayName(int id) {
-    return id >= 0 && id < display.length && display[id] != null
-        ? display[id]
-        : "<method " + id + ">";
-  }
-
-  String fullName(int id) {
-    TraceFile.MethodRef m = file.method(id);
-    return m == null ? displayName(id) : m.className() + "." + m.sig();
-  }
-
-  boolean collides(int id) {
-    return id >= 0 && id < collides.length && collides[id];
-  }
-
   static String simpleClass(String className) {
     return className.substring(className.lastIndexOf('.') + 1);
   }
@@ -62,5 +47,20 @@ final class Names {
       return s;
     }
     return s.replace("\r", "").replace('\n', ' ').replace('\t', ' ');
+  }
+
+  String displayName(int id) {
+    return id >= 0 && id < display.length && display[id] != null
+        ? display[id]
+        : "<method " + id + ">";
+  }
+
+  String fullName(int id) {
+    TraceFile.MethodRef m = file.method(id);
+    return m == null ? displayName(id) : m.className() + "." + m.sig();
+  }
+
+  boolean collides(int id) {
+    return id >= 0 && id < collides.length && collides[id];
   }
 }

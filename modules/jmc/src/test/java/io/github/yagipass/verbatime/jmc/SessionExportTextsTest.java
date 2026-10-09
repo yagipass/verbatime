@@ -44,26 +44,6 @@ final class SessionExportTextsTest {
     assertEquals(100_000, SessionExportTexts.floorNs(100));
   }
 
-  private static TraceSnapshot trace() throws IOException {
-    TraceBuilder w = TestTraces.writer();
-    w.thread(7, "a");
-    w.thread(8, "b");
-    w.clazz(1, "pkg.R", "r()V", "k()V");
-    w.chunk(
-        7,
-        100,
-        new TraceBuilder.Payload(100).enter(100, 1).enter(110, 2).exit(150).exit(300).bytes(),
-        true);
-    w.chunk(7, 400, new TraceBuilder.Payload(400).enter(400, 1).exit(1400).bytes(), true);
-    w.chunk(8, 100, new TraceBuilder.Payload(100).enter(100, 1).exit(700).bytes(), true);
-    w.end();
-    return TestTraces.index(w);
-  }
-
-  private static SelectedCall frame(long tid, long startNs) {
-    return new SelectedCall(tid, startNs, 1, 1, 0, 1, -1, false, List.of(), null, null);
-  }
-
   @Test
   void preselectionFollowsTheSelectedFrameThenTheLongestSession() throws IOException {
     TraceSnapshot d = trace();
@@ -139,5 +119,25 @@ final class SessionExportTextsTest {
         "Exported session #1 with a floor of 10 µs to\n/tmp/x.txt\n\n124,739 body lines, 11.5 MB\n"
             + "75,430 calls listed, 5,223,107 calls below the floor kept as counts",
         SessionExportTexts.summary(Path.of("/tmp/x.txt"), s, 10_000, r));
+  }
+
+  private static TraceSnapshot trace() throws IOException {
+    TraceBuilder w = TestTraces.writer();
+    w.thread(7, "a");
+    w.thread(8, "b");
+    w.clazz(1, "pkg.R", "r()V", "k()V");
+    w.chunk(
+        7,
+        100,
+        new TraceBuilder.Payload(100).enter(100, 1).enter(110, 2).exit(150).exit(300).bytes(),
+        true);
+    w.chunk(7, 400, new TraceBuilder.Payload(400).enter(400, 1).exit(1400).bytes(), true);
+    w.chunk(8, 100, new TraceBuilder.Payload(100).enter(100, 1).exit(700).bytes(), true);
+    w.end();
+    return TestTraces.index(w);
+  }
+
+  private static SelectedCall frame(long tid, long startNs) {
+    return new SelectedCall(tid, startNs, 1, 1, 0, 1, -1, false, List.of(), null, null);
   }
 }

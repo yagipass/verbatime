@@ -174,6 +174,10 @@ final class BodyLines {
     writer.newline();
   }
 
+  private static int digits(long v) {
+    return Long.toString(Math.max(v, 0)).length();
+  }
+
   private void patchFlag(long off, int excNo) throws IOException {
     Arrays.fill(flagScratch, (byte) ' ');
     flagScratch[1] = '!';
@@ -186,9 +190,5 @@ final class BodyLines {
       }
     }
     writer.patch(off, flagScratch);
-  }
-
-  private static int digits(long v) {
-    return Long.toString(Math.max(v, 0)).length();
   }
 }

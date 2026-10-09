@@ -25,6 +25,154 @@ import org.junit.jupiter.api.Test;
 
 final class ViewerJsonTest {
 
+  static final class MiniJson {
+    private final String s;
+
+    private int i;
+
+    private MiniJson(String s) {
+      this.s = s;
+    }
+
+    static void parse(String s) {
+      MiniJson p = new MiniJson(s);
+      p.value();
+      p.ws();
+      if (p.i != s.length()) {
+        throw new IllegalArgumentException("trailing garbage at " + p.i);
+      }
+    }
+
+    private void value() {
+      ws();
+      char c = peek();
+      switch (c) {
+        case '{' -> object();
+        case '[' -> array();
+        case '"' -> string();
+        case 't' -> keyword("true");
+        case 'f' -> keyword("false");
+        case 'n' -> keyword("null");
+        default -> number();
+      }
+    }
+
+    private void object() {
+      expect('{');
+      ws();
+      if (peek() == '}') {
+        i++;
+        return;
+      }
+      while (true) {
+        ws();
+        string();
+        ws();
+        expect(':');
+        value();
+        ws();
+        char c = next();
+        if (c == '}') {
+          return;
+        }
+        if (c != ',') {
+          throw new IllegalArgumentException("expected , or } at " + (i - 1));
+        }
+      }
+    }
+
+    private void array() {
+      expect('[');
+      ws();
+      if (peek() == ']') {
+        i++;
+        return;
+      }
+      while (true) {
+        value();
+        ws();
+        char c = next();
+        if (c == ']') {
+          return;
+        }
+        if (c != ',') {
+          throw new IllegalArgumentException("expected , or ] at " + (i - 1));
+        }
+      }
+    }
+
+    private void string() {
+      expect('"');
+      while (true) {
+        char c = next();
+        if (c == '"') {
+          return;
+        }
+        if (c == '\\') {
+          char e = next();
+          if (e == 'u') {
+            for (int k = 0; k < 4; k++) {
+              char h = next();
+              if (Character.digit(h, 16) < 0) {
+                throw new IllegalArgumentException("bad \\u at " + i);
+              }
+            }
+          } else if ("\"\\/bfnrt".indexOf(e) < 0) {
+            throw new IllegalArgumentException("bad escape \\" + e + " at " + i);
+          }
+        } else if (c < 0x20) {
+          throw new IllegalArgumentException("raw control char at " + (i - 1));
+        }
+      }
+    }
+
+    private void number() {
+      int start = i;
+      if (peek() == '-') {
+        i++;
+      }
+      while (i < s.length() && "0123456789+-.eE".indexOf(s.charAt(i)) >= 0) {
+        i++;
+      }
+      if (i == start) {
+        throw new IllegalArgumentException("expected a value at " + start);
+      }
+      Double.parseDouble(s.substring(start, i));
+    }
+
+    private void keyword(String kw) {
+      if (!s.startsWith(kw, i)) {
+        throw new IllegalArgumentException("expected " + kw + " at " + i);
+      }
+      i += kw.length();
+    }
+
+    private void ws() {
+      while (i < s.length() && Character.isWhitespace(s.charAt(i))) {
+        i++;
+      }
+    }
+
+    private char peek() {
+      if (i >= s.length()) {
+        throw new IllegalArgumentException("unexpected end");
+      }
+      return s.charAt(i);
+    }
+
+    private char next() {
+      char c = peek();
+      i++;
+      return c;
+    }
+
+    private void expect(char c) {
+      if (next() != c) {
+        throw new IllegalArgumentException("expected " + c + " at " + (i - 1));
+      }
+    }
+  }
+
   @Test
   void initAndWindowJsonAreWellFormed() throws IOException {
     TraceBuilder w = TestTraces.writer();
@@ -504,153 +652,5 @@ final class ViewerJsonTest {
     }
     assertEquals(out.length, b, "runs tile every bucket exactly once");
     return out;
-  }
-
-  static final class MiniJson {
-    private final String s;
-
-    private int i;
-
-    private MiniJson(String s) {
-      this.s = s;
-    }
-
-    static void parse(String s) {
-      MiniJson p = new MiniJson(s);
-      p.value();
-      p.ws();
-      if (p.i != s.length()) {
-        throw new IllegalArgumentException("trailing garbage at " + p.i);
-      }
-    }
-
-    private void value() {
-      ws();
-      char c = peek();
-      switch (c) {
-        case '{' -> object();
-        case '[' -> array();
-        case '"' -> string();
-        case 't' -> keyword("true");
-        case 'f' -> keyword("false");
-        case 'n' -> keyword("null");
-        default -> number();
-      }
-    }
-
-    private void object() {
-      expect('{');
-      ws();
-      if (peek() == '}') {
-        i++;
-        return;
-      }
-      while (true) {
-        ws();
-        string();
-        ws();
-        expect(':');
-        value();
-        ws();
-        char c = next();
-        if (c == '}') {
-          return;
-        }
-        if (c != ',') {
-          throw new IllegalArgumentException("expected , or } at " + (i - 1));
-        }
-      }
-    }
-
-    private void array() {
-      expect('[');
-      ws();
-      if (peek() == ']') {
-        i++;
-        return;
-      }
-      while (true) {
-        value();
-        ws();
-        char c = next();
-        if (c == ']') {
-          return;
-        }
-        if (c != ',') {
-          throw new IllegalArgumentException("expected , or ] at " + (i - 1));
-        }
-      }
-    }
-
-    private void string() {
-      expect('"');
-      while (true) {
-        char c = next();
-        if (c == '"') {
-          return;
-        }
-        if (c == '\\') {
-          char e = next();
-          if (e == 'u') {
-            for (int k = 0; k < 4; k++) {
-              char h = next();
-              if (Character.digit(h, 16) < 0) {
-                throw new IllegalArgumentException("bad \\u at " + i);
-              }
-            }
-          } else if ("\"\\/bfnrt".indexOf(e) < 0) {
-            throw new IllegalArgumentException("bad escape \\" + e + " at " + i);
-          }
-        } else if (c < 0x20) {
-          throw new IllegalArgumentException("raw control char at " + (i - 1));
-        }
-      }
-    }
-
-    private void number() {
-      int start = i;
-      if (peek() == '-') {
-        i++;
-      }
-      while (i < s.length() && "0123456789+-.eE".indexOf(s.charAt(i)) >= 0) {
-        i++;
-      }
-      if (i == start) {
-        throw new IllegalArgumentException("expected a value at " + start);
-      }
-      Double.parseDouble(s.substring(start, i));
-    }
-
-    private void keyword(String kw) {
-      if (!s.startsWith(kw, i)) {
-        throw new IllegalArgumentException("expected " + kw + " at " + i);
-      }
-      i += kw.length();
-    }
-
-    private void ws() {
-      while (i < s.length() && Character.isWhitespace(s.charAt(i))) {
-        i++;
-      }
-    }
-
-    private char peek() {
-      if (i >= s.length()) {
-        throw new IllegalArgumentException("unexpected end");
-      }
-      return s.charAt(i);
-    }
-
-    private char next() {
-      char c = peek();
-      i++;
-      return c;
-    }
-
-    private void expect(char c) {
-      if (next() != c) {
-        throw new IllegalArgumentException("expected " + c + " at " + (i - 1));
-      }
-    }
   }
 }

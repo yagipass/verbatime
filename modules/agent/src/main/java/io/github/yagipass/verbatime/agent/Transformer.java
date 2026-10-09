@@ -48,15 +48,6 @@ public final class Transformer implements ClassFileTransformer {
     return neverInstrumentedPrefix(internalName) != null;
   }
 
-  static @Nullable String neverInstrumentedPrefix(String internalName) {
-    for (String p : NEVER_INSTRUMENTED) {
-      if (internalName.startsWith(p)) {
-        return p;
-      }
-    }
-    return null;
-  }
-
   public int instrumentedClasses() {
     return instrumentedClasses.get();
   }
@@ -103,6 +94,15 @@ public final class Transformer implements ClassFileTransformer {
       Log.warn("failed to instrument " + className + ", loading it unchanged: " + t);
       return null;
     }
+  }
+
+  static @Nullable String neverInstrumentedPrefix(String internalName) {
+    for (String p : NEVER_INSTRUMENTED) {
+      if (internalName.startsWith(p)) {
+        return p;
+      }
+    }
+    return null;
   }
 
   byte @Nullable [] instrument(String internalName, byte[] bytes, boolean injectGate) {

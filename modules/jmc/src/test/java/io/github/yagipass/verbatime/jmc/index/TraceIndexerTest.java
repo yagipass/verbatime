@@ -23,26 +23,107 @@ import org.junit.jupiter.api.Test;
 
 final class TraceIndexerTest {
 
-  private static byte[] simpleTrace() {
-    TraceBuilder w = TestTraces.writer();
-    w.thread(7, "main");
-    w.clazz(1, "pkg.Root", "root()V");
-    w.clazz(2, "pkg.A", "a()V", "a2()V");
-    w.exception(1, "java.sql.SQLException");
-    TraceBuilder.Payload p = new TraceBuilder.Payload(100);
-    p.enter(100, 1);
-    p.enter(110, 2);
-    p.enter(120, 9);
-    p.exit(150);
-    p.exit(160);
-    p.enter(160, 3);
-    p.exitThrow(170, 1);
-    p.exit(200);
-    w.chunk(7, 100, p.bytes(), true);
-    w.gc(162, 6, Vbtm.GC_ACTION_MINOR, "G1 Young Generation", "G1 Evacuation Pause");
-    w.gc(90, 15, Vbtm.GC_ACTION_MAJOR, "G1 Old Generation", "System.gc()");
-    w.end();
-    return w.bytes();
+  static void assertMatchesReference(ReferenceDecoder.Result ref, TraceSnapshot d, String ctx) {
+    assertEquals(ref.startEpochMs, d.startEpochMs, ctx + " startEpochMs");
+    assertEquals(ref.utcOffsetSeconds, d.utcOffsetSeconds, ctx + " utcOffsetSeconds");
+    assertEquals(ref.calls.size(), d.totalCalls, ctx + " totalCalls");
+    assertEquals(ref.threadNames, d.threadNames, ctx + " threadNames");
+    for (Map.Entry<Integer, String> e : ref.methodNames.entrySet()) {
+      assertEquals(e.getValue(), d.methodName(e.getKey()), ctx + " name #" + e.getKey());
+    }
+    for (Map.Entry<Integer, String> e : ref.exceptionNames.entrySet()) {
+      assertEquals(e.getValue(), d.exceptionName(e.getKey()), ctx + " exception #" + e.getKey());
+    }
+    assertEquals(ref.exceptionNames.size(), d.totalExceptions, ctx + " totalExceptions");
+    assertEquals(ref.gc.size(), d.gc.count, ctx + " gc count");
+    @Var long gcTotal = 0;
+    for (int i = 0; i < ref.gc.size(); i++) {
+      ReferenceDecoder.GcPause g = ref.gc.get(i);
+      String c = ctx + " gc " + i;
+      assertEquals(g.startNs(), d.gc.startNs[i], c + " start");
+      assertEquals(g.durNs(), d.gc.durNs[i], c + " dur");
+      assertEquals(g.action(), d.gc.action[i], c + " action");
+      assertEquals(g.name(), d.gc.collector[i], c + " name");
+      assertEquals(g.cause(), d.gc.cause[i], c + " cause");
+      gcTotal += g.durNs();
+    }
+    assertEquals(gcTotal, d.gc.totalNs, ctx + " gc totalNs");
+    assertEquals(ref.sessions.size(), d.sessions.size(), ctx + " session count");
+    for (int i = 0; i < ref.sessions.size(); i++) {
+      ReferenceDecoder.Session rs = ref.sessions.get(i);
+      Session s = d.sessions.get(i);
+      String c = ctx + " session " + (i + 1);
+      assertEquals(rs.seq, s.seq, c);
+      assertEquals(rs.tid, s.tid, c);
+      assertEquals(rs.rootMethodId, s.rootMethodId, c);
+      assertEquals(rs.startNs, s.startNs, c);
+      assertEquals(rs.endNs, s.endNs, c);
+      assertEquals(rs.ended, s.ended, c);
+      assertEquals(rs.callCount, s.callCount, c);
+    }
+    Map<Long, List<ReferenceDecoder.Call>> byTid = TestTraces.byTid(ref.calls);
+    assertEquals(0, d.overviewThresholdNs, ctx);
+    @Var int tids = 0;
+    for (ThreadIndex m : d.threads) {
+      List<ReferenceDecoder.Call> exp = byTid.getOrDefault(m.tid, List.of());
+      if (!exp.isEmpty()) {
+        tids++;
+      }
+      assertEquals(exp.size(), m.overview.count, ctx + " tid " + m.tid + " frames");
+      @Var int maxDepth = 0;
+      for (int i = 0; i < exp.size(); i++) {
+        ReferenceDecoder.Call f = exp.get(i);
+        String c = ctx + " tid " + m.tid + " frame " + i;
+        assertEquals(f.startNs(), m.overview.startNs[i], c + " start");
+        assertEquals(f.durNs(), m.overview.durNs[i], c + " dur");
+        assertEquals(f.methodId(), m.overview.methodId[i], c + " method");
+        assertEquals(f.depth(), m.overview.depth[i], c + " depth");
+        assertEquals(f.selfNs(), m.overview.selfNs[i], c + " self");
+        assertEquals(f.unclosed(), m.overview.unclosed[i], c + " unclosed");
+        assertEquals(f.exceptionId(), m.overview.exceptionId[i], c + " exc");
+        maxDepth = Math.max(maxDepth, f.depth());
+      }
+      assertEquals(maxDepth, m.maxDepth, ctx + " tid " + m.tid + " maxDepth");
+    }
+    assertEquals(byTid.size(), tids, ctx + " thread count");
+
+    Map<Long, Integer> nextChunk = new java.util.HashMap<>();
+    for (Session s : d.sessions) {
+      String c = ctx + " session " + s.seq + " chunks";
+      assertEquals(nextChunk.getOrDefault(s.tid, 0).intValue(), s.firstChunk, c + " first");
+      assertTrue(s.lastChunk >= s.firstChunk, c + " owns at least one chunk");
+      nextChunk.put(s.tid, s.lastChunk + 1);
+      ThreadIndex m = d.thread(s.tid);
+      if (m != null) {
+        assertEquals(
+            s.startNs, m.chunks.baseTicks[s.firstChunk] * Vbtm.NANOS_PER_TICK, c + " start anchor");
+        for (int i = s.firstChunk; i <= s.lastChunk; i++) {
+          assertEquals(
+              i == s.lastChunk && s.ended, m.chunks.endsSession[i], c + " cIsEnd[" + i + "]");
+        }
+      }
+    }
+    for (ThreadIndex m : d.threads) {
+      assertEquals(
+          m.chunks.count,
+          nextChunk.getOrDefault(m.tid, 0).intValue(),
+          ctx + " tid " + m.tid + " chunk partition");
+      for (int i = 0; i < m.chunks.count; i++) {
+        assertTrue(
+            m.chunks.baseTicks[i] <= m.chunks.endTicks[i],
+            ctx + " tid " + m.tid + " chunk " + i + " base <= last");
+        if (i > 0) {
+          assertTrue(
+              m.chunks.endTicks[i - 1] <= m.chunks.baseTicks[i],
+              ctx
+                  + " tid "
+                  + m.tid
+                  + " chunk "
+                  + i
+                  + " starts at or after the previous chunk's last tick");
+        }
+      }
+    }
   }
 
   @Test
@@ -523,14 +604,6 @@ final class TraceIndexerTest {
         "MAX_TICKS is the last value whose nanoseconds fit in a long");
   }
 
-  private static void rawVarint(TraceBuilder w, long v) {
-    byte[] b = new byte[Varint.MAX_BYTES];
-    int n = Varint.put(b, 0, v);
-    for (int i = 0; i < n; i++) {
-      w.rawBytes(b[i] & 0xFF);
-    }
-  }
-
   @Test
   void varintTooLongIsCorrupt() throws IOException {
     TraceBuilder w = TestTraces.writer();
@@ -610,106 +683,33 @@ final class TraceIndexerTest {
     }
   }
 
-  static void assertMatchesReference(ReferenceDecoder.Result ref, TraceSnapshot d, String ctx) {
-    assertEquals(ref.startEpochMs, d.startEpochMs, ctx + " startEpochMs");
-    assertEquals(ref.utcOffsetSeconds, d.utcOffsetSeconds, ctx + " utcOffsetSeconds");
-    assertEquals(ref.calls.size(), d.totalCalls, ctx + " totalCalls");
-    assertEquals(ref.threadNames, d.threadNames, ctx + " threadNames");
-    for (Map.Entry<Integer, String> e : ref.methodNames.entrySet()) {
-      assertEquals(e.getValue(), d.methodName(e.getKey()), ctx + " name #" + e.getKey());
-    }
-    for (Map.Entry<Integer, String> e : ref.exceptionNames.entrySet()) {
-      assertEquals(e.getValue(), d.exceptionName(e.getKey()), ctx + " exception #" + e.getKey());
-    }
-    assertEquals(ref.exceptionNames.size(), d.totalExceptions, ctx + " totalExceptions");
-    assertEquals(ref.gc.size(), d.gc.count, ctx + " gc count");
-    @Var long gcTotal = 0;
-    for (int i = 0; i < ref.gc.size(); i++) {
-      ReferenceDecoder.GcPause g = ref.gc.get(i);
-      String c = ctx + " gc " + i;
-      assertEquals(g.startNs(), d.gc.startNs[i], c + " start");
-      assertEquals(g.durNs(), d.gc.durNs[i], c + " dur");
-      assertEquals(g.action(), d.gc.action[i], c + " action");
-      assertEquals(g.name(), d.gc.collector[i], c + " name");
-      assertEquals(g.cause(), d.gc.cause[i], c + " cause");
-      gcTotal += g.durNs();
-    }
-    assertEquals(gcTotal, d.gc.totalNs, ctx + " gc totalNs");
-    assertEquals(ref.sessions.size(), d.sessions.size(), ctx + " session count");
-    for (int i = 0; i < ref.sessions.size(); i++) {
-      ReferenceDecoder.Session rs = ref.sessions.get(i);
-      Session s = d.sessions.get(i);
-      String c = ctx + " session " + (i + 1);
-      assertEquals(rs.seq, s.seq, c);
-      assertEquals(rs.tid, s.tid, c);
-      assertEquals(rs.rootMethodId, s.rootMethodId, c);
-      assertEquals(rs.startNs, s.startNs, c);
-      assertEquals(rs.endNs, s.endNs, c);
-      assertEquals(rs.ended, s.ended, c);
-      assertEquals(rs.callCount, s.callCount, c);
-    }
-    Map<Long, List<ReferenceDecoder.Call>> byTid = TestTraces.byTid(ref.calls);
-    assertEquals(0, d.overviewThresholdNs, ctx);
-    @Var int tids = 0;
-    for (ThreadIndex m : d.threads) {
-      List<ReferenceDecoder.Call> exp = byTid.getOrDefault(m.tid, List.of());
-      if (!exp.isEmpty()) {
-        tids++;
-      }
-      assertEquals(exp.size(), m.overview.count, ctx + " tid " + m.tid + " frames");
-      @Var int maxDepth = 0;
-      for (int i = 0; i < exp.size(); i++) {
-        ReferenceDecoder.Call f = exp.get(i);
-        String c = ctx + " tid " + m.tid + " frame " + i;
-        assertEquals(f.startNs(), m.overview.startNs[i], c + " start");
-        assertEquals(f.durNs(), m.overview.durNs[i], c + " dur");
-        assertEquals(f.methodId(), m.overview.methodId[i], c + " method");
-        assertEquals(f.depth(), m.overview.depth[i], c + " depth");
-        assertEquals(f.selfNs(), m.overview.selfNs[i], c + " self");
-        assertEquals(f.unclosed(), m.overview.unclosed[i], c + " unclosed");
-        assertEquals(f.exceptionId(), m.overview.exceptionId[i], c + " exc");
-        maxDepth = Math.max(maxDepth, f.depth());
-      }
-      assertEquals(maxDepth, m.maxDepth, ctx + " tid " + m.tid + " maxDepth");
-    }
-    assertEquals(byTid.size(), tids, ctx + " thread count");
+  private static byte[] simpleTrace() {
+    TraceBuilder w = TestTraces.writer();
+    w.thread(7, "main");
+    w.clazz(1, "pkg.Root", "root()V");
+    w.clazz(2, "pkg.A", "a()V", "a2()V");
+    w.exception(1, "java.sql.SQLException");
+    TraceBuilder.Payload p = new TraceBuilder.Payload(100);
+    p.enter(100, 1);
+    p.enter(110, 2);
+    p.enter(120, 9);
+    p.exit(150);
+    p.exit(160);
+    p.enter(160, 3);
+    p.exitThrow(170, 1);
+    p.exit(200);
+    w.chunk(7, 100, p.bytes(), true);
+    w.gc(162, 6, Vbtm.GC_ACTION_MINOR, "G1 Young Generation", "G1 Evacuation Pause");
+    w.gc(90, 15, Vbtm.GC_ACTION_MAJOR, "G1 Old Generation", "System.gc()");
+    w.end();
+    return w.bytes();
+  }
 
-    Map<Long, Integer> nextChunk = new java.util.HashMap<>();
-    for (Session s : d.sessions) {
-      String c = ctx + " session " + s.seq + " chunks";
-      assertEquals(nextChunk.getOrDefault(s.tid, 0).intValue(), s.firstChunk, c + " first");
-      assertTrue(s.lastChunk >= s.firstChunk, c + " owns at least one chunk");
-      nextChunk.put(s.tid, s.lastChunk + 1);
-      ThreadIndex m = d.thread(s.tid);
-      if (m != null) {
-        assertEquals(
-            s.startNs, m.chunks.baseTicks[s.firstChunk] * Vbtm.NANOS_PER_TICK, c + " start anchor");
-        for (int i = s.firstChunk; i <= s.lastChunk; i++) {
-          assertEquals(
-              i == s.lastChunk && s.ended, m.chunks.endsSession[i], c + " cIsEnd[" + i + "]");
-        }
-      }
-    }
-    for (ThreadIndex m : d.threads) {
-      assertEquals(
-          m.chunks.count,
-          nextChunk.getOrDefault(m.tid, 0).intValue(),
-          ctx + " tid " + m.tid + " chunk partition");
-      for (int i = 0; i < m.chunks.count; i++) {
-        assertTrue(
-            m.chunks.baseTicks[i] <= m.chunks.endTicks[i],
-            ctx + " tid " + m.tid + " chunk " + i + " base <= last");
-        if (i > 0) {
-          assertTrue(
-              m.chunks.endTicks[i - 1] <= m.chunks.baseTicks[i],
-              ctx
-                  + " tid "
-                  + m.tid
-                  + " chunk "
-                  + i
-                  + " starts at or after the previous chunk's last tick");
-        }
-      }
+  private static void rawVarint(TraceBuilder w, long v) {
+    byte[] b = new byte[Varint.MAX_BYTES];
+    int n = Varint.put(b, 0, v);
+    for (int i = 0; i < n; i++) {
+      w.rawBytes(b[i] & 0xFF);
     }
   }
 }

@@ -29,6 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 final class CorpusSelfTest {
 
+  private record Sabotaged(String internalName, int major, String method, String kind) {}
+
   private static final List<String> SABOTAGED_JARS =
       List.of("commons-lang-", "mail-", "httpcore-", "log4j-api-", "spring-expression-");
 
@@ -36,8 +38,6 @@ final class CorpusSelfTest {
       "io.github.yagipass.verbatime.agent.test.corpus.clinitRan";
 
   private static final MethodTypeDesc INT_NO_ARGS = MethodTypeDesc.of(CD_int);
-
-  private record Sabotaged(String internalName, int major, String method, String kind) {}
 
   private CorpusSelfTest() {}
 

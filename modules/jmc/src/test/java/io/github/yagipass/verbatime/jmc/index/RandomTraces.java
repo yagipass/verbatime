@@ -14,6 +14,14 @@ import java.util.function.IntSupplier;
 
 public final class RandomTraces {
 
+  public interface ChunkSink {
+    void chunk(long baseTicks, byte[] payload, boolean lastOfSession);
+  }
+
+  private interface Rec {
+    void write(TraceBuilder w);
+  }
+
   private RandomTraces() {}
 
   public static byte[] random(long seed) {
@@ -146,10 +154,6 @@ public final class RandomTraces {
     return out.toByteArray();
   }
 
-  public interface ChunkSink {
-    void chunk(long baseTicks, byte[] payload, boolean lastOfSession);
-  }
-
   public static void chunkEvents(List<long[]> events, IntSupplier chunkSize, ChunkSink sink) {
     @Var int i = 0;
     while (i < events.size()) {
@@ -169,10 +173,6 @@ public final class RandomTraces {
       i += k;
       sink.chunk(base, p.bytes(), i == events.size());
     }
-  }
-
-  private interface Rec {
-    void write(TraceBuilder w);
   }
 
   private static byte[] record(Rec r) {

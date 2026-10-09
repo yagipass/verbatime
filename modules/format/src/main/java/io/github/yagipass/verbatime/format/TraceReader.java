@@ -35,6 +35,15 @@ public final class TraceReader {
     default void end() {}
   }
 
+  private static final class Truncated extends RuntimeException {
+
+    private static final long serialVersionUID = 1L;
+
+    private Truncated() {
+      super(null, null, false, false);
+    }
+  }
+
   private final byte[] data;
 
   private int pos;
@@ -221,14 +230,5 @@ public final class TraceReader {
     String s = new String(data, pos, (int) len, StandardCharsets.UTF_8);
     pos += (int) len;
     return s;
-  }
-
-  private static final class Truncated extends RuntimeException {
-
-    private static final long serialVersionUID = 1L;
-
-    private Truncated() {
-      super(null, null, false, false);
-    }
   }
 }

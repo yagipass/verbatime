@@ -8,167 +8,6 @@ import java.util.Arrays;
 
 public final class SubtreeAggregate {
 
-  public static final int MAX_NODES = 1 << 20;
-
-  private final boolean found;
-
-  private final boolean truncated;
-
-  private final int nodeCount;
-
-  private final int[] nodeMethod;
-
-  private final int[] nodeParent;
-
-  private final long[] nodeCalls;
-
-  private final long[] nodeTotalNs;
-
-  private final long[] nodeSelfNs;
-
-  private final int[] childStart;
-
-  private final int[] childIndex;
-
-  private final int[] byMethodStart;
-
-  private final int[] byMethodIndex;
-
-  private final long[] methodCalls;
-
-  private final long[] methodTotalNs;
-
-  private final long[] methodSelfNs;
-
-  private SubtreeAggregate(Collector b) {
-    found = b.done;
-    truncated = b.truncated;
-    nodeCount = b.n;
-    nodeMethod = Arrays.copyOf(b.nodeMethod, b.n);
-    nodeParent = Arrays.copyOf(b.nodeParent, b.n);
-    nodeCalls = Arrays.copyOf(b.nodeCalls, b.n);
-    nodeTotalNs = Arrays.copyOf(b.nodeTotalNs, b.n);
-    nodeSelfNs = Arrays.copyOf(b.nodeSelfNs, b.n);
-    int m = b.methodIdLimit;
-    methodCalls = Arrays.copyOf(b.methodCalls, m);
-    methodTotalNs = Arrays.copyOf(b.methodTotalNs, m);
-    methodSelfNs = Arrays.copyOf(b.methodSelfNs, m);
-
-    childStart = new int[b.n + 1];
-    for (int i = 1; i < b.n; i++) {
-      childStart[nodeParent[i] + 1]++;
-    }
-    for (int i = 0; i < b.n; i++) {
-      childStart[i + 1] += childStart[i];
-    }
-    childIndex = new int[Math.max(b.n - 1, 0)];
-    int[] fill = Arrays.copyOf(childStart, b.n);
-    for (int i = 1; i < b.n; i++) {
-      childIndex[fill[nodeParent[i]]++] = i;
-    }
-
-    byMethodStart = new int[m + 1];
-    for (int i = 0; i < b.n; i++) {
-      byMethodStart[nodeMethod[i] + 1]++;
-    }
-    for (int i = 0; i < m; i++) {
-      byMethodStart[i + 1] += byMethodStart[i];
-    }
-    byMethodIndex = new int[b.n];
-    int[] mfill = Arrays.copyOf(byMethodStart, m);
-    for (int i = 0; i < b.n; i++) {
-      byMethodIndex[mfill[nodeMethod[i]]++] = i;
-    }
-  }
-
-  public static SubtreeAggregate compute(
-      TraceSnapshot data, long tid, long startNs, long durNs, int depth, int methodId) {
-    return compute(data, tid, startNs, durNs, depth, methodId, MAX_NODES);
-  }
-
-  static SubtreeAggregate compute(
-      TraceSnapshot data,
-      long tid,
-      long startNs,
-      long durNs,
-      int depth,
-      int methodId,
-      int maxNodes) {
-    Collector b = new Collector(data, startNs, durNs, depth, methodId, maxNodes);
-    ThreadIndex m = data.thread(tid);
-    if (m != null) {
-      ChunkWalker.walkRange(data, m, startNs, startNs + durNs, b);
-      b.sessionEnd();
-    }
-    return new SubtreeAggregate(b);
-  }
-
-  public boolean found() {
-    return found;
-  }
-
-  public boolean truncated() {
-    return truncated;
-  }
-
-  public int nodeCount() {
-    return nodeCount;
-  }
-
-  public int method(int node) {
-    return nodeMethod[node];
-  }
-
-  public int parent(int node) {
-    return nodeParent[node];
-  }
-
-  public long calls(int node) {
-    return nodeCalls[node];
-  }
-
-  public long totalNs(int node) {
-    return nodeTotalNs[node];
-  }
-
-  public long selfNs(int node) {
-    return nodeSelfNs[node];
-  }
-
-  public int childCount(int node) {
-    return childStart[node + 1] - childStart[node];
-  }
-
-  public int child(int node, int i) {
-    return childIndex[childStart[node] + i];
-  }
-
-  public int methodIdLimit() {
-    return methodCalls.length;
-  }
-
-  public int methodNodeCount(int methodId) {
-    return methodId < 0 || methodId >= methodCalls.length
-        ? 0
-        : byMethodStart[methodId + 1] - byMethodStart[methodId];
-  }
-
-  public int methodNode(int methodId, int i) {
-    return byMethodIndex[byMethodStart[methodId] + i];
-  }
-
-  public long methodCalls(int methodId) {
-    return methodId < 0 || methodId >= methodCalls.length ? 0 : methodCalls[methodId];
-  }
-
-  public long methodTotalNs(int methodId) {
-    return methodId < 0 || methodId >= methodCalls.length ? 0 : methodTotalNs[methodId];
-  }
-
-  public long methodSelfNs(int methodId) {
-    return methodId < 0 || methodId >= methodCalls.length ? 0 : methodSelfNs[methodId];
-  }
-
   private static final class Collector implements ChunkWalker.Visitor {
 
     private final long rootStartNs;
@@ -243,28 +82,6 @@ public final class SubtreeAggregate {
       reset();
     }
 
-    private void reset() {
-      n = 1;
-      nodeMethod[0] = rootMethodId;
-      nodeParent[0] = -1;
-      nodeCalls[0] = 1;
-      nodeTotalNs[0] = rootDurNs;
-      nodeSelfNs[0] = rootDurNs;
-      methodIdLimit = rootMethodId + 1;
-      Arrays.fill(methodCalls, 0);
-      Arrays.fill(methodTotalNs, 0);
-      Arrays.fill(methodSelfNs, 0);
-      methodCalls[rootMethodId] = 1;
-      methodTotalNs[rootMethodId] = rootDurNs;
-      methodSelfNs[rootMethodId] = rootDurNs;
-      if (mapSize > 0) {
-        Arrays.fill(keys, -1L);
-        mapSize = 0;
-      }
-      truncated = false;
-      collecting = false;
-    }
-
     @Override
     public boolean enter(long startNs, int methodId, int sessionDepth, int sp) {
       if (done) {
@@ -326,6 +143,32 @@ public final class SubtreeAggregate {
         closeOpenAt();
         done = true;
       }
+    }
+
+    private static int hash(long key) {
+      return (int) ((key * 0x9E3779B97F4A7C15L) >>> 32);
+    }
+
+    private void reset() {
+      n = 1;
+      nodeMethod[0] = rootMethodId;
+      nodeParent[0] = -1;
+      nodeCalls[0] = 1;
+      nodeTotalNs[0] = rootDurNs;
+      nodeSelfNs[0] = rootDurNs;
+      methodIdLimit = rootMethodId + 1;
+      Arrays.fill(methodCalls, 0);
+      Arrays.fill(methodTotalNs, 0);
+      Arrays.fill(methodSelfNs, 0);
+      methodCalls[rootMethodId] = 1;
+      methodTotalNs[rootMethodId] = rootDurNs;
+      methodSelfNs[rootMethodId] = rootDurNs;
+      if (mapSize > 0) {
+        Arrays.fill(keys, -1L);
+        mapSize = 0;
+      }
+      truncated = false;
+      collecting = false;
     }
 
     private void closeOpenAt() {
@@ -420,10 +263,6 @@ public final class SubtreeAggregate {
       }
     }
 
-    private static int hash(long key) {
-      return (int) ((key * 0x9E3779B97F4A7C15L) >>> 32);
-    }
-
     private void ensureSp(int sp) {
       if (sp >= nodeAtDepth.length) {
         int cap = Math.max(sp + 1, nodeAtDepth.length * 2);
@@ -445,5 +284,166 @@ public final class SubtreeAggregate {
         methodIdLimit = methodId + 1;
       }
     }
+  }
+
+  public static final int MAX_NODES = 1 << 20;
+
+  private final boolean found;
+
+  private final boolean truncated;
+
+  private final int nodeCount;
+
+  private final int[] nodeMethod;
+
+  private final int[] nodeParent;
+
+  private final long[] nodeCalls;
+
+  private final long[] nodeTotalNs;
+
+  private final long[] nodeSelfNs;
+
+  private final int[] childStart;
+
+  private final int[] childIndex;
+
+  private final int[] byMethodStart;
+
+  private final int[] byMethodIndex;
+
+  private final long[] methodCalls;
+
+  private final long[] methodTotalNs;
+
+  private final long[] methodSelfNs;
+
+  private SubtreeAggregate(Collector b) {
+    found = b.done;
+    truncated = b.truncated;
+    nodeCount = b.n;
+    nodeMethod = Arrays.copyOf(b.nodeMethod, b.n);
+    nodeParent = Arrays.copyOf(b.nodeParent, b.n);
+    nodeCalls = Arrays.copyOf(b.nodeCalls, b.n);
+    nodeTotalNs = Arrays.copyOf(b.nodeTotalNs, b.n);
+    nodeSelfNs = Arrays.copyOf(b.nodeSelfNs, b.n);
+    int m = b.methodIdLimit;
+    methodCalls = Arrays.copyOf(b.methodCalls, m);
+    methodTotalNs = Arrays.copyOf(b.methodTotalNs, m);
+    methodSelfNs = Arrays.copyOf(b.methodSelfNs, m);
+
+    childStart = new int[b.n + 1];
+    for (int i = 1; i < b.n; i++) {
+      childStart[nodeParent[i] + 1]++;
+    }
+    for (int i = 0; i < b.n; i++) {
+      childStart[i + 1] += childStart[i];
+    }
+    childIndex = new int[Math.max(b.n - 1, 0)];
+    int[] fill = Arrays.copyOf(childStart, b.n);
+    for (int i = 1; i < b.n; i++) {
+      childIndex[fill[nodeParent[i]]++] = i;
+    }
+
+    byMethodStart = new int[m + 1];
+    for (int i = 0; i < b.n; i++) {
+      byMethodStart[nodeMethod[i] + 1]++;
+    }
+    for (int i = 0; i < m; i++) {
+      byMethodStart[i + 1] += byMethodStart[i];
+    }
+    byMethodIndex = new int[b.n];
+    int[] mfill = Arrays.copyOf(byMethodStart, m);
+    for (int i = 0; i < b.n; i++) {
+      byMethodIndex[mfill[nodeMethod[i]]++] = i;
+    }
+  }
+
+  public static SubtreeAggregate compute(
+      TraceSnapshot data, long tid, long startNs, long durNs, int depth, int methodId) {
+    return compute(data, tid, startNs, durNs, depth, methodId, MAX_NODES);
+  }
+
+  public boolean found() {
+    return found;
+  }
+
+  public boolean truncated() {
+    return truncated;
+  }
+
+  public int nodeCount() {
+    return nodeCount;
+  }
+
+  public int method(int node) {
+    return nodeMethod[node];
+  }
+
+  public int parent(int node) {
+    return nodeParent[node];
+  }
+
+  public long calls(int node) {
+    return nodeCalls[node];
+  }
+
+  public long totalNs(int node) {
+    return nodeTotalNs[node];
+  }
+
+  public long selfNs(int node) {
+    return nodeSelfNs[node];
+  }
+
+  public int childCount(int node) {
+    return childStart[node + 1] - childStart[node];
+  }
+
+  public int child(int node, int i) {
+    return childIndex[childStart[node] + i];
+  }
+
+  public int methodIdLimit() {
+    return methodCalls.length;
+  }
+
+  public int methodNodeCount(int methodId) {
+    return methodId < 0 || methodId >= methodCalls.length
+        ? 0
+        : byMethodStart[methodId + 1] - byMethodStart[methodId];
+  }
+
+  public int methodNode(int methodId, int i) {
+    return byMethodIndex[byMethodStart[methodId] + i];
+  }
+
+  public long methodCalls(int methodId) {
+    return methodId < 0 || methodId >= methodCalls.length ? 0 : methodCalls[methodId];
+  }
+
+  public long methodTotalNs(int methodId) {
+    return methodId < 0 || methodId >= methodCalls.length ? 0 : methodTotalNs[methodId];
+  }
+
+  public long methodSelfNs(int methodId) {
+    return methodId < 0 || methodId >= methodCalls.length ? 0 : methodSelfNs[methodId];
+  }
+
+  static SubtreeAggregate compute(
+      TraceSnapshot data,
+      long tid,
+      long startNs,
+      long durNs,
+      int depth,
+      int methodId,
+      int maxNodes) {
+    Collector b = new Collector(data, startNs, durNs, depth, methodId, maxNodes);
+    ThreadIndex m = data.thread(tid);
+    if (m != null) {
+      ChunkWalker.walkRange(data, m, startNs, startNs + durNs, b);
+      b.sessionEnd();
+    }
+    return new SubtreeAggregate(b);
   }
 }

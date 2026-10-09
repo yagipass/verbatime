@@ -35,10 +35,6 @@ abstract class SubtreeVisitor implements SessionWalker.Visitor {
     this.found = rootOrdinal < 0;
   }
 
-  int baseDepth() {
-    return baseDepth;
-  }
-
   @Override
   public final void enter(long ordinal, int depth, int methodId, long startTicks) {
     thrown.enter(depth, methodId);
@@ -90,6 +86,10 @@ abstract class SubtreeVisitor implements SessionWalker.Visitor {
       inside = false;
       walker.stop();
     }
+  }
+
+  int baseDepth() {
+    return baseDepth;
   }
 
   abstract void onEnter(long ordinal, int level, int depth, int methodId, long startTicks);

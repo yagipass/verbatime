@@ -9,28 +9,6 @@ import java.util.Set;
 
 final class FindCommand {
 
-  static final String HELP =
-      """
-            vbtm find <file> PATTERN [--session SESSION] [--min DUR] [--thrown] [--sort dur|start] [--limit N] [--all]
-              [--json]
-
-            Lists the calls of a method, to get the ids of the slow ones for tree --at and to compare one call with
-            the others.
-
-              --session S  search one session instead of all of them
-              --min DUR    only calls at least this long, such as 5ms
-              --thrown     only calls that ended by throwing
-              --sort KEY   dur, the default, puts the longest first. start follows session order, then time
-              --limit N    rows to print, 50 by default
-              --all        accept a PATTERN that matches several methods
-
-            Columns: id, start, dur, self, depth, method, caller and flags. start is ms from the start of the call's
-            session, caller is the method that made the call, and flags are !Exception when the call ended by
-            throwing and ~ when it was still open when the recording ended.
-            """;
-
-  private FindCommand() {}
-
   private record Match(
       int session,
       long ordinal,
@@ -90,17 +68,6 @@ final class FindCommand {
       this.kept = new PriorityQueue<>(order.reversed());
     }
 
-    void walk(TraceFile.Session s) {
-      session = s.number;
-      walker.walk(s, this);
-    }
-
-    List<Match> rows() {
-      List<Match> rows = new ArrayList<>(kept);
-      rows.sort(order);
-      return rows;
-    }
-
     @Override
     public void enter(long ordinal, int depth, int methodId, long startTicks) {
       stack.push(depth, methodId);
@@ -149,7 +116,40 @@ final class FindCommand {
         kept.add(m);
       }
     }
+
+    void walk(TraceFile.Session s) {
+      session = s.number;
+      walker.walk(s, this);
+    }
+
+    List<Match> rows() {
+      List<Match> rows = new ArrayList<>(kept);
+      rows.sort(order);
+      return rows;
+    }
   }
+
+  static final String HELP =
+      """
+            vbtm find <file> PATTERN [--session SESSION] [--min DUR] [--thrown] [--sort dur|start] [--limit N] [--all]
+              [--json]
+
+            Lists the calls of a method, to get the ids of the slow ones for tree --at and to compare one call with
+            the others.
+
+              --session S  search one session instead of all of them
+              --min DUR    only calls at least this long, such as 5ms
+              --thrown     only calls that ended by throwing
+              --sort KEY   dur, the default, puts the longest first. start follows session order, then time
+              --limit N    rows to print, 50 by default
+              --all        accept a PATTERN that matches several methods
+
+            Columns: id, start, dur, self, depth, method, caller and flags. start is ms from the start of the call's
+            session, caller is the method that made the call, and flags are !Exception when the call ended by
+            throwing and ~ when it was still open when the recording ended.
+            """;
+
+  private FindCommand() {}
 
   static int run(List<String> argv, PrintStream stdout) {
     Args args =

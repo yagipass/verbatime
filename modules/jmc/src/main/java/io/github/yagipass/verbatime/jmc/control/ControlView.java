@@ -36,6 +36,73 @@ import org.jspecify.annotations.Nullable;
 
 public final class ControlView extends ViewPart {
 
+  private record SearchPopup(Shell shell, Table table) {}
+
+  private final class PresenterView implements ControlPresenter.View {
+
+    @Override
+    public void render(ViewState p) {
+      ControlView.this.render(p);
+    }
+
+    @Override
+    public void message(String text) {
+      setMessage(text);
+    }
+
+    @Override
+    public void rootCandidates(String[] specs) {
+      if (specs.length == 0) {
+        hidePopup();
+      } else {
+        showCandidates(specs);
+      }
+    }
+
+    @Override
+    public void rootAccepted() {
+      searchText.setText("");
+      searchText.setFocus();
+    }
+
+    @Override
+    public ControlPresenter.@Nullable EditorHandle openEditor(Path file) {
+      RecordingEditor editor =
+          RecordingEditorInput.openOrReport(
+              getSite().getPage(), file, ControlView.this::setMessage);
+      return editor == null ? null : new WorkbenchEditorHandle(editor);
+    }
+
+    @Override
+    public void recordingsChanged() {
+      RecordingsView.refreshIn(getSite().getPage());
+    }
+  }
+
+  private static final class WorkbenchEditorHandle implements ControlPresenter.EditorHandle {
+
+    private final RecordingEditor editor;
+
+    private WorkbenchEditorHandle(RecordingEditor editor) {
+      this.editor = editor;
+    }
+
+    @Override
+    public boolean isOpen() {
+      return !editor.isDisposed();
+    }
+
+    @Override
+    public boolean isLoading() {
+      return editor.isLoading();
+    }
+
+    @Override
+    public void reload(boolean live) {
+      editor.reload(live);
+    }
+  }
+
   private static final int POPUP_FOCUS_GRACE_MS = 150;
 
   private final Preferences settings = Preferences.get();
@@ -116,6 +183,45 @@ public final class ControlView extends ViewPart {
     setMessage("Not connected");
   }
 
+  @Override
+  public void setFocus() {
+    if (connection != null
+        && connection.state() == State.CONNECTED
+        && searchText != null
+        && !searchText.isDisposed()) {
+      searchText.setFocus();
+    } else if (targetText != null && !targetText.isDisposed()) {
+      targetText.setFocus();
+    }
+  }
+
+  @Override
+  public void dispose() {
+    if (connection != null) {
+      connection.dispose();
+    }
+    SearchPopup p = popup;
+    if (p != null && !p.shell().isDisposed()) {
+      p.shell().dispose();
+    }
+    super.dispose();
+  }
+
+  private static GridLayout zeroMargin(GridLayout l) {
+    l.marginWidth = 0;
+    l.marginHeight = 0;
+    return l;
+  }
+
+  private static ExecutorService newJmxExecutor() {
+    return Executors.newSingleThreadExecutor(
+        r -> {
+          Thread t = new Thread(r, "vbtm-control-jmx");
+          t.setDaemon(true);
+          return t;
+        });
+  }
+
   private void createConnectionRow(Composite root) {
     Composite conn = new Composite(root, SWT.NONE);
     conn.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
@@ -159,12 +265,6 @@ public final class ControlView extends ViewPart {
     disconnectBtn.addListener(SWT.Selection, e -> connection.disconnect());
 
     connStackLayout.topControl = disconnectedPage;
-  }
-
-  private static GridLayout zeroMargin(GridLayout l) {
-    l.marginWidth = 0;
-    l.marginHeight = 0;
-    return l;
   }
 
   @SuppressWarnings("ReferenceEquality")
@@ -410,105 +510,5 @@ public final class ControlView extends ViewPart {
     if (!messageLabel.isDisposed()) {
       messageLabel.setText(text);
     }
-  }
-
-  private record SearchPopup(Shell shell, Table table) {}
-
-  private final class PresenterView implements ControlPresenter.View {
-
-    @Override
-    public void render(ViewState p) {
-      ControlView.this.render(p);
-    }
-
-    @Override
-    public void message(String text) {
-      setMessage(text);
-    }
-
-    @Override
-    public void rootCandidates(String[] specs) {
-      if (specs.length == 0) {
-        hidePopup();
-      } else {
-        showCandidates(specs);
-      }
-    }
-
-    @Override
-    public void rootAccepted() {
-      searchText.setText("");
-      searchText.setFocus();
-    }
-
-    @Override
-    public ControlPresenter.@Nullable EditorHandle openEditor(Path file) {
-      RecordingEditor editor =
-          RecordingEditorInput.openOrReport(
-              getSite().getPage(), file, ControlView.this::setMessage);
-      return editor == null ? null : new WorkbenchEditorHandle(editor);
-    }
-
-    @Override
-    public void recordingsChanged() {
-      RecordingsView.refreshIn(getSite().getPage());
-    }
-  }
-
-  private static final class WorkbenchEditorHandle implements ControlPresenter.EditorHandle {
-
-    private final RecordingEditor editor;
-
-    private WorkbenchEditorHandle(RecordingEditor editor) {
-      this.editor = editor;
-    }
-
-    @Override
-    public boolean isOpen() {
-      return !editor.isDisposed();
-    }
-
-    @Override
-    public boolean isLoading() {
-      return editor.isLoading();
-    }
-
-    @Override
-    public void reload(boolean live) {
-      editor.reload(live);
-    }
-  }
-
-  @Override
-  public void setFocus() {
-    if (connection != null
-        && connection.state() == State.CONNECTED
-        && searchText != null
-        && !searchText.isDisposed()) {
-      searchText.setFocus();
-    } else if (targetText != null && !targetText.isDisposed()) {
-      targetText.setFocus();
-    }
-  }
-
-  @Override
-  public void dispose() {
-    if (connection != null) {
-      connection.dispose();
-    }
-    SearchPopup p = popup;
-    if (p != null && !p.shell().isDisposed()) {
-      p.shell().dispose();
-    }
-    super.dispose();
-  }
-
-  private static ExecutorService newJmxExecutor() {
-    return Executors.newSingleThreadExecutor(
-        r -> {
-          Thread t = new Thread(r, "vbtm-control-jmx");
-          t.setDaemon(true);
-          return t;
-        });
   }
 }

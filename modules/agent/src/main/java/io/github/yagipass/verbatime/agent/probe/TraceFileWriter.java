@@ -82,10 +82,6 @@ public final class TraceFileWriter {
     return startEpochMs;
   }
 
-  boolean isStopped() {
-    return stopped;
-  }
-
   public boolean hasFailed() {
     return failed;
   }
@@ -94,9 +90,34 @@ public final class TraceFileWriter {
     return committedBytes;
   }
 
-  @SuppressWarnings("NonAtomicVolatileUpdate")
-  private void advanceCommitted(long n) {
-    committedBytes += n;
+  public synchronized void close() {
+    if (!stopped) {
+      long clamped = encoder.clampedDeltas();
+      if (clamped > 0) {
+        Log.warn("clamped " + Log.plural(clamped, "non-monotonic event timestamp"));
+      }
+      writeLocked(RecordEncoder.end());
+      stopped = true;
+    }
+    try {
+      out.close();
+    } catch (IOException e) {
+      Log.warn("closing " + path + ": " + e);
+    }
+  }
+
+  static long @Nullable [] toTicks(long startMs, long durMs, long gcClockAtOriginMs) {
+    long endMs = startMs + Math.max(durMs, 0);
+    if (endMs <= gcClockAtOriginMs) {
+      return null;
+    }
+    long s = Math.max(startMs - gcClockAtOriginMs, 0);
+    long e = endMs - gcClockAtOriginMs;
+    return new long[] {s * Vbtm.TICKS_PER_MS, (e - s) * Vbtm.TICKS_PER_MS};
+  }
+
+  boolean isStopped() {
+    return stopped;
   }
 
   void writeClass(int baseId, String className, List<String> sigs) {
@@ -124,35 +145,6 @@ public final class TraceFileWriter {
     writeRecord(RecordEncoder.gc(ticks[0], ticks[1], action, collector, cause));
   }
 
-  private synchronized void writeRecord(byte[] rec) {
-    if (!stopped) {
-      writeLocked(rec);
-    }
-  }
-
-  private void writeLocked(byte[] rec) {
-    writeLocked(rec, 0, rec.length);
-  }
-
-  private void writeLocked(byte[] b, int off, int len) {
-    try {
-      out.write(b, off, len);
-      advanceCommitted(len);
-    } catch (IOException e) {
-      stopOnFailure(e);
-    }
-  }
-
-  static long @Nullable [] toTicks(long startMs, long durMs, long gcClockAtOriginMs) {
-    long endMs = startMs + Math.max(durMs, 0);
-    if (endMs <= gcClockAtOriginMs) {
-      return null;
-    }
-    long s = Math.max(startMs - gcClockAtOriginMs, 0);
-    long e = endMs - gcClockAtOriginMs;
-    return new long[] {s * Vbtm.TICKS_PER_MS, (e - s) * Vbtm.TICKS_PER_MS};
-  }
-
   synchronized void appendChunk(Session r, boolean sessionEnd) {
     try {
       if (!r.truncatedByStop) {
@@ -171,6 +163,30 @@ public final class TraceFileWriter {
       appendChunkLocked(r, false);
     } catch (Throwable t) {
       stopOnFailure(t);
+    }
+  }
+
+  @SuppressWarnings("NonAtomicVolatileUpdate")
+  private void advanceCommitted(long n) {
+    committedBytes += n;
+  }
+
+  private synchronized void writeRecord(byte[] rec) {
+    if (!stopped) {
+      writeLocked(rec);
+    }
+  }
+
+  private void writeLocked(byte[] rec) {
+    writeLocked(rec, 0, rec.length);
+  }
+
+  private void writeLocked(byte[] b, int off, int len) {
+    try {
+      out.write(b, off, len);
+      advanceCommitted(len);
+    } catch (IOException e) {
+      stopOnFailure(e);
     }
   }
 
@@ -200,22 +216,6 @@ public final class TraceFileWriter {
     r.firstChunkPending = false;
     if (e.lastTicks() >= 0) {
       r.lastTicks = e.lastTicks();
-    }
-  }
-
-  public synchronized void close() {
-    if (!stopped) {
-      long clamped = encoder.clampedDeltas();
-      if (clamped > 0) {
-        Log.warn("clamped " + Log.plural(clamped, "non-monotonic event timestamp"));
-      }
-      writeLocked(RecordEncoder.end());
-      stopped = true;
-    }
-    try {
-      out.close();
-    } catch (IOException e) {
-      Log.warn("closing " + path + ": " + e);
     }
   }
 

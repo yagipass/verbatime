@@ -52,14 +52,6 @@ final class SessionExportDialog extends Dialog {
     this.preselected = preselected;
   }
 
-  static boolean openAndSchedule(
-      Shell parent, TraceSnapshot data, @Nullable SelectedCall selection) {
-    SessionExportDialog d =
-        new SessionExportDialog(parent, data, SessionExportTexts.defaultSession(data, selection));
-    d.open();
-    return d.scheduled;
-  }
-
   @Override
   protected void configureShell(Shell shell) {
     super.configureShell(shell);
@@ -145,6 +137,56 @@ final class SessionExportDialog extends Dialog {
     return area;
   }
 
+  @Override
+  protected void createButtonsForButtonBar(Composite parent) {
+    createButton(parent, IDialogConstants.OK_ID, "Export…", true);
+    createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, false);
+    updateState();
+  }
+
+  @Override
+  protected void okPressed() {
+    Session s = selected();
+    if (s == null || !SessionExportTexts.isExportable(s)) {
+      return;
+    }
+    int floorUs = floorUs();
+    FileDialog fd = new FileDialog(getShell(), SWT.SAVE | SWT.SHEET);
+    fd.setText("Export session #" + s.seq + " as text");
+    fd.setOverwrite(true);
+    Path parentDir = data.path.toAbsolutePath().getParent();
+    if (parentDir != null) {
+      fd.setFilterPath(parentDir.toString());
+    }
+    fd.setFileName(
+        SessionExportTexts.exportFileName(data.path.getFileName().toString(), s.seq, floorUs));
+    fd.setFilterExtensions(new String[] {"*.txt", "*.*"});
+    fd.setFilterNames(new String[] {"Text files", "All files"});
+    String chosen = fd.open();
+    if (chosen == null) {
+      return;
+    }
+    Path dest = Path.of(chosen);
+    if (dest.toAbsolutePath().equals(data.path.toAbsolutePath())
+        || chosen.toLowerCase(Locale.ROOT).endsWith(".vbtm")) {
+      MessageDialog.openError(
+          getShell(), "Export session", "Refusing to overwrite a recording: " + dest);
+      return;
+    }
+    long floorNs = SessionExportTexts.floorNs(floorUs);
+    super.okPressed();
+    SessionExportJob.schedule(getParentShell(), data, s, floorNs, dest);
+    scheduled = true;
+  }
+
+  static boolean openAndSchedule(
+      Shell parent, TraceSnapshot data, @Nullable SelectedCall selection) {
+    SessionExportDialog d =
+        new SessionExportDialog(parent, data, SessionExportTexts.defaultSession(data, selection));
+    d.open();
+    return d.scheduled;
+  }
+
   private static GridData wrapData() {
     GridData gd = new GridData(SWT.FILL, SWT.TOP, true, false);
     gd.widthHint = 400;
@@ -170,13 +212,6 @@ final class SessionExportDialog extends Dialog {
                 : null;
           }
         });
-  }
-
-  @Override
-  protected void createButtonsForButtonBar(Composite parent) {
-    createButton(parent, IDialogConstants.OK_ID, "Export…", true);
-    createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, false);
-    updateState();
   }
 
   private @Nullable Session selected() {
@@ -218,40 +253,5 @@ final class SessionExportDialog extends Dialog {
                   data.path.getFileName().toString(), s.seq, floorUs()));
     }
     fileLabel.getParent().layout();
-  }
-
-  @Override
-  protected void okPressed() {
-    Session s = selected();
-    if (s == null || !SessionExportTexts.isExportable(s)) {
-      return;
-    }
-    int floorUs = floorUs();
-    FileDialog fd = new FileDialog(getShell(), SWT.SAVE | SWT.SHEET);
-    fd.setText("Export session #" + s.seq + " as text");
-    fd.setOverwrite(true);
-    Path parentDir = data.path.toAbsolutePath().getParent();
-    if (parentDir != null) {
-      fd.setFilterPath(parentDir.toString());
-    }
-    fd.setFileName(
-        SessionExportTexts.exportFileName(data.path.getFileName().toString(), s.seq, floorUs));
-    fd.setFilterExtensions(new String[] {"*.txt", "*.*"});
-    fd.setFilterNames(new String[] {"Text files", "All files"});
-    String chosen = fd.open();
-    if (chosen == null) {
-      return;
-    }
-    Path dest = Path.of(chosen);
-    if (dest.toAbsolutePath().equals(data.path.toAbsolutePath())
-        || chosen.toLowerCase(Locale.ROOT).endsWith(".vbtm")) {
-      MessageDialog.openError(
-          getShell(), "Export session", "Refusing to overwrite a recording: " + dest);
-      return;
-    }
-    long floorNs = SessionExportTexts.floorNs(floorUs);
-    super.okPressed();
-    SessionExportJob.schedule(getParentShell(), data, s, floorNs, dest);
-    scheduled = true;
   }
 }

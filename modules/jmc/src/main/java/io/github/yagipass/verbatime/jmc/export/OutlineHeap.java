@@ -146,6 +146,18 @@ final class OutlineHeap {
     return excNo[i];
   }
 
+  private static void swap(long[] v, int a, int b) {
+    long t = v[a];
+    v[a] = v[b];
+    v[b] = t;
+  }
+
+  private static void swap(int[] v, int a, int b) {
+    int t = v[a];
+    v[a] = v[b];
+    v[b] = t;
+  }
+
   private boolean less(int a, int b) {
     return dur[a] < dur[b] || (dur[a] == dur[b] && seq[a] < seq[b]);
   }
@@ -193,17 +205,5 @@ final class OutlineHeap {
     byte f = flags[a];
     flags[a] = flags[b];
     flags[b] = f;
-  }
-
-  private static void swap(long[] v, int a, int b) {
-    long t = v[a];
-    v[a] = v[b];
-    v[b] = t;
-  }
-
-  private static void swap(int[] v, int a, int b) {
-    int t = v[a];
-    v[a] = v[b];
-    v[b] = t;
   }
 }

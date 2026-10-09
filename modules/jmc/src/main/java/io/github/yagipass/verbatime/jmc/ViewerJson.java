@@ -12,10 +12,6 @@ import org.jspecify.annotations.Nullable;
 
 public final class ViewerJson {
 
-  static final int COVERAGE_BUCKETS = 1600;
-
-  private ViewerJson() {}
-
   public static final class SentSessions {
 
     int sent;
@@ -66,6 +62,10 @@ public final class ViewerJson {
       exceptions.clear();
     }
   }
+
+  static final int COVERAGE_BUCKETS = 1600;
+
+  private ViewerJson() {}
 
   public static String metaJson(TraceSnapshot d, SentNames sent, SentSessions cursor) {
     StringBuilder sb = new StringBuilder(1 << 16);

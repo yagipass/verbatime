@@ -9,6 +9,64 @@ import java.util.Set;
 
 final class HotCommand {
 
+  private static final class MethodTotals implements SessionWalker.Visitor {
+
+    long[] calls;
+
+    long[] selfTicks;
+
+    long[] totalTicks;
+
+    long rootTicks;
+
+    long allCalls;
+
+    private int[] openCalls;
+
+    MethodTotals(int capacity) {
+      calls = new long[capacity];
+      selfTicks = new long[capacity];
+      totalTicks = new long[capacity];
+      openCalls = new int[capacity];
+    }
+
+    @Override
+    public void enter(long ordinal, int depth, int methodId, long startTicks) {
+      if (methodId >= calls.length) {
+        allocate(Math.max(methodId + 1, calls.length * 2));
+      }
+      openCalls[methodId]++;
+    }
+
+    @Override
+    public void exit(
+        long ordinal,
+        int depth,
+        int methodId,
+        long startTicks,
+        long durTicks,
+        long self,
+        int exceptionId,
+        boolean unclosed) {
+      allCalls++;
+      calls[methodId]++;
+      selfTicks[methodId] += self;
+      if (--openCalls[methodId] == 0) {
+        totalTicks[methodId] += durTicks;
+      }
+      if (depth == 0) {
+        rootTicks += durTicks;
+      }
+    }
+
+    private void allocate(int capacity) {
+      calls = Arrays.copyOf(calls, capacity);
+      selfTicks = Arrays.copyOf(selfTicks, capacity);
+      totalTicks = Arrays.copyOf(totalTicks, capacity);
+      openCalls = Arrays.copyOf(openCalls, capacity);
+    }
+  }
+
   static final String HELP =
       """
             vbtm hot <file> [SESSION] [--by self|total|calls] [--limit N] [--json]
@@ -106,63 +164,5 @@ final class HotCommand {
     out.more(ids.size() - shown, "methods", args.commandWith("limit", limit * 3L));
     out.status(file);
     return file.exitCode();
-  }
-
-  private static final class MethodTotals implements SessionWalker.Visitor {
-
-    long[] calls;
-
-    long[] selfTicks;
-
-    long[] totalTicks;
-
-    long rootTicks;
-
-    long allCalls;
-
-    private int[] openCalls;
-
-    MethodTotals(int capacity) {
-      calls = new long[capacity];
-      selfTicks = new long[capacity];
-      totalTicks = new long[capacity];
-      openCalls = new int[capacity];
-    }
-
-    @Override
-    public void enter(long ordinal, int depth, int methodId, long startTicks) {
-      if (methodId >= calls.length) {
-        allocate(Math.max(methodId + 1, calls.length * 2));
-      }
-      openCalls[methodId]++;
-    }
-
-    @Override
-    public void exit(
-        long ordinal,
-        int depth,
-        int methodId,
-        long startTicks,
-        long durTicks,
-        long self,
-        int exceptionId,
-        boolean unclosed) {
-      allCalls++;
-      calls[methodId]++;
-      selfTicks[methodId] += self;
-      if (--openCalls[methodId] == 0) {
-        totalTicks[methodId] += durTicks;
-      }
-      if (depth == 0) {
-        rootTicks += durTicks;
-      }
-    }
-
-    private void allocate(int capacity) {
-      calls = Arrays.copyOf(calls, capacity);
-      selfTicks = Arrays.copyOf(selfTicks, capacity);
-      totalTicks = Arrays.copyOf(totalTicks, capacity);
-      openCalls = Arrays.copyOf(openCalls, capacity);
-    }
   }
 }

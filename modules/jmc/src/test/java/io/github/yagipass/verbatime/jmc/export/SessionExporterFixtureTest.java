@@ -21,45 +21,9 @@ import org.junit.jupiter.api.io.TempDir;
 
 final class SessionExporterFixtureTest {
 
-  @TempDir Path dir;
-
   private static final long FLOOR_NS = 10_000;
 
-  private static byte[] trace() {
-    TraceBuilder w = TestTraces.writer();
-    w.thread(7, "main");
-    w.clazz(1, "pkg.Root", "run()V");
-    w.clazz(2, "pkg.A", "a()V", "getChar()I", "getChar(ZZ)I", "tiny()V");
-    w.clazz(6, "pkg.other.A", "a()V");
-    w.exception(1, "java.lang.IllegalStateException");
-    w.exception(2, "pkg.AppException");
-    TraceBuilder.Payload p = new TraceBuilder.Payload(100);
-    p.enter(100, 1);
-    p.enter(110, 2);
-    p.enter(120, 3).exit(130);
-    p.enter(130, 4).exit(300);
-    p.enter(300, 5).exitThrow(305, 1);
-    p.enter(310, 5).enter(311, 5).exit(312).exit(315);
-    p.exitThrow(500, 1);
-    p.enter(600, 6).exitThrow(900, 2);
-    p.exit(150_100);
-    w.chunk(7, 100, p.bytes(), true);
-    w.gc(120, 10, Vbtm.GC_ACTION_MINOR, "Copy", "Allocation Failure");
-    w.gc(140_000, 20_000, Vbtm.GC_ACTION_MAJOR, "MarkSweepCompact", "System.gc()");
-    w.end();
-    return w.bytes();
-  }
-
-  private Result export(TraceSnapshot d, Path out) throws IOException {
-    return SessionExporter.export(
-        d,
-        d.sessions.get(0),
-        FLOOR_NS,
-        out,
-        TraceIndexer.ProgressListener.NONE,
-        SessionExporter.OUTLINE_LIMIT,
-        SessionExporter.WRITE_BUFFER_BYTES);
-  }
+  @TempDir Path dir;
 
   @Test
   void theWholeFileIsPinned() throws IOException {
@@ -287,5 +251,41 @@ final class SessionExporterFixtureTest {
         "an empty body is a heading with no blank line to trail");
     assertTrue(t.body.isEmpty());
     assertTrue(t.outline.isEmpty());
+  }
+
+  private static byte[] trace() {
+    TraceBuilder w = TestTraces.writer();
+    w.thread(7, "main");
+    w.clazz(1, "pkg.Root", "run()V");
+    w.clazz(2, "pkg.A", "a()V", "getChar()I", "getChar(ZZ)I", "tiny()V");
+    w.clazz(6, "pkg.other.A", "a()V");
+    w.exception(1, "java.lang.IllegalStateException");
+    w.exception(2, "pkg.AppException");
+    TraceBuilder.Payload p = new TraceBuilder.Payload(100);
+    p.enter(100, 1);
+    p.enter(110, 2);
+    p.enter(120, 3).exit(130);
+    p.enter(130, 4).exit(300);
+    p.enter(300, 5).exitThrow(305, 1);
+    p.enter(310, 5).enter(311, 5).exit(312).exit(315);
+    p.exitThrow(500, 1);
+    p.enter(600, 6).exitThrow(900, 2);
+    p.exit(150_100);
+    w.chunk(7, 100, p.bytes(), true);
+    w.gc(120, 10, Vbtm.GC_ACTION_MINOR, "Copy", "Allocation Failure");
+    w.gc(140_000, 20_000, Vbtm.GC_ACTION_MAJOR, "MarkSweepCompact", "System.gc()");
+    w.end();
+    return w.bytes();
+  }
+
+  private Result export(TraceSnapshot d, Path out) throws IOException {
+    return SessionExporter.export(
+        d,
+        d.sessions.get(0),
+        FLOOR_NS,
+        out,
+        TraceIndexer.ProgressListener.NONE,
+        SessionExporter.OUTLINE_LIMIT,
+        SessionExporter.WRITE_BUFFER_BYTES);
   }
 }

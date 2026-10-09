@@ -31,19 +31,6 @@ public final class Probe {
 
   private Probe() {}
 
-  static void attach(TraceFileWriter w) {
-    sink = w;
-  }
-
-  static void detach() {
-    sink = null;
-  }
-
-  static void enable() {
-    warnedBroken = false;
-    enabled = true;
-  }
-
   public static void addRootId(int id) {
     synchronized (ROOTS_LOCK) {
       @Var long[] bits = rootBits;
@@ -172,6 +159,41 @@ public final class Probe {
     }
   }
 
+  public static int liveSessions() {
+    return LIVE_COUNT.get();
+  }
+
+  public static int completedSessions() {
+    return COMPLETED.get();
+  }
+
+  static void attach(TraceFileWriter w) {
+    sink = w;
+  }
+
+  static void detach() {
+    sink = null;
+  }
+
+  static void enable() {
+    warnedBroken = false;
+    enabled = true;
+  }
+
+  @SuppressWarnings("ModifyCollectionInEnhancedForLoop")
+  static int disableAndFlush() {
+    enabled = false;
+    @Var int flushed = 0;
+    for (Session session : LIVE_SESSIONS) {
+      if (LIVE_SESSIONS.remove(session)) {
+        LIVE_COUNT.decrementAndGet();
+        session.flushTruncated();
+        flushed++;
+      }
+    }
+    return flushed;
+  }
+
   private static void finish(Session session) {
     session.finish();
     session.closed = true;
@@ -208,27 +230,5 @@ public final class Probe {
     if (LIVE_SESSIONS.remove(session)) {
       LIVE_COUNT.decrementAndGet();
     }
-  }
-
-  @SuppressWarnings("ModifyCollectionInEnhancedForLoop")
-  static int disableAndFlush() {
-    enabled = false;
-    @Var int flushed = 0;
-    for (Session session : LIVE_SESSIONS) {
-      if (LIVE_SESSIONS.remove(session)) {
-        LIVE_COUNT.decrementAndGet();
-        session.flushTruncated();
-        flushed++;
-      }
-    }
-    return flushed;
-  }
-
-  public static int liveSessions() {
-    return LIVE_COUNT.get();
-  }
-
-  public static int completedSessions() {
-    return COMPLETED.get();
   }
 }

@@ -23,8 +23,6 @@ import org.jspecify.annotations.Nullable;
 
 public final class TraceIndexer {
 
-  public static final int DEFAULT_OVERVIEW_BUDGET = 120_000;
-
   public interface ProgressListener {
 
     ProgressListener NONE = (done, total) -> false;
@@ -50,24 +48,73 @@ public final class TraceIndexer {
     }
   }
 
-  static TraceSnapshot index(Path path) throws IOException {
-    return index(path, DEFAULT_OVERVIEW_BUDGET, ProgressListener.NONE);
-  }
+  private static final class ThreadState {
 
-  static TraceSnapshot index(Path path, int overviewBudget, ProgressListener progress)
-      throws IOException {
-    TraceIndexer ix = open(path, overviewBudget);
-    try {
-      ix.advance(progress);
-      return ix.snapshot();
-    } finally {
-      ix.close();
+    private final long tid;
+
+    private @Nullable SessionState session;
+
+    private long lastTicks;
+
+    private final FrameStack stack;
+
+    private int maxDepth;
+
+    private long totalCalls;
+
+    private final ChunkTable chunks;
+
+    private final Calls overview;
+
+    private ThreadState(long tid) {
+      this.tid = tid;
+      stack = new FrameStack();
+      chunks = new ChunkTable();
+      overview = new Calls(tid);
+    }
+
+    private ThreadState(ThreadState src, List<SessionState> sessions) {
+      tid = src.tid;
+      session = src.session == null ? null : sessions.get(src.session.seq - 1);
+      lastTicks = src.lastTicks;
+      stack = src.stack.copy();
+      maxDepth = src.maxDepth;
+      totalCalls = src.totalCalls;
+      chunks = src.chunks.copy();
+      overview = src.overview.copy();
+    }
+
+    private ThreadIndex freeze() {
+      return new ThreadIndex(tid, maxDepth, totalCalls, chunks, overview);
     }
   }
 
-  public static TraceIndexer open(Path path, int overviewBudget) {
-    return new TraceIndexer(path, overviewBudget);
+  private static final class TruncatedException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
+    @SuppressWarnings("StaticAssignmentOfThrowable")
+    private static final TruncatedException INSTANCE = new TruncatedException();
+
+    private TruncatedException() {
+      super(null, null, false, false);
+    }
   }
+
+  private static final class CorruptException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
+    private final long offset;
+
+    private final String reason;
+
+    private CorruptException(long offset, String reason) {
+      super(null, null, false, false);
+      this.offset = offset;
+      this.reason = reason;
+    }
+  }
+
+  public static final int DEFAULT_OVERVIEW_BUDGET = 120_000;
 
   private static final AtomicLong GENERATIONS = new AtomicLong();
 
@@ -121,47 +168,6 @@ public final class TraceIndexer {
 
   private final Map<String, String> gcLabels = new HashMap<>();
 
-  private static final class ThreadState {
-
-    private final long tid;
-
-    private @Nullable SessionState session;
-
-    private long lastTicks;
-
-    private final FrameStack stack;
-
-    private int maxDepth;
-
-    private long totalCalls;
-
-    private final ChunkTable chunks;
-
-    private final Calls overview;
-
-    private ThreadState(long tid) {
-      this.tid = tid;
-      stack = new FrameStack();
-      chunks = new ChunkTable();
-      overview = new Calls(tid);
-    }
-
-    private ThreadState(ThreadState src, List<SessionState> sessions) {
-      tid = src.tid;
-      session = src.session == null ? null : sessions.get(src.session.seq - 1);
-      lastTicks = src.lastTicks;
-      stack = src.stack.copy();
-      maxDepth = src.maxDepth;
-      totalCalls = src.totalCalls;
-      chunks = src.chunks.copy();
-      overview = src.overview.copy();
-    }
-
-    private ThreadIndex freeze() {
-      return new ThreadIndex(tid, maxDepth, totalCalls, chunks, overview);
-    }
-  }
-
   private TraceIndexer(Path path, int overviewBudget) {
     this.path = path;
     this.overviewBudget = Math.max(overviewBudget, 1);
@@ -191,22 +197,8 @@ public final class TraceIndexer {
     anchorRead = src.anchorRead;
   }
 
-  private void reset() {
-    data = new TraceSnapshot.Builder(path);
-    data.generation = GENERATIONS.incrementAndGet();
-    durationHistogram = new long[DurationHistogram.SIZE];
-    states = new HashMap<>();
-    pos = 0;
-    overviewThresholdNs = 0;
-    overviewTotal = 0;
-    compactTrigger = 2L * overviewBudget;
-    minNs = Long.MAX_VALUE;
-    maxNs = 0;
-    endSeen = false;
-    endOffset = 0;
-    magicChecked = false;
-    versionChecked = false;
-    anchorRead = false;
+  public static TraceIndexer open(Path path, int overviewBudget) {
+    return new TraceIndexer(path, overviewBudget);
   }
 
   public void close() {
@@ -220,18 +212,6 @@ public final class TraceIndexer {
     }
     if (b != null) {
       b.release();
-    }
-  }
-
-  private @Nullable MappedTrace acquire() {
-    synchronized (lock) {
-      if (closed) {
-        throw new CancelledException();
-      }
-      if (buf != null) {
-        buf.retain();
-      }
-      return buf;
     }
   }
 
@@ -269,6 +249,75 @@ public final class TraceIndexer {
     }
   }
 
+  public TraceSnapshot snapshot() {
+    MappedTrace guard = acquire();
+    if (guard == null) {
+      throw new IllegalStateException("advance() before snapshot()");
+    }
+    try {
+      TraceIndexer c = new TraceIndexer(this);
+      c.complete(guard);
+      return c.data.build(guard);
+    } finally {
+      guard.release();
+    }
+  }
+
+  static TraceSnapshot index(Path path) throws IOException {
+    return index(path, DEFAULT_OVERVIEW_BUDGET, ProgressListener.NONE);
+  }
+
+  static TraceSnapshot index(Path path, int overviewBudget, ProgressListener progress)
+      throws IOException {
+    TraceIndexer ix = open(path, overviewBudget);
+    try {
+      ix.advance(progress);
+      return ix.snapshot();
+    } finally {
+      ix.close();
+    }
+  }
+
+  private static String faultReason(EventCursor.Fault fault, long value, long at) {
+    return switch (fault) {
+      case VARINT_TOO_LONG -> "varint too long at offset " + at;
+      case METHOD_ID_LIMIT -> "method id " + value + " is outside the 2^22 format range";
+      case EXCEPTION_ID_LIMIT -> "exception id " + value + " is outside the 2^22 format range";
+      case TICKS_LIMIT ->
+          "tick delta " + value + " pushes the clock past the format limit at offset " + at;
+    };
+  }
+
+  private void reset() {
+    data = new TraceSnapshot.Builder(path);
+    data.generation = GENERATIONS.incrementAndGet();
+    durationHistogram = new long[DurationHistogram.SIZE];
+    states = new HashMap<>();
+    pos = 0;
+    overviewThresholdNs = 0;
+    overviewTotal = 0;
+    compactTrigger = 2L * overviewBudget;
+    minNs = Long.MAX_VALUE;
+    maxNs = 0;
+    endSeen = false;
+    endOffset = 0;
+    magicChecked = false;
+    versionChecked = false;
+    anchorRead = false;
+  }
+
+  private @Nullable MappedTrace acquire() {
+    synchronized (lock) {
+      if (closed) {
+        throw new CancelledException();
+      }
+      if (buf != null) {
+        buf.retain();
+      }
+      return buf;
+    }
+  }
+
   private MappedTrace remap(@Nullable MappedTrace guard) throws IOException {
     MappedTrace fresh = MappedTrace.open(path);
     MappedTrace old;
@@ -289,20 +338,6 @@ public final class TraceIndexer {
       old.release();
     }
     return fresh;
-  }
-
-  public TraceSnapshot snapshot() {
-    MappedTrace guard = acquire();
-    if (guard == null) {
-      throw new IllegalStateException("advance() before snapshot()");
-    }
-    try {
-      TraceIndexer c = new TraceIndexer(this);
-      c.complete(guard);
-      return c.data.build(guard);
-    } finally {
-      guard.release();
-    }
   }
 
   private void checkMagic(MappedTrace in) throws NotTraceFormatException {
@@ -645,16 +680,6 @@ public final class TraceIndexer {
     }
   }
 
-  private static String faultReason(EventCursor.Fault fault, long value, long at) {
-    return switch (fault) {
-      case VARINT_TOO_LONG -> "varint too long at offset " + at;
-      case METHOD_ID_LIMIT -> "method id " + value + " is outside the 2^22 format range";
-      case EXCEPTION_ID_LIMIT -> "exception id " + value + " is outside the 2^22 format range";
-      case TICKS_LIMIT ->
-          "tick delta " + value + " pushes the clock past the format limit at offset " + at;
-    };
-  }
-
   private void closeOpenCalls(ThreadState st, SessionState s) {
     long endTicks = st.lastTicks;
     FrameStack stack = st.stack;
@@ -850,31 +875,6 @@ public final class TraceIndexer {
   private void corrupt(long offset, String reason) {
     if (data.corruption == null) {
       data.corruption = new TraceSnapshot.Corruption(offset, reason);
-    }
-  }
-
-  private static final class TruncatedException extends RuntimeException {
-    private static final long serialVersionUID = 1L;
-
-    @SuppressWarnings("StaticAssignmentOfThrowable")
-    private static final TruncatedException INSTANCE = new TruncatedException();
-
-    private TruncatedException() {
-      super(null, null, false, false);
-    }
-  }
-
-  private static final class CorruptException extends RuntimeException {
-    private static final long serialVersionUID = 1L;
-
-    private final long offset;
-
-    private final String reason;
-
-    private CorruptException(long offset, String reason) {
-      super(null, null, false, false);
-      this.offset = offset;
-      this.reason = reason;
     }
   }
 }

@@ -10,10 +10,6 @@ import org.junit.jupiter.api.Test;
 
 final class OutlineHeapTest {
 
-  private static void offer(OutlineHeap t, long dur, long seq, long line) {
-    t.offer(dur, seq, line, 0, 0, 0, 0, 0, 1, (byte) 0, 0);
-  }
-
   @Test
   void keepsTheLongestCallsAndOnATieTheLaterOne() {
     OutlineHeap t = new OutlineHeap(3);
@@ -71,5 +67,9 @@ final class OutlineHeapTest {
     assertEquals(44, t.methodId(b));
     assertTrue(t.thrown(b) && !t.unclosed(b));
     assertEquals(2, t.excNo(b));
+  }
+
+  private static void offer(OutlineHeap t, long dur, long seq, long line) {
+    t.offer(dur, seq, line, 0, 0, 0, 0, 0, 1, (byte) 0, 0);
   }
 }

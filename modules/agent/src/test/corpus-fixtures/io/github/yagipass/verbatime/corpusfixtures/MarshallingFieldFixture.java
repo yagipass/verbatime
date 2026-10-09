@@ -4,6 +4,21 @@ import org.jboss.marshalling.FieldSetter;
 
 public final class MarshallingFieldFixture {
 
+  static final class Holder {
+
+    private static final FieldSetter SETTER = FieldSetter.get(Holder.class, "count");
+
+    private int count;
+
+    private Holder() {}
+
+    static String read() {
+      Holder h = new Holder();
+      SETTER.setInt(h, 7);
+      return String.valueOf(h.count);
+    }
+  }
+
   private int value;
 
   private MarshallingFieldFixture() {}
@@ -24,21 +39,6 @@ public final class MarshallingFieldFixture {
       return Holder.read();
     } catch (ExceptionInInitializerError e) {
       return String.valueOf(e.getCause());
-    }
-  }
-
-  static final class Holder {
-
-    private static final FieldSetter SETTER = FieldSetter.get(Holder.class, "count");
-
-    private int count;
-
-    private Holder() {}
-
-    static String read() {
-      Holder h = new Holder();
-      SETTER.setInt(h, 7);
-      return String.valueOf(h.count);
     }
   }
 }

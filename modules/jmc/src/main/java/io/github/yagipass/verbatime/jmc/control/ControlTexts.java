@@ -48,6 +48,26 @@ public final class ControlTexts {
     return sb.append("\n\nThis cannot be undone.").toString();
   }
 
+  public static String stillTransferringText(Entry e) {
+    return "Cannot delete "
+        + e.name()
+        + ": it is still being transferred.\n\n"
+        + "Stop the recording in the Verbatime Control view first.";
+  }
+
+  public static String deleteFailedText(int failed, int total, @Nullable String firstError) {
+    return "Could not delete "
+        + failed
+        + " of "
+        + Formats.plural(total, "recording")
+        + ".\n\n"
+        + firstError;
+  }
+
+  public static String sizeOrUnknown(long b) {
+    return b < 0 ? "?" : Formats.fmtBytes(b);
+  }
+
   static String connectionText(String target, String pid) {
     return target + ", pid " + pid;
   }
@@ -92,25 +112,5 @@ public final class ControlTexts {
 
   static String idleText(boolean hasRoots) {
     return hasRoots ? "Idle" : "Idle. Add a root to start recording";
-  }
-
-  public static String stillTransferringText(Entry e) {
-    return "Cannot delete "
-        + e.name()
-        + ": it is still being transferred.\n\n"
-        + "Stop the recording in the Verbatime Control view first.";
-  }
-
-  public static String deleteFailedText(int failed, int total, @Nullable String firstError) {
-    return "Could not delete "
-        + failed
-        + " of "
-        + Formats.plural(total, "recording")
-        + ".\n\n"
-        + firstError;
-  }
-
-  public static String sizeOrUnknown(long b) {
-    return b < 0 ? "?" : Formats.fmtBytes(b);
   }
 }

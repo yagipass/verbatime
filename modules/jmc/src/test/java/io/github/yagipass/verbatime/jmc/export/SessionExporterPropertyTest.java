@@ -33,10 +33,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 final class SessionExporterPropertyTest {
 
-  @TempDir Path dir;
-
-  private static final long[] FLOORS_NS = {0, 1_000, 10_000, 100_000};
-
   private static final class Node {
     final Call f;
 
@@ -60,6 +56,10 @@ final class SessionExporterPropertyTest {
       subtreeThrown = f.thrown() ? 1 : 0;
     }
   }
+
+  private static final long[] FLOORS_NS = {0, 1_000, 10_000, 100_000};
+
+  @TempDir Path dir;
 
   @Test
   void everySessionOfRandomTracesMatchesTheReferenceAtEveryFloor() throws IOException {
@@ -119,6 +119,164 @@ final class SessionExporterPropertyTest {
         Files.delete(out);
       }
     }
+  }
+
+  private static void checkHot(
+      ParsedExport t,
+      TraceSnapshot d,
+      Map<Integer, long[]> agg,
+      List<Integer> order,
+      int limit,
+      List<HotRow> rows,
+      String ctx) {
+    assertEquals(Math.min(limit, order.size()), rows.size(), ctx + " rows");
+    for (int i = 0; i < rows.size(); i++) {
+      int methodId = order.get(i);
+      HotRow row = rows.get(i);
+      String c = ctx + " row " + (i + 1) + ": " + row;
+      assertEquals(d.methodName(methodId), t.fullName(row.name()), c);
+      assertEquals(agg.get(methodId)[2], row.self(), c);
+      assertEquals(agg.get(methodId)[1], row.total(), c);
+      assertEquals(agg.get(methodId)[0], row.calls(), c);
+    }
+  }
+
+  private static void emit(
+      Node n,
+      int depth,
+      Session s,
+      long floorNs,
+      TraceSnapshot d,
+      Map<Integer, Integer> excNo,
+      List<String> out,
+      List<Node> lineNodes) {
+    n.listed = true;
+    long start = (n.f.startNs() - s.startNs) / 100;
+    StringBuilder sb = new StringBuilder();
+    sb.append(start)
+        .append(' ')
+        .append(n.f.durNs() / 100)
+        .append(' ')
+        .append(depth)
+        .append(' ')
+        .append(d.methodName(n.f.methodId()));
+    if (!n.kids.isEmpty()) {
+      sb.append(" self ").append(n.f.selfNs() / 100);
+    }
+    if (n.f.thrown()) {
+      sb.append(" !");
+      if (n.f.exceptionId() > 0) {
+        sb.append('e').append(excNo.get(n.f.exceptionId()));
+      }
+    }
+    if (n.f.unclosed()) {
+      sb.append(" ~");
+    }
+    out.add(sb.toString());
+    lineNodes.add(n);
+    Map<Integer, Long> tiny = new LinkedHashMap<>();
+    @Var long belowFloorCalls = 0;
+    @Var long tinyNested = 0;
+    @Var long tinyThrown = 0;
+    @Var long tinyDur = 0;
+    for (Node k : n.kids) {
+      boolean listed = k.f.unclosed() || k.f.durNs() >= floorNs;
+      if (listed) {
+        emit(k, depth + 1, s, floorNs, d, excNo, out, lineNodes);
+      } else {
+        belowFloorCalls++;
+        tinyNested += k.subtreeFrames;
+        tinyThrown += k.subtreeThrown;
+        tinyDur += k.f.durNs();
+        tiny.merge(k.f.methodId(), 1L, Long::sum);
+      }
+    }
+    if (belowFloorCalls > 0) {
+      List<Map.Entry<Integer, Long>> items = new ArrayList<>(tiny.entrySet());
+      items.sort((a, b) -> Long.compare(b.getValue(), a.getValue()));
+      StringBuilder a = new StringBuilder();
+      a.append(start)
+          .append(' ')
+          .append(tinyDur / 100)
+          .append(' ')
+          .append(depth + 1)
+          .append(" ·")
+          .append(belowFloorCalls)
+          .append(" calls <")
+          .append(SessionExporter.floorLabelCompact(floorNs))
+          .append(", ")
+          .append(tinyNested)
+          .append(" incl. nested");
+      if (tinyThrown > 0) {
+        a.append(" [!").append(tinyThrown).append(']');
+      }
+      a.append(": ");
+      for (int i = 0; i < items.size(); i++) {
+        if (i > 0) {
+          a.append(", ");
+        }
+        a.append(d.methodName(items.get(i).getKey()));
+        if (items.get(i).getValue() > 1) {
+          a.append('×').append(items.get(i).getValue());
+        }
+      }
+      out.add(a.toString());
+      lineNodes.add(null);
+    }
+  }
+
+  private static String describe(ParsedExport t, BodyLine b) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(b.start()).append(' ').append(b.dur()).append(' ').append(b.depth()).append(' ');
+    if (b.accounting()) {
+      sb.append('·')
+          .append(b.belowFloorCalls())
+          .append(" calls <")
+          .append(b.floor())
+          .append(", ")
+          .append(b.tinyNested())
+          .append(" incl. nested");
+      if (b.tinyThrown() > 0) {
+        sb.append(" [!").append(b.tinyThrown()).append(']');
+      }
+      sb.append(": ");
+      for (int i = 0; i < b.list().size(); i++) {
+        if (i > 0) {
+          sb.append(", ");
+        }
+        sb.append(t.fullName(b.list().get(i)[0]));
+        if (!"1".equals(b.list().get(i)[1])) {
+          sb.append('×').append(b.list().get(i)[1]);
+        }
+      }
+      return sb.toString();
+    }
+    sb.append(t.fullName(b.name()));
+    if (b.hasSelf()) {
+      sb.append(" self ").append(b.self());
+    }
+    if (b.thrown()) {
+      sb.append(" !");
+      if (b.excNo() > 0) {
+        sb.append('e').append(b.excNo());
+      }
+    }
+    if (b.unclosed()) {
+      sb.append(" ~");
+    }
+    return sb.toString();
+  }
+
+  private static long subtreeLines(ParsedExport t, long line) {
+    int depth = t.body.get((int) line - 1).depth();
+    @Var long n = 1;
+    for (int i = (int) line; i < t.body.size(); i++) {
+      if (t.body.get(i).depth() <= depth) {
+        break;
+      }
+      n++;
+    }
+    return n;
   }
 
   private ParsedExport check(
@@ -345,163 +503,5 @@ final class SessionExporterPropertyTest {
     assertFalse(
         Files.exists(dir.resolve(out.getFileName() + ".part")), ctx + " staging file removed");
     return t;
-  }
-
-  private static void checkHot(
-      ParsedExport t,
-      TraceSnapshot d,
-      Map<Integer, long[]> agg,
-      List<Integer> order,
-      int limit,
-      List<HotRow> rows,
-      String ctx) {
-    assertEquals(Math.min(limit, order.size()), rows.size(), ctx + " rows");
-    for (int i = 0; i < rows.size(); i++) {
-      int methodId = order.get(i);
-      HotRow row = rows.get(i);
-      String c = ctx + " row " + (i + 1) + ": " + row;
-      assertEquals(d.methodName(methodId), t.fullName(row.name()), c);
-      assertEquals(agg.get(methodId)[2], row.self(), c);
-      assertEquals(agg.get(methodId)[1], row.total(), c);
-      assertEquals(agg.get(methodId)[0], row.calls(), c);
-    }
-  }
-
-  private static void emit(
-      Node n,
-      int depth,
-      Session s,
-      long floorNs,
-      TraceSnapshot d,
-      Map<Integer, Integer> excNo,
-      List<String> out,
-      List<Node> lineNodes) {
-    n.listed = true;
-    long start = (n.f.startNs() - s.startNs) / 100;
-    StringBuilder sb = new StringBuilder();
-    sb.append(start)
-        .append(' ')
-        .append(n.f.durNs() / 100)
-        .append(' ')
-        .append(depth)
-        .append(' ')
-        .append(d.methodName(n.f.methodId()));
-    if (!n.kids.isEmpty()) {
-      sb.append(" self ").append(n.f.selfNs() / 100);
-    }
-    if (n.f.thrown()) {
-      sb.append(" !");
-      if (n.f.exceptionId() > 0) {
-        sb.append('e').append(excNo.get(n.f.exceptionId()));
-      }
-    }
-    if (n.f.unclosed()) {
-      sb.append(" ~");
-    }
-    out.add(sb.toString());
-    lineNodes.add(n);
-    Map<Integer, Long> tiny = new LinkedHashMap<>();
-    @Var long belowFloorCalls = 0;
-    @Var long tinyNested = 0;
-    @Var long tinyThrown = 0;
-    @Var long tinyDur = 0;
-    for (Node k : n.kids) {
-      boolean listed = k.f.unclosed() || k.f.durNs() >= floorNs;
-      if (listed) {
-        emit(k, depth + 1, s, floorNs, d, excNo, out, lineNodes);
-      } else {
-        belowFloorCalls++;
-        tinyNested += k.subtreeFrames;
-        tinyThrown += k.subtreeThrown;
-        tinyDur += k.f.durNs();
-        tiny.merge(k.f.methodId(), 1L, Long::sum);
-      }
-    }
-    if (belowFloorCalls > 0) {
-      List<Map.Entry<Integer, Long>> items = new ArrayList<>(tiny.entrySet());
-      items.sort((a, b) -> Long.compare(b.getValue(), a.getValue()));
-      StringBuilder a = new StringBuilder();
-      a.append(start)
-          .append(' ')
-          .append(tinyDur / 100)
-          .append(' ')
-          .append(depth + 1)
-          .append(" ·")
-          .append(belowFloorCalls)
-          .append(" calls <")
-          .append(SessionExporter.floorLabelCompact(floorNs))
-          .append(", ")
-          .append(tinyNested)
-          .append(" incl. nested");
-      if (tinyThrown > 0) {
-        a.append(" [!").append(tinyThrown).append(']');
-      }
-      a.append(": ");
-      for (int i = 0; i < items.size(); i++) {
-        if (i > 0) {
-          a.append(", ");
-        }
-        a.append(d.methodName(items.get(i).getKey()));
-        if (items.get(i).getValue() > 1) {
-          a.append('×').append(items.get(i).getValue());
-        }
-      }
-      out.add(a.toString());
-      lineNodes.add(null);
-    }
-  }
-
-  private static String describe(ParsedExport t, BodyLine b) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(b.start()).append(' ').append(b.dur()).append(' ').append(b.depth()).append(' ');
-    if (b.accounting()) {
-      sb.append('·')
-          .append(b.belowFloorCalls())
-          .append(" calls <")
-          .append(b.floor())
-          .append(", ")
-          .append(b.tinyNested())
-          .append(" incl. nested");
-      if (b.tinyThrown() > 0) {
-        sb.append(" [!").append(b.tinyThrown()).append(']');
-      }
-      sb.append(": ");
-      for (int i = 0; i < b.list().size(); i++) {
-        if (i > 0) {
-          sb.append(", ");
-        }
-        sb.append(t.fullName(b.list().get(i)[0]));
-        if (!"1".equals(b.list().get(i)[1])) {
-          sb.append('×').append(b.list().get(i)[1]);
-        }
-      }
-      return sb.toString();
-    }
-    sb.append(t.fullName(b.name()));
-    if (b.hasSelf()) {
-      sb.append(" self ").append(b.self());
-    }
-    if (b.thrown()) {
-      sb.append(" !");
-      if (b.excNo() > 0) {
-        sb.append('e').append(b.excNo());
-      }
-    }
-    if (b.unclosed()) {
-      sb.append(" ~");
-    }
-    return sb.toString();
-  }
-
-  private static long subtreeLines(ParsedExport t, long line) {
-    int depth = t.body.get((int) line - 1).depth();
-    @Var long n = 1;
-    for (int i = (int) line; i < t.body.size(); i++) {
-      if (t.body.get(i).depth() <= depth) {
-        break;
-      }
-      n++;
-    }
-    return n;
   }
 }

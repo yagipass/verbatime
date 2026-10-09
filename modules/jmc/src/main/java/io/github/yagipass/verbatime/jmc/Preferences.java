@@ -24,17 +24,17 @@ public final class Preferences extends ScopedPreferenceStore implements ControlP
 
   private static @Nullable Preferences instance;
 
+  private Preferences() {
+    super(InstanceScope.INSTANCE, QUALIFIER);
+    setDefault(AGENT_TARGET, "localhost:7091");
+    setDefault(RECORDINGS_DIR, recordingsDirIn(workspaceDir()).toString());
+  }
+
   public static synchronized Preferences get() {
     if (instance == null) {
       instance = new Preferences();
     }
     return instance;
-  }
-
-  private Preferences() {
-    super(InstanceScope.INSTANCE, QUALIFIER);
-    setDefault(AGENT_TARGET, "localhost:7091");
-    setDefault(RECORDINGS_DIR, recordingsDirIn(workspaceDir()).toString());
   }
 
   @Override

@@ -56,19 +56,6 @@ final class GcPauses {
     }
   }
 
-  private static void detachLocked() {
-    sink = null;
-    for (NotificationEmitter e : subscribed) {
-      try {
-        e.removeNotificationListener(listener);
-      } catch (ListenerNotFoundException | RuntimeException ex) {
-        Log.warn("cannot unsubscribe from GC notifications: " + ex);
-      }
-    }
-    subscribed.clear();
-    listener = null;
-  }
-
   static boolean reportsPauses(String beanName) {
     return !beanName.contains("Cycles");
   }
@@ -84,6 +71,19 @@ final class GcPauses {
       return Vbtm.GC_ACTION_MAJOR;
     }
     return Vbtm.GC_ACTION_UNKNOWN;
+  }
+
+  private static void detachLocked() {
+    sink = null;
+    for (NotificationEmitter e : subscribed) {
+      try {
+        e.removeNotificationListener(listener);
+      } catch (ListenerNotFoundException | RuntimeException ex) {
+        Log.warn("cannot unsubscribe from GC notifications: " + ex);
+      }
+    }
+    subscribed.clear();
+    listener = null;
   }
 
   private static void onNotification(Notification n) {

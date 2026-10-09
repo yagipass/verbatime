@@ -16,7 +16,7 @@ import java.util.Random;
 
 public final class ViewerPreview {
 
-  private ViewerPreview() {}
+  private record Ev(long ticks, boolean enter, int methodId, int exc) {}
 
   private static final String[][] CLASSES = {
     {
@@ -54,34 +54,6 @@ public final class ViewerPreview {
     },
     {"com.example.batch.ReportJob", "run()V", "aggregate(Ljava/util/List;)V", "flush()V"},
   };
-
-  public static void main(String[] args) throws Exception {
-    Path out = Path.of(args.length > 0 ? args[0] : "preview.html");
-    byte[] bytes = buildTrace();
-    TraceSnapshot data = TestTraces.index(bytes, 1 << 20);
-    ViewerJson.SentNames sent = new ViewerJson.SentNames();
-    String init = ViewerJson.metaJson(data, sent, new ViewerJson.SentSessions());
-
-    WindowExtractor.Window win =
-        WindowExtractor.extract(data, data.minNs - 1, data.maxNs + 1, 2_000_000, 60_000);
-    String winJson = ViewerJson.windowJson(data, win, 0, sent);
-
-    String html =
-        ViewerHtml.render(ViewerHtml.template(), init, "window.__WIN = " + winJson + ";\n" + SHIM);
-    Files.writeString(out, html, StandardCharsets.UTF_8);
-    System.out.println(
-        "wrote "
-            + out.toAbsolutePath()
-            + ": "
-            + data.totalCalls
-            + " calls, "
-            + data.threads.size()
-            + " threads, "
-            + data.sessions.size()
-            + " sessions, D="
-            + data.overviewThresholdNs
-            + "ns");
-  }
 
   private static final String SHIM =
       """
@@ -131,7 +103,35 @@ public final class ViewerPreview {
     "java.lang.IllegalStateException"
   };
 
-  private record Ev(long ticks, boolean enter, int methodId, int exc) {}
+  private ViewerPreview() {}
+
+  public static void main(String[] args) throws Exception {
+    Path out = Path.of(args.length > 0 ? args[0] : "preview.html");
+    byte[] bytes = buildTrace();
+    TraceSnapshot data = TestTraces.index(bytes, 1 << 20);
+    ViewerJson.SentNames sent = new ViewerJson.SentNames();
+    String init = ViewerJson.metaJson(data, sent, new ViewerJson.SentSessions());
+
+    WindowExtractor.Window win =
+        WindowExtractor.extract(data, data.minNs - 1, data.maxNs + 1, 2_000_000, 60_000);
+    String winJson = ViewerJson.windowJson(data, win, 0, sent);
+
+    String html =
+        ViewerHtml.render(ViewerHtml.template(), init, "window.__WIN = " + winJson + ";\n" + SHIM);
+    Files.writeString(out, html, StandardCharsets.UTF_8);
+    System.out.println(
+        "wrote "
+            + out.toAbsolutePath()
+            + ": "
+            + data.totalCalls
+            + " calls, "
+            + data.threads.size()
+            + " threads, "
+            + data.sessions.size()
+            + " sessions, D="
+            + data.overviewThresholdNs
+            + "ns");
+  }
 
   private static int maybeThrow(Random rng, int oneIn) {
     return rng.nextInt(oneIn) == 0 ? 1 + rng.nextInt(EXCEPTIONS.length) : -1;

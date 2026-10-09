@@ -36,6 +36,28 @@ public final class Roots {
     return l;
   }
 
+  public synchronized void presetRoots(List<RootSpec> newSpecs) {
+    matchAgainstLoadedClasses(newSpecs);
+    StringBuilder sb =
+        new StringBuilder("roots from the agent arguments, matched as their classes load:");
+    for (RootSpec s : specs) {
+      sb.append(' ').append(s);
+    }
+    Log.info(sb.toString());
+  }
+
+  public synchronized void replaceRoots(List<RootSpec> newSpecs) {
+    matchAgainstLoadedClasses(newSpecs);
+    StringBuilder sb = new StringBuilder("roots set:");
+    for (RootSpec s : specs) {
+      sb.append(' ')
+          .append(s)
+          .append('=')
+          .append(Log.plural(matchCounts.getOrDefault(s, 0), "method"));
+    }
+    Log.info(specs.isEmpty() ? "roots cleared" : sb.toString());
+  }
+
   void classCommitted(String binaryName, int baseId, List<String> sigs) {
     @Var boolean candidate = false;
     for (RootSpec s : specs) {
@@ -57,28 +79,6 @@ public final class Roots {
         }
       }
     }
-  }
-
-  public synchronized void presetRoots(List<RootSpec> newSpecs) {
-    matchAgainstLoadedClasses(newSpecs);
-    StringBuilder sb =
-        new StringBuilder("roots from the agent arguments, matched as their classes load:");
-    for (RootSpec s : specs) {
-      sb.append(' ').append(s);
-    }
-    Log.info(sb.toString());
-  }
-
-  public synchronized void replaceRoots(List<RootSpec> newSpecs) {
-    matchAgainstLoadedClasses(newSpecs);
-    StringBuilder sb = new StringBuilder("roots set:");
-    for (RootSpec s : specs) {
-      sb.append(' ')
-          .append(s)
-          .append('=')
-          .append(Log.plural(matchCounts.getOrDefault(s, 0), "method"));
-    }
-    Log.info(specs.isEmpty() ? "roots cleared" : sb.toString());
   }
 
   private void matchAgainstLoadedClasses(List<RootSpec> newSpecs) {

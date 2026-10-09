@@ -6,12 +6,12 @@ import java.util.List;
 
 final class CorpusCallerTest {
 
+  private record CallerCheck(
+      String fixture, String method, String expected, String libraryClass, String why) {}
+
   private static final String P = CorpusFixtures.PACKAGE;
 
   private static final String I = P.replace('.', '/');
-
-  private record CallerCheck(
-      String fixture, String method, String expected, String libraryClass, String why) {}
 
   private static final List<CallerCheck> CHECKS =
       List.of(

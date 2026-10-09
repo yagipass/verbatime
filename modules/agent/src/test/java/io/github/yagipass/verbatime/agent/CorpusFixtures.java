@@ -42,6 +42,11 @@ final class CorpusFixtures implements AutoCloseable {
             });
   }
 
+  @Override
+  public void close() throws IOException {
+    corpus.close();
+  }
+
   static CorpusFixtures open() throws IOException {
     String dir = System.getProperty(FIXTURES_PROPERTY);
     if (dir == null || !Files.isDirectory(Path.of(dir, PACKAGE.replace('.', '/')))) {
@@ -70,10 +75,5 @@ final class CorpusFixtures implements AutoCloseable {
     } finally {
       thread.setContextClassLoader(saved);
     }
-  }
-
-  @Override
-  public void close() throws IOException {
-    corpus.close();
   }
 }

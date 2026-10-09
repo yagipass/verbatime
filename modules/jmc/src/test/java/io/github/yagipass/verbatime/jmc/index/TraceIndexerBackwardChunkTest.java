@@ -13,33 +13,6 @@ import org.junit.jupiter.api.Test;
 
 final class TraceIndexerBackwardChunkTest {
 
-  private static TraceSnapshot frameClosedInABackwardChunk() throws IOException {
-    TraceBuilder w = TestTraces.writer();
-    w.thread(1, "main");
-    w.clazz(0, "pkg.A", "a()V");
-    w.clazz(1, "pkg.B", "b()V");
-    TraceBuilder.Payload first = new TraceBuilder.Payload(100);
-    first.enter(100, 0).enter(110, 1).exit(120);
-    w.chunk(1, 100, first.bytes(), false);
-    TraceBuilder.Payload second = new TraceBuilder.Payload(90);
-    second.exit(90).enter(100, 1).exit(105);
-    w.chunk(1, 90, second.bytes(), true);
-    return TestTraces.index(w);
-  }
-
-  private static void assertMonotonicChunkIndex(ThreadIndex m) {
-    for (int i = 0; i < m.chunks.count; i++) {
-      assertTrue(m.chunks.baseTicks[i] <= m.chunks.endTicks[i], "chunk " + i + " base <= last");
-      if (i > 0) {
-        assertTrue(
-            m.chunks.endTicks[i - 1] <= m.chunks.baseTicks[i],
-            "chunk "
-                + i
-                + " must not start before the previous chunk's last tick, or ChunkWalker's binary search skips chunks");
-      }
-    }
-  }
-
   @Test
   void backwardChunkIsShiftedToTheThreadsLastTickInsteadOfYieldingNegativeDurations()
       throws IOException {
@@ -124,5 +97,32 @@ final class TraceIndexerBackwardChunkTest {
         10 * Vbtm.NANOS_PER_TICK,
         m.overview.durNs[1],
         "the shift preserves durations inside the chunk");
+  }
+
+  private static TraceSnapshot frameClosedInABackwardChunk() throws IOException {
+    TraceBuilder w = TestTraces.writer();
+    w.thread(1, "main");
+    w.clazz(0, "pkg.A", "a()V");
+    w.clazz(1, "pkg.B", "b()V");
+    TraceBuilder.Payload first = new TraceBuilder.Payload(100);
+    first.enter(100, 0).enter(110, 1).exit(120);
+    w.chunk(1, 100, first.bytes(), false);
+    TraceBuilder.Payload second = new TraceBuilder.Payload(90);
+    second.exit(90).enter(100, 1).exit(105);
+    w.chunk(1, 90, second.bytes(), true);
+    return TestTraces.index(w);
+  }
+
+  private static void assertMonotonicChunkIndex(ThreadIndex m) {
+    for (int i = 0; i < m.chunks.count; i++) {
+      assertTrue(m.chunks.baseTicks[i] <= m.chunks.endTicks[i], "chunk " + i + " base <= last");
+      if (i > 0) {
+        assertTrue(
+            m.chunks.endTicks[i - 1] <= m.chunks.baseTicks[i],
+            "chunk "
+                + i
+                + " must not start before the previous chunk's last tick, or ChunkWalker's binary search skips chunks");
+      }
+    }
   }
 }

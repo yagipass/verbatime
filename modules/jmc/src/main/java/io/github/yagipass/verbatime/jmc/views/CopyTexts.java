@@ -91,20 +91,6 @@ final class CopyTexts {
     return sb.toString();
   }
 
-  private static void appendBottomUpRow(
-      StringBuilder sb,
-      BottomUpModel m,
-      BottomUpModel.Row r,
-      int level,
-      Predicate<BottomUpModel.Row> expanded) {
-    appendTreeRow(sb, level, r.selfNs(), r.totalNs(), m.pct(r.selfNs()), r.calls(), r.name());
-    if (expanded.test(r)) {
-      for (int i = 0; i < r.childCount(); i++) {
-        appendBottomUpRow(sb, m, r.child(i), level + 1, expanded);
-      }
-    }
-  }
-
   static String topDownText(TopDownModel m, Predicate<TopDownModel.Row> expanded) {
     StringBuilder sb = new StringBuilder();
     TopDownModel.Row root = m.root();
@@ -121,6 +107,28 @@ final class CopyTexts {
     appendTreeHeader(sb);
     appendTopDownRow(sb, m, root, 0, expanded);
     return sb.toString();
+  }
+
+  static String sessionText(TraceSnapshot d, long tid, long ts) {
+    Session s = d.sessionAt(tid, ts);
+    if (s == null) {
+      return "not in a session";
+    }
+    return "session #" + s.seq + " " + Formats.shortName(SessionExportTexts.rootName(d, s));
+  }
+
+  private static void appendBottomUpRow(
+      StringBuilder sb,
+      BottomUpModel m,
+      BottomUpModel.Row r,
+      int level,
+      Predicate<BottomUpModel.Row> expanded) {
+    appendTreeRow(sb, level, r.selfNs(), r.totalNs(), m.pct(r.selfNs()), r.calls(), r.name());
+    if (expanded.test(r)) {
+      for (int i = 0; i < r.childCount(); i++) {
+        appendBottomUpRow(sb, m, r.child(i), level + 1, expanded);
+      }
+    }
   }
 
   private static void appendTopDownRow(
@@ -154,13 +162,5 @@ final class CopyTexts {
                 Formats.fmtPct(pct),
                 Formats.fmtInt(calls),
                 "  ".repeat(level) + name));
-  }
-
-  static String sessionText(TraceSnapshot d, long tid, long ts) {
-    Session s = d.sessionAt(tid, ts);
-    if (s == null) {
-      return "not in a session";
-    }
-    return "session #" + s.seq + " " + Formats.shortName(SessionExportTexts.rootName(d, s));
   }
 }

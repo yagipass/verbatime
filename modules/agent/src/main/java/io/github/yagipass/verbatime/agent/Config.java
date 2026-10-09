@@ -16,6 +16,44 @@ public record Config(
     long waitStartMs,
     RecordStart recordStart) {
 
+  public void requireInstrumentable(RootSpec spec) {
+    String internal = spec.internalClassName();
+    if (Transformer.isNeverInstrumented(internal) || !selects(internal)) {
+      throw new IllegalArgumentException(
+          "root "
+              + spec
+              + " is not instrumentable: "
+              + spec.className()
+              + " is excluded from instrumentation");
+    }
+  }
+
+  public boolean selects(String internalName) {
+    if (!includes.isEmpty() && !matchesAny(includes, internalName)) {
+      return false;
+    }
+    return !matchesAny(excludes, internalName);
+  }
+
+  public String includeText() {
+    return includes.isEmpty() ? "*" : dotted(includes);
+  }
+
+  public String excludeText() {
+    return dotted(excludes);
+  }
+
+  public String rootsText() {
+    StringBuilder sb = new StringBuilder();
+    for (RootSpec s : roots) {
+      if (sb.length() > 0) {
+        sb.append('+');
+      }
+      sb.append(s);
+    }
+    return sb.toString();
+  }
+
   static Config parse(@Nullable String args) {
     return parse(args, Log::warn);
   }
@@ -90,6 +128,26 @@ public record Config(
     return cfg;
   }
 
+  String describe() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("include=").append(includeText());
+    sb.append(" exclude=").append(excludeText());
+    if (!roots.isEmpty()) {
+      sb.append(" roots=").append(rootsText());
+    }
+    if (out != null) {
+      sb.append(" out=").append(out);
+    }
+    if (spoolDir != null) {
+      sb.append(" spool=").append(spoolDir);
+    }
+    if (waitStartMs > 0) {
+      sb.append(" waitstart=").append(waitStartMs / 1000).append('s');
+    }
+    sb.append(" record=").append(recordStart);
+    return sb.toString();
+  }
+
   private static void addRoots(List<RootSpec> target, String value) {
     for (String s : value.split("\\+", -1)) {
       String spec = s.trim();
@@ -120,18 +178,6 @@ public record Config(
     if (waitStartMs > 0) {
       throw new IllegalArgumentException(
           "record=startup and waitstart= are mutually exclusive: the recording starts at once, so there is nothing to wait for");
-    }
-  }
-
-  public void requireInstrumentable(RootSpec spec) {
-    String internal = spec.internalClassName();
-    if (Transformer.isNeverInstrumented(internal) || !selects(internal)) {
-      throw new IllegalArgumentException(
-          "root "
-              + spec
-              + " is not instrumentable: "
-              + spec.className()
-              + " is excluded from instrumentation");
     }
   }
 
@@ -212,13 +258,6 @@ public record Config(
     return s.isEmpty() ? "com.example" : s;
   }
 
-  public boolean selects(String internalName) {
-    if (!includes.isEmpty() && !matchesAny(includes, internalName)) {
-      return false;
-    }
-    return !matchesAny(excludes, internalName);
-  }
-
   private static boolean matchesAny(List<String> prefixes, String internalName) {
     for (int i = 0, n = prefixes.size(); i < n; i++) {
       String p = prefixes.get(i);
@@ -235,45 +274,6 @@ public record Config(
       }
     }
     return false;
-  }
-
-  public String includeText() {
-    return includes.isEmpty() ? "*" : dotted(includes);
-  }
-
-  public String excludeText() {
-    return dotted(excludes);
-  }
-
-  String describe() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("include=").append(includeText());
-    sb.append(" exclude=").append(excludeText());
-    if (!roots.isEmpty()) {
-      sb.append(" roots=").append(rootsText());
-    }
-    if (out != null) {
-      sb.append(" out=").append(out);
-    }
-    if (spoolDir != null) {
-      sb.append(" spool=").append(spoolDir);
-    }
-    if (waitStartMs > 0) {
-      sb.append(" waitstart=").append(waitStartMs / 1000).append('s');
-    }
-    sb.append(" record=").append(recordStart);
-    return sb.toString();
-  }
-
-  public String rootsText() {
-    StringBuilder sb = new StringBuilder();
-    for (RootSpec s : roots) {
-      if (sb.length() > 0) {
-        sb.append('+');
-      }
-      sb.append(s);
-    }
-    return sb.toString();
   }
 
   private static String dotted(List<String> internal) {

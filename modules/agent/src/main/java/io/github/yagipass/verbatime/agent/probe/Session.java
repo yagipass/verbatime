@@ -82,6 +82,16 @@ final class Session {
     depth--;
   }
 
+  void finish() {
+    writer.appendChunk(this, true);
+  }
+
+  void flushTruncated() {
+    closed = true;
+    writer.flushTruncated(this);
+    buf = NO_EVENTS;
+  }
+
   private void push(long nanos, long packed) {
     long[] b = buf;
     int p = pos;
@@ -94,15 +104,5 @@ final class Session {
       writer.appendChunk(this, false);
       nextFlushNanos = nanos + FLUSH_INTERVAL_NANOS;
     }
-  }
-
-  void finish() {
-    writer.appendChunk(this, true);
-  }
-
-  void flushTruncated() {
-    closed = true;
-    writer.flushTruncated(this);
-    buf = NO_EVENTS;
   }
 }

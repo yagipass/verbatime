@@ -2,12 +2,6 @@ package io.github.yagipass.verbatime.corpusfixtures;
 
 public final class CallerClassFixture {
 
-  private CallerClassFixture() {}
-
-  public static String callerOfCallee() {
-    return Callee.callerClass().getName();
-  }
-
   static final class Callee {
 
     private static final StackWalker WALKER =
@@ -18,5 +12,11 @@ public final class CallerClassFixture {
     static Class<?> callerClass() {
       return WALKER.getCallerClass();
     }
+  }
+
+  private CallerClassFixture() {}
+
+  public static String callerOfCallee() {
+    return Callee.callerClass().getName();
   }
 }

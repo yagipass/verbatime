@@ -34,6 +34,15 @@ final class PatchableFileWriter implements Closeable {
     buf = new byte[Math.max(bufferBytes, 16)];
   }
 
+  @Override
+  public void close() throws IOException {
+    try {
+      flushBuffer();
+    } finally {
+      channel.close();
+    }
+  }
+
   long position() {
     return flushed + len;
   }
@@ -51,21 +60,6 @@ final class PatchableFileWriter implements Closeable {
 
   void bytes(byte[] b) throws IOException {
     bytes(b, 0, b.length);
-  }
-
-  private void bytes(byte[] b, int off, int n) throws IOException {
-    @Var int p = off;
-    @Var int left = n;
-    while (left > 0) {
-      if (len == buf.length) {
-        flushBuffer();
-      }
-      int k = Math.min(left, buf.length - len);
-      System.arraycopy(b, p, buf, len, k);
-      len += k;
-      p += k;
-      left -= k;
-    }
   }
 
   void newline() throws IOException {
@@ -124,12 +118,18 @@ final class PatchableFileWriter implements Closeable {
     }
   }
 
-  @Override
-  public void close() throws IOException {
-    try {
-      flushBuffer();
-    } finally {
-      channel.close();
+  private void bytes(byte[] b, int off, int n) throws IOException {
+    @Var int p = off;
+    @Var int left = n;
+    while (left > 0) {
+      if (len == buf.length) {
+        flushBuffer();
+      }
+      int k = Math.min(left, buf.length - len);
+      System.arraycopy(b, p, buf, len, k);
+      len += k;
+      p += k;
+      left -= k;
     }
   }
 

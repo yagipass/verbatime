@@ -7,57 +7,6 @@ import java.util.Locale;
 
 final class Out {
 
-  final boolean json;
-
-  private final PrintStream stream;
-
-  Out(PrintStream stream, boolean json) {
-    this.stream = stream;
-    this.json = json;
-  }
-
-  void text(String line) {
-    if (!json) {
-      stream.println(line);
-    }
-  }
-
-  void json(Json object) {
-    if (json) {
-      stream.println(object);
-    }
-  }
-
-  void more(long count, String what, String next) {
-    if (count <= 0) {
-      return;
-    }
-    if (json) {
-      stream.println(new Json("more").put("count", count).put("what", what).put("next", next));
-    } else {
-      stream.println("# " + Formats.grouped(count) + " more " + what + ". next: " + next);
-    }
-  }
-
-  void status(TraceFile file) {
-    if (file.status == TraceFile.Status.COMPLETE) {
-      return;
-    }
-    if (json) {
-      stream.println(
-          new Json("status")
-              .put("status", file.status.name().toLowerCase(Locale.ROOT))
-              .put("detail", file.statusText()));
-    } else {
-      stream.println(
-          "# status: "
-              + file.statusText()
-              + (file.status == TraceFile.Status.TRUNCATED
-                  ? ", the recording stops mid-record and calls still open there are marked ~"
-                  : ", everything after that offset is missing"));
-    }
-  }
-
   static final class Table {
 
     private final String[] headers;
@@ -116,6 +65,57 @@ final class Out {
         }
       }
       return sb.toString().stripTrailing();
+    }
+  }
+
+  final boolean json;
+
+  private final PrintStream stream;
+
+  Out(PrintStream stream, boolean json) {
+    this.stream = stream;
+    this.json = json;
+  }
+
+  void text(String line) {
+    if (!json) {
+      stream.println(line);
+    }
+  }
+
+  void json(Json object) {
+    if (json) {
+      stream.println(object);
+    }
+  }
+
+  void more(long count, String what, String next) {
+    if (count <= 0) {
+      return;
+    }
+    if (json) {
+      stream.println(new Json("more").put("count", count).put("what", what).put("next", next));
+    } else {
+      stream.println("# " + Formats.grouped(count) + " more " + what + ". next: " + next);
+    }
+  }
+
+  void status(TraceFile file) {
+    if (file.status == TraceFile.Status.COMPLETE) {
+      return;
+    }
+    if (json) {
+      stream.println(
+          new Json("status")
+              .put("status", file.status.name().toLowerCase(Locale.ROOT))
+              .put("detail", file.statusText()));
+    } else {
+      stream.println(
+          "# status: "
+              + file.statusText()
+              + (file.status == TraceFile.Status.TRUNCATED
+                  ? ", the recording stops mid-record and calls still open there are marked ~"
+                  : ", everything after that offset is missing"));
     }
   }
 }

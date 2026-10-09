@@ -101,60 +101,6 @@ final class SubtreeAggregateTest {
     }
   }
 
-  private static int canonicalIndex(ReferenceDecoder.Result ref, int picked) {
-    Call p = ref.calls.get(picked);
-    for (int i = 0; i < ref.calls.size(); i++) {
-      Call c = ref.calls.get(i);
-      if (c.tid() == p.tid()
-          && c.startNs() == p.startNs()
-          && c.depth() == p.depth()
-          && c.methodId() == p.methodId()) {
-        return i;
-      }
-    }
-    return picked;
-  }
-
-  private static int[] reconstructParents(ReferenceDecoder.Result ref) {
-    int[] parent = new int[ref.calls.size()];
-    Map<Long, Deque<Integer>> byTid = new HashMap<>();
-    for (int i = 0; i < ref.calls.size(); i++) {
-      Call c = ref.calls.get(i);
-      Deque<Integer> stack = byTid.computeIfAbsent(c.tid(), k -> new ArrayDeque<>());
-      while (!stack.isEmpty() && ref.calls.get(stack.peek()).depth() == c.depth() + 1) {
-        parent[stack.pop()] = i;
-      }
-      parent[i] = -1;
-      stack.push(i);
-    }
-    return parent;
-  }
-
-  private static Map<Integer, long[]> bruteForce(
-      ReferenceDecoder.Result ref, int[] parent, int fIdx) {
-    Set<Integer> subtree = new HashSet<>();
-    subtree.add(fIdx);
-    @Var boolean grew = true;
-    while (grew) {
-      grew = false;
-      for (int i = 0; i < parent.length; i++) {
-        if (!subtree.contains(i) && parent[i] >= 0 && subtree.contains(parent[i])) {
-          subtree.add(i);
-          grew = true;
-        }
-      }
-    }
-    Map<Integer, long[]> per = new HashMap<>();
-    for (int i : subtree) {
-      Call c = ref.calls.get(i);
-      long[] x = per.computeIfAbsent(c.methodId(), k -> new long[3]);
-      x[0]++;
-      x[1] += c.durNs();
-      x[2] += c.selfNs();
-    }
-    return per;
-  }
-
   @Test
   void recursionCountsEachCall() throws IOException {
     TraceBuilder w = TestTraces.writer();
@@ -294,5 +240,59 @@ final class SubtreeAggregateTest {
         4_000,
         agg.methodTotalNs(1) + agg.methodTotalNs(2) + agg.methodTotalNs(3) + agg.methodTotalNs(4),
         "every child's flat total stays exact even past the cap");
+  }
+
+  private static int canonicalIndex(ReferenceDecoder.Result ref, int picked) {
+    Call p = ref.calls.get(picked);
+    for (int i = 0; i < ref.calls.size(); i++) {
+      Call c = ref.calls.get(i);
+      if (c.tid() == p.tid()
+          && c.startNs() == p.startNs()
+          && c.depth() == p.depth()
+          && c.methodId() == p.methodId()) {
+        return i;
+      }
+    }
+    return picked;
+  }
+
+  private static int[] reconstructParents(ReferenceDecoder.Result ref) {
+    int[] parent = new int[ref.calls.size()];
+    Map<Long, Deque<Integer>> byTid = new HashMap<>();
+    for (int i = 0; i < ref.calls.size(); i++) {
+      Call c = ref.calls.get(i);
+      Deque<Integer> stack = byTid.computeIfAbsent(c.tid(), k -> new ArrayDeque<>());
+      while (!stack.isEmpty() && ref.calls.get(stack.peek()).depth() == c.depth() + 1) {
+        parent[stack.pop()] = i;
+      }
+      parent[i] = -1;
+      stack.push(i);
+    }
+    return parent;
+  }
+
+  private static Map<Integer, long[]> bruteForce(
+      ReferenceDecoder.Result ref, int[] parent, int fIdx) {
+    Set<Integer> subtree = new HashSet<>();
+    subtree.add(fIdx);
+    @Var boolean grew = true;
+    while (grew) {
+      grew = false;
+      for (int i = 0; i < parent.length; i++) {
+        if (!subtree.contains(i) && parent[i] >= 0 && subtree.contains(parent[i])) {
+          subtree.add(i);
+          grew = true;
+        }
+      }
+    }
+    Map<Integer, long[]> per = new HashMap<>();
+    for (int i : subtree) {
+      Call c = ref.calls.get(i);
+      long[] x = per.computeIfAbsent(c.methodId(), k -> new long[3]);
+      x[0]++;
+      x[1] += c.durNs();
+      x[2] += c.selfNs();
+    }
+    return per;
   }
 }
