@@ -47,7 +47,7 @@
     <errorprone.flags></errorprone.flags>
     <nullaway.version>0.14.2</nullaway.version>
     <errorprone-tidy.version>0.1.0</errorprone-tidy.version>
-    <spotless-member-order.version>0.1.0</spotless-member-order.version>
+    <spotless-member-order.version>0.2.0</spotless-member-order.version>
     <jspecify.version>1.0.1</jspecify.version>
     <junit.version>6.1.3</junit.version>
   </properties>
