@@ -8,12 +8,12 @@ import org.springframework.context.annotation.Bean;
 @SpringBootApplication
 public class MybatisApplication {
 
-  public static void main(String[] args) {
-    SpringApplication.run(MybatisApplication.class, args);
-  }
-
   @Bean
   OrderService orderService() {
     return new OrderService();
+  }
+
+  public static void main(String[] args) {
+    SpringApplication.run(MybatisApplication.class, args);
   }
 }
