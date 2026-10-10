@@ -10,12 +10,12 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class ScheduledTaskApplication {
 
-  public static void main(String[] args) {
-    SpringApplication.run(ScheduledTaskApplication.class, args);
-  }
-
   @Bean
   OrderService orderService() {
     return new OrderService();
+  }
+
+  public static void main(String[] args) {
+    SpringApplication.run(ScheduledTaskApplication.class, args);
   }
 }

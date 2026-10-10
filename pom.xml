@@ -283,7 +283,7 @@
                 <include>src/test/java/**/*.java</include>
               </includes>
               <memberOrder>
-                <order>T,SF,F,C,SM:B,M:B,SM:R,M:R,SM:D,M:D,SM:V,M:V</order>
+                <order>T,SF,F,C,@BeforeAll,@BeforeClass,@BeforeEach,@Before,@AfterEach,@After,@AfterAll,@AfterClass,SM:B,M:B,SM:R,M:R,SM:D,M:D,SM:V,M:V</order>
               </memberOrder>
               <googleJavaFormat>
                 <version>1.36.1</version>

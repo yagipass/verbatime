@@ -8,12 +8,12 @@ import org.springframework.context.annotation.Bean;
 @SpringBootApplication
 public class BatchApplication {
 
-  public static void main(String[] args) {
-    System.exit(SpringApplication.exit(SpringApplication.run(BatchApplication.class, args)));
-  }
-
   @Bean
   OrderService orderService() {
     return new OrderService();
+  }
+
+  public static void main(String[] args) {
+    System.exit(SpringApplication.exit(SpringApplication.run(BatchApplication.class, args)));
   }
 }

@@ -8,12 +8,12 @@ import org.springframework.context.annotation.Bean;
 @SpringBootApplication
 public class WebfluxApplication {
 
-  public static void main(String[] args) {
-    SpringApplication.run(WebfluxApplication.class, args);
-  }
-
   @Bean
   OrderService orderService() {
     return new OrderService();
+  }
+
+  public static void main(String[] args) {
+    SpringApplication.run(WebfluxApplication.class, args);
   }
 }

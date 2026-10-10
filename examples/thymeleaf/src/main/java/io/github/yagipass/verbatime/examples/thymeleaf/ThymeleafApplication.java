@@ -8,12 +8,12 @@ import org.springframework.context.annotation.Bean;
 @SpringBootApplication
 public class ThymeleafApplication {
 
-  public static void main(String[] args) {
-    SpringApplication.run(ThymeleafApplication.class, args);
-  }
-
   @Bean
   OrderService orderService() {
     return new OrderService();
+  }
+
+  public static void main(String[] args) {
+    SpringApplication.run(ThymeleafApplication.class, args);
   }
 }

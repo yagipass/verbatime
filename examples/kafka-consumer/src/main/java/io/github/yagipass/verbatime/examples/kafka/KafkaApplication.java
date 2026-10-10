@@ -12,10 +12,6 @@ public class KafkaApplication {
 
   static final String TOPIC = "orders";
 
-  public static void main(String[] args) {
-    SpringApplication.run(KafkaApplication.class, args);
-  }
-
   @Bean
   OrderService orderService() {
     return new OrderService();
@@ -24,5 +20,9 @@ public class KafkaApplication {
   @Bean
   NewTopic ordersTopic() {
     return TopicBuilder.name(TOPIC).partitions(1).replicas(1).build();
+  }
+
+  public static void main(String[] args) {
+    SpringApplication.run(KafkaApplication.class, args);
   }
 }
