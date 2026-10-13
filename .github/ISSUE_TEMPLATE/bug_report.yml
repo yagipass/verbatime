@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Check [Troubleshooting](https://verbatime-docs.yagipass.com/troubleshooting/) first.
+        Check [Troubleshooting](https://verbatime.yagipass.com/troubleshooting/) first.
         To report a security vulnerability, do not open an issue. Send
         [a private report](https://github.com/yagipass/verbatime/security/advisories/new) instead.
   - type: dropdown

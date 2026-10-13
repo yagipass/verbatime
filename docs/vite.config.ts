@@ -4,7 +4,7 @@ import { extname, join } from "node:path";
 import { oxContent, defineTheme, defaultTheme } from "@ox-content/vite-plugin";
 
 const base = process.env.DOCS_BASE ?? "/";
-const siteUrl = "https://verbatime-docs.yagipass.com";
+const siteUrl = "https://verbatime.yagipass.com";
 const imageTypes: Record<string, string> = { ".png": "image/png", ".webp": "image/webp" };
 const brandColors = {
   primary: "#fb8f24",

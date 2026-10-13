@@ -18,7 +18,7 @@ batch job, you need every call it made, in order, not a sample or an average.
 
 The agent needs Java 25 or later. Download `verbatime-agent.jar` from the
 [GitHub releases page](https://github.com/yagipass/verbatime/releases).
-[Verifying downloads](https://verbatime-docs.yagipass.com/verify/) shows how to check it.
+[Verifying downloads](https://verbatime.yagipass.com/verify/) shows how to check it.
 
 ### Recording from JDK Mission Control
 
