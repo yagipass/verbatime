@@ -36,7 +36,7 @@ the results.
 
 1. Download `verbatime-agent.jar` and `verbatime-jmc-plugin.jar` from the
    [GitHub releases page](https://github.com/yagipass/verbatime/releases).
-   [Verifying downloads](https://verbatime-docs.yagipass.com/verify/) shows how to check them.
+   [Verifying downloads](https://verbatime.yagipass.com/verify/) shows how to check them.
 2. Copy the plugin into the `dropins` directory of JDK Mission Control, and restart it.
    ```sh
    # macOS
@@ -102,7 +102,7 @@ See the [CLI README](modules/cli/README.md).
 
 | Where | What |
 |---|---|
-| [verbatime-docs.yagipass.com](https://verbatime-docs.yagipass.com) | The documentation site: quick start, use cases, and troubleshooting |
+| [verbatime.yagipass.com](https://verbatime.yagipass.com) | The documentation site: quick start, use cases, and troubleshooting |
 | [`modules/agent/`](modules/agent/) | The Java agent and its options |
 | [`modules/jmc/`](modules/jmc/) | The JDK Mission Control plugin and its views |
 | [`modules/cli/`](modules/cli/) | The `vbtm` command |
