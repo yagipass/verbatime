@@ -112,7 +112,7 @@ final class MergedTree {
       }
       int[] kids = children[node];
       int next = stack.state();
-      if (next < kids.length && trie.totalTicks[kids[next]] >= floor) {
+      if (next < kids.length && (node == 0 || trie.totalTicks[kids[next]] >= floor)) {
         stack.setState(next + 1);
         stack.push(kids[next]);
         continue;
