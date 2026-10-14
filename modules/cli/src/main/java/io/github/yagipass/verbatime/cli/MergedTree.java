@@ -11,6 +11,8 @@ final class MergedTree {
 
     final PathTrie trie = new PathTrie();
 
+    long calls;
+
     private final int maxDepth;
 
     private final int session;
@@ -29,7 +31,7 @@ final class MergedTree {
         nodes = Arrays.copyOf(nodes, level * 2);
       }
       int parent = level == 0 ? 0 : nodes[level - 1];
-      nodes[level] = parent < 0 || level > maxDepth ? -1 : trie.child(parent, methodId, level);
+      nodes[level] = parent < 0 || level - 1 > maxDepth ? -1 : trie.child(parent, methodId, level);
     }
 
     @Override
@@ -43,6 +45,7 @@ final class MergedTree {
         long selfTicks,
         int exceptionId,
         boolean unclosed) {
+      calls++;
       int node = nodes[level];
       if (node >= 0) {
         trie.record(
@@ -64,11 +67,7 @@ final class MergedTree {
     Paths paths = new Paths(tree.walker, tree.at, tree.maxDepth, tree.session.number);
     tree.walk(paths);
     PathTrie trie = paths.trie;
-    @Var long totalCalls = 0;
-    for (int n = 1; n < trie.size; n++) {
-      totalCalls += trie.calls[n];
-    }
-    tree.header(paths, totalCalls);
+    tree.header(paths, paths.calls);
     long floor = tree.autoFloor() ? chooseFloor(trie) : tree.floorTicks();
     out.text(
         "merged: calls of the same method under the same path are one line. floor: "
@@ -112,7 +111,9 @@ final class MergedTree {
       }
       int[] kids = children[node];
       int next = stack.state();
-      if (next < kids.length && (node == 0 || trie.totalTicks[kids[next]] >= floor)) {
+      if (next < kids.length
+          && (node == 0
+              || (trie.depth[node] < tree.maxDepth && trie.totalTicks[kids[next]] >= floor))) {
         stack.setState(next + 1);
         stack.push(kids[next]);
         continue;
@@ -140,7 +141,13 @@ final class MergedTree {
     }
     FloorFit fit = new FloorFit(tree.limit);
     for (int n = 1; n < trie.size; n++) {
-      fit.offer(trie.depth[n] == 0 ? Long.MAX_VALUE : trie.totalTicks[n], shortestChild[n]);
+      int d = trie.depth[n];
+      if (d <= tree.maxDepth) {
+        long shortest = shortestChild[n];
+        fit.offer(
+            d == 0 ? Long.MAX_VALUE : trie.totalTicks[n],
+            d == tree.maxDepth && shortest != Long.MAX_VALUE ? -1 : shortest);
+      }
     }
     return fit.floor();
   }
