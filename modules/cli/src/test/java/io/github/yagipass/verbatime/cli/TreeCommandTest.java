@@ -255,6 +255,20 @@ final class TreeCommandTest {
         "the 0.3 ms call right after the pause holds 0.05 ms of it, not 50 ms");
   }
 
+  @Test
+  void mergePrintsTheGcLegendOfTheTree() throws IOException {
+    Path t = gcTrace(dir);
+    Cli.Result merged = Cli.vbtm("tree", t, "1", "--merge");
+    assertEquals(0, merged.code(), merged.err());
+    assertEquals(
+        Cli.vbtm("tree", t, "1").line("gc:"),
+        merged.line("gc:"),
+        "--merge is for loops, whose merged totals include GC that must still be subtracted");
+    assertTrue(
+        Cli.vbtm("tree", t, "1", "--merge", "--json").out().contains("{\"type\":\"gc\","),
+        "JSON readers get the pauses too");
+  }
+
   private static Path gcTrace(Path dir) throws IOException {
     byte[] s1 =
         new TraceBuilder.Payload(499_000)
