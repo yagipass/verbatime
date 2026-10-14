@@ -196,6 +196,15 @@ final class TreeCommandTest {
   }
 
   @Test
+  void mergeFoldsAndCountsCallsDeeperThanDepth() throws IOException {
+    Cli.Result r = Cli.vbtm("tree", TestTraces.trace(dir), "1", "--merge", "--depth", "1");
+    assertEquals(0, r.code(), r.err());
+    assertTrue(r.line("session 1").contains("  calls 6"), "fib calls count too: " + r.out());
+    assertEquals(
+        "0.0030 1 - 2 ·1 path under App.render deeper than --depth: App.fib", r.line("0.0030 "));
+  }
+
+  @Test
   void theExceptionsLegendCountsThrowsInThePrintedScope() throws IOException {
     Path e = TestTraces.throwsTrace(dir);
     Cli.Result whole = Cli.vbtm("tree", e, "1", "--floor", "1ms");
