@@ -218,12 +218,19 @@ final class CallTree {
   }
 
   private long chooseFloor() {
-    FloorHeap heap = new FloorHeap(Math.max(tree.limit * 2 / 3, 1));
+    FloorFit fit = new FloorFit(tree.limit);
     tree.walk(
         new SubtreeVisitor(tree.walker, tree.at) {
 
+          private long[] shortestChild = new long[64];
+
           @Override
-          void onEnter(long ordinal, int level, int depth, int methodId, long startTicks) {}
+          void onEnter(long ordinal, int level, int depth, int methodId, long startTicks) {
+            if (level == shortestChild.length) {
+              shortestChild = Arrays.copyOf(shortestChild, level * 2);
+            }
+            shortestChild[level] = Long.MAX_VALUE;
+          }
 
           @Override
           void onExit(
@@ -236,12 +243,18 @@ final class CallTree {
               long selfTicks,
               int exceptionId,
               boolean unclosed) {
+            if (level > 0) {
+              shortestChild[level - 1] = Math.min(shortestChild[level - 1], durTicks);
+            }
             if (level <= tree.maxDepth) {
-              heap.offer(durTicks);
+              long shortest = shortestChild[level];
+              fit.offer(
+                  level == 0 ? Long.MAX_VALUE : durTicks,
+                  level == tree.maxDepth && shortest != Long.MAX_VALUE ? -1 : shortest);
             }
           }
         });
-    return heap.floor();
+    return fit.floor();
   }
 
   private void printCall(Line l, long sessionStart) {

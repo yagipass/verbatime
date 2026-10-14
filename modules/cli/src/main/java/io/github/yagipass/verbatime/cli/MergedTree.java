@@ -132,11 +132,17 @@ final class MergedTree {
   }
 
   private long chooseFloor(PathTrie trie) {
-    FloorHeap heap = new FloorHeap(Math.max(tree.limit * 2 / 3, 1));
+    long[] shortestChild = new long[trie.size];
+    Arrays.fill(shortestChild, Long.MAX_VALUE);
     for (int n = 1; n < trie.size; n++) {
-      heap.offer(trie.totalTicks[n]);
+      int p = trie.parent[n];
+      shortestChild[p] = Math.min(shortestChild[p], trie.totalTicks[n]);
     }
-    return heap.floor();
+    FloorFit fit = new FloorFit(tree.limit);
+    for (int n = 1; n < trie.size; n++) {
+      fit.offer(trie.depth[n] == 0 ? Long.MAX_VALUE : trie.totalTicks[n], shortestChild[n]);
+    }
+    return fit.floor();
   }
 
   private void printPath(PathTrie trie, int node, int baseDepth) {
