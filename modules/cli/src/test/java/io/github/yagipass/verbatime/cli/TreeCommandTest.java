@@ -68,6 +68,16 @@ final class TreeCommandTest {
   }
 
   @Test
+  void mergePrintsTheRootPathEvenWhenTheFloorIsLongerThanTheSession() throws IOException {
+    Cli.Result r = Cli.vbtm("tree", TestTraces.trace(dir), "1", "--merge", "--floor", "1s");
+    assertEquals(0, r.code(), r.err());
+    assertEquals("0.1000 1 0.0130 0 App.handle [1.0]", r.line("0.1000 "));
+    assertTrue(
+        r.line("0.0870 ").startsWith("0.0870 3 - 1 ·2 paths under App.handle < 1s: "),
+        "the paths below the floor are folded, so the session does not look empty: " + r.out());
+  }
+
+  @Test
   void theExceptionsLegendCountsThrowsInThePrintedScope() throws IOException {
     Path e = TestTraces.throwsTrace(dir);
     Cli.Result whole = Cli.vbtm("tree", e, "1", "--floor", "1ms");
