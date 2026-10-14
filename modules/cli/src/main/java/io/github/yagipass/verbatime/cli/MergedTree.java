@@ -84,6 +84,7 @@ final class MergedTree {
     }
     out.json(tree.optionsJson(floor, true).put("dropped_calls", trie.dropped));
     tree.exceptionsLegend(paths.thrown.countByException);
+    tree.gcLegend(paths.startTicks, paths.durTicks);
     out.text("line: total calls self depth method [!K thrown] [slowest call id], in ms");
     out.text("");
     int[][] children = trie.childrenByTotal();
