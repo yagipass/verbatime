@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.errorprone.annotations.Var;
 import io.github.yagipass.verbatime.format.TraceBuilder;
+import io.github.yagipass.verbatime.format.Vbtm;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -229,6 +230,50 @@ final class TreeCommandTest {
     assertEquals(
         "exceptions: e1 = java.sql.SQLException ×2",
         Cli.vbtm("tree", e, "--at", "1.3", "--merge").line("exceptions:"));
+  }
+
+  @Test
+  void theGcLegendCountsOnlyThePartOfEachPauseInsideThePrintedTree() throws IOException {
+    Path t = gcTrace(dir);
+    Cli.Result r = Cli.vbtm("tree", t, "1");
+    assertEquals(0, r.code(), r.err());
+    assertEquals(
+        "gc: 2 pauses overlap, 1.1000 ms stop-the-world, included in the durations below",
+        r.line("gc:"),
+        "only the last 0.1 ms of the 50 ms pause falls in the 2.1 ms session, so counting all of it"
+            + " would make the time left for the code negative");
+    assertEquals(
+        "  at 0.0000 ms for 0.1000 ms, major G1 Old Generation: Allocation Failure",
+        r.line("  at 0.0000 "),
+        "the listed pauses add up to the total, so subtracting each of them is right");
+    assertTrue(
+        Cli.vbtm("sessions", t, "--json").out().contains("\"gc_ms\":1.1000"),
+        "tree and sessions report the same GC time for a session");
+    assertEquals(
+        "gc: 1 pause overlap, 0.0500 ms stop-the-world, included in the durations below",
+        Cli.vbtm("tree", t, "--at", "1.1").line("gc:"),
+        "the 0.3 ms call right after the pause holds 0.05 ms of it, not 50 ms");
+  }
+
+  private static Path gcTrace(Path dir) throws IOException {
+    byte[] s1 =
+        new TraceBuilder.Payload(499_000)
+            .enter(499_000, 0)
+            .enter(499_500, 1)
+            .exit(502_500)
+            .exit(520_000)
+            .bytes();
+    return TestTraces.write(
+        dir,
+        "gc.vbtm",
+        new TraceBuilder(1_700_000_000_000L, 0)
+            .thread(1, "http-1")
+            .clazz(0, "com.example.App", "handle()V", "query()V")
+            .gc(0, 500_000, Vbtm.GC_ACTION_MAJOR, "G1 Old Generation", "Allocation Failure")
+            .gc(510_000, 10_000, Vbtm.GC_ACTION_MINOR, "G1 Young", "G1 Evacuation Pause")
+            .chunk(1, 499_000, s1, true)
+            .end()
+            .bytes());
   }
 
   private static long printedLines(Cli.Result r) {

@@ -247,8 +247,7 @@ final class TreeCommand {
   }
 
   void gcLegend(long startTicks, long durTicks) {
-    List<TraceFile.GcPause> pauses =
-        new GcPauses(file).overlapping(startTicks, startTicks + durTicks);
+    List<TraceFile.GcPause> pauses = new GcPauses(file).within(startTicks, startTicks + durTicks);
     if (pauses.isEmpty()) {
       return;
     }

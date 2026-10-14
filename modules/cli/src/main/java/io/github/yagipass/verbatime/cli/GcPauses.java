@@ -33,7 +33,7 @@ final class GcPauses {
     return t;
   }
 
-  List<TraceFile.GcPause> overlapping(long startTicks, long endTicks) {
+  List<TraceFile.GcPause> within(long startTicks, long endTicks) {
     List<TraceFile.GcPause> r = new ArrayList<>();
     for (int i = firstCandidate(startTicks); i < byStart.size(); i++) {
       TraceFile.GcPause g = byStart.get(i);
@@ -41,7 +41,14 @@ final class GcPauses {
         break;
       }
       if (g.endTicks() > startTicks) {
-        r.add(g);
+        long start = Math.max(startTicks, g.startTicks());
+        r.add(
+            new TraceFile.GcPause(
+                start,
+                Math.min(endTicks, g.endTicks()) - start,
+                g.action(),
+                g.collector(),
+                g.cause()));
       }
     }
     return r;
@@ -49,8 +56,8 @@ final class GcPauses {
 
   long overlapTicks(long startTicks, long endTicks) {
     @Var long t = 0;
-    for (TraceFile.GcPause g : overlapping(startTicks, endTicks)) {
-      t += Math.min(endTicks, g.endTicks()) - Math.max(startTicks, g.startTicks());
+    for (TraceFile.GcPause g : within(startTicks, endTicks)) {
+      t += g.durTicks();
     }
     return t;
   }
