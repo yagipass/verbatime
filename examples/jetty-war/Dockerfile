@@ -20,7 +20,7 @@ COPY examples/tomcat-war examples/tomcat-war
 RUN --mount=type=cache,id=verbatime-m2,target=/root/.m2/repository,sharing=locked \
     mvn -B -f examples/tomcat-war/pom.xml package -DskipTests
 
-FROM jetty:12.1.13-jdk25-eclipse-temurin
+FROM jetty:12.1.14-jdk25-eclipse-temurin
 RUN java -jar "$JETTY_HOME/start.jar" --add-modules=ee11-deploy,ee11-annotations
 COPY --from=agent --chown=jetty:jetty /src/modules/agent/target/verbatime-agent.jar /var/lib/jetty/verbatime-agent.jar
 COPY --from=app --chown=jetty:jetty /src/examples/tomcat-war/target/ROOT.war /var/lib/jetty/webapps/ROOT.war
