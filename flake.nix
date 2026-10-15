@@ -137,12 +137,7 @@
               package = config.treefmt.build.wrapper;
             };
 
-            gitleaks = {
-              enable = true;
-              name = "gitleaks";
-              entry = "${pkgs.gitleaks}/bin/gitleaks git --pre-commit --staged --redact --verbose";
-              pass_filenames = false;
-            };
+            gitleaks.enable = true;
 
             convco.enable = true;
 
