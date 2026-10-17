@@ -13,7 +13,6 @@ workflows:
         - 'cachix/install-nix-action@v31.11.1'
     '.github/workflows/release.yml':
         - 'actions/attest@v4.2.2'
-        - 'actions/cache@v6.1.0'
         - 'actions/checkout@v7.0.1'
         - 'cachix/cachix-action@v17'
         - 'cachix/install-nix-action@v31.11.1'

@@ -4,6 +4,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: build
       include: scope
@@ -15,6 +17,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 30
     commit-message:
       prefix: build
@@ -68,6 +72,8 @@ updates:
     directory: /examples
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 30
     commit-message:
       prefix: build
@@ -80,6 +86,8 @@ updates:
     directories: ["/examples/*"]
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: build
       include: scope
@@ -91,6 +99,8 @@ updates:
     directories: ["/examples/*"]
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: build
       include: scope
@@ -102,6 +112,8 @@ updates:
     directory: /examples/junit-gradle
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: build
       include: scope
@@ -120,6 +132,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: build
       include: scope

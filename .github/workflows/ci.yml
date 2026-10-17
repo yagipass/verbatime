@@ -19,8 +19,11 @@ jobs:
       matrix:
         os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - uses: cachix/install-nix-action@v31.11.1
       - uses: cachix/cachix-action@v17
         with:
@@ -30,8 +33,11 @@ jobs:
 
   agent:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - uses: cachix/install-nix-action@v31.11.1
       - uses: cachix/cachix-action@v17
         with:
@@ -46,8 +52,11 @@ jobs:
 
   jmc:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - uses: cachix/install-nix-action@v31.11.1
       - uses: cachix/cachix-action@v17
         with:
@@ -62,8 +71,11 @@ jobs:
 
   cli:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - uses: cachix/install-nix-action@v31.11.1
       - uses: cachix/cachix-action@v17
         with:
@@ -78,8 +90,11 @@ jobs:
 
   docs:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - uses: cachix/install-nix-action@v31.11.1
       - uses: cachix/cachix-action@v17
         with:

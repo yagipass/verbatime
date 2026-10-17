@@ -1,0 +1,4 @@
+rules:
+  unpinned-uses:
+    policies:
+      yagipass/homebrew-tap: ref-pin
