@@ -4,12 +4,18 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-caller
+  cancel-in-progress: false
+  queue: max
+
 permissions:
   contents: read
 
 jobs:
   tagpr:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
       pull-requests: write
@@ -34,15 +40,6 @@ jobs:
         with:
           name: verbatime
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      - if: steps.tagpr.outputs.tag != ''
-        uses: actions/cache@v6.1.0
-        with:
-          path: ~/.m2/repository
-          key: m2-release-${{ hashFiles('pom.xml', 'modules/format/pom.xml', 'modules/agent/pom.xml', 'modules/jmc/pom.xml', 'modules/cli/pom.xml') }}
-          restore-keys: |
-            m2-agent-
-            m2-jmc-
-            m2-cli-
       - if: steps.tagpr.outputs.tag != ''
         env:
           MAVEN_GPG_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
@@ -87,6 +84,7 @@ jobs:
           - os: macos-latest
             platform: darwin-arm64
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     permissions:
       contents: write
       id-token: write
@@ -99,11 +97,6 @@ jobs:
         with:
           java-version: "25"
           distribution: graalvm-community
-      - uses: actions/cache@v6.1.0
-        with:
-          path: ~/.m2/repository
-          key: m2-cli-${{ matrix.platform }}-${{ hashFiles('pom.xml', 'modules/format/pom.xml', 'modules/cli/pom.xml') }}
-          restore-keys: m2-cli-
       - run: mvn -B -pl modules/cli -am -Pnative -DskipTests package
       - run: modules/cli/target/vbtm --help
       - run: |
@@ -125,6 +118,7 @@ jobs:
     needs: [tagpr, cli-native]
     if: needs.tagpr.outputs.tag != ''
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: write
     steps:
@@ -150,6 +144,7 @@ jobs:
     needs: tagpr
     if: needs.tagpr.outputs.tag != ''
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
