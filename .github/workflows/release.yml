@@ -169,6 +169,7 @@ jobs:
     if: needs.tagpr.outputs.tag != ''
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment: Cloudflare
     permissions:
       contents: read
     steps:
