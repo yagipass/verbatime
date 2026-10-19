@@ -24,6 +24,20 @@ changelog:
         labels:
           - documentation
           - maintenance
+    - title: Examples
+      labels:
+        - examples
+      exclude:
+        labels:
+          - documentation
+          - maintenance
+    - title: Benchmark
+      labels:
+        - benchmark
+      exclude:
+        labels:
+          - documentation
+          - maintenance
     - title: New Features
       labels:
         - enhancement

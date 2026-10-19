@@ -34,6 +34,9 @@ spec:
   - name: agent
     description: Pull requests that change the shipped agent code
     color: 5319e7
+  - name: benchmark
+    description: Pull requests that change the overhead benchmark
+    color: d4c5f9
   - name: bug
     description: Something isn't working
     color: d73a4a
@@ -55,6 +58,9 @@ spec:
   - name: enhancement
     description: New feature or request
     color: a2eeef
+  - name: examples
+    description: Pull requests that change the examples or their dependencies
+    color: bfd4f2
   - name: github_actions
     description: Pull requests that update GitHub Actions code
     color: "000000"
