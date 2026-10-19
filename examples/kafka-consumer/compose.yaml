@@ -20,6 +20,7 @@ services:
       start_period: 30s
 
   app:
+    image: ghcr.io/yagipass/verbatime-example-kafka-consumer:main
     build:
       context: ../..
       dockerfile: examples/kafka-consumer/Dockerfile

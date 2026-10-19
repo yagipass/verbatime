@@ -12,6 +12,7 @@ services:
       retries: 30
 
   app:
+    image: ghcr.io/yagipass/verbatime-example-jdbc-hibernate:main
     build:
       context: ../..
       dockerfile: examples/jdbc-hibernate/Dockerfile

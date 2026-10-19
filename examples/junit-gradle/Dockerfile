@@ -12,7 +12,8 @@ RUN --mount=type=cache,id=verbatime-m2,target=/root/.m2/repository,sharing=locke
     mvn -B -pl modules/agent -am package -DskipTests -Dmaven.test.skip=true -Dmaven.antrun.skip=true
 
 FROM gradle:9.8.0-jdk26-noble
-COPY --from=agent --chown=gradle:gradle /src/modules/agent/target/verbatime-agent.jar /work/verbatime-agent.jar
 COPY --chown=gradle:gradle examples/workload /work/workload
 COPY --chown=gradle:gradle examples/junit-gradle /work/junit-gradle
 WORKDIR /work/junit-gradle
+RUN gradle test --no-daemon --console=plain && rm -rf build .gradle
+COPY --from=agent --chown=gradle:gradle /src/modules/agent/target/verbatime-agent.jar /work/verbatime-agent.jar

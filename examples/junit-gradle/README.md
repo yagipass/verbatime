@@ -22,8 +22,8 @@ recordings/junit-gradle.vbtm
 ```
 
 A second run in the same container would find the `test` task up to date and start no worker,
-which is why `docker compose run --rm` starts from a fresh container each time. `docker compose down -v` also
-removes the `gradle-home` volume that caches Gradle's home directory.
+which is why `docker compose run --rm` starts from a fresh container each time. The dependencies are
+downloaded when the image is built, so a run downloads nothing.
 
 ## Agent settings
 

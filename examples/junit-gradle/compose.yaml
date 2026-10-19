@@ -1,12 +1,9 @@
 services:
   test:
+    image: ghcr.io/yagipass/verbatime-example-junit-gradle:main
     build:
       context: ../..
       dockerfile: examples/junit-gradle/Dockerfile
     volumes:
       - ./recordings:/work/recordings
-      - gradle-home:/home/gradle/.gradle
     command: ["gradle", "test", "--no-daemon", "--console=plain"]
-
-volumes:
-  gradle-home:

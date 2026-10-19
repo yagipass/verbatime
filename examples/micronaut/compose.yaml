@@ -1,5 +1,6 @@
 services:
   app:
+    image: ghcr.io/yagipass/verbatime-example-micronaut:main
     build:
       context: ../..
       dockerfile: examples/micronaut/Dockerfile

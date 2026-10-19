@@ -1,5 +1,6 @@
 services:
   app:
+    image: ghcr.io/yagipass/verbatime-example-undertow:main
     build:
       context: ../..
       dockerfile: examples/undertow/Dockerfile

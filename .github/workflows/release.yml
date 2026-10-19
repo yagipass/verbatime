@@ -164,6 +164,16 @@ jobs:
     secrets:
       tap-token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
 
+  examples:
+    needs: tagpr
+    if: needs.tagpr.outputs.tag != ''
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/examples.yml
+    with:
+      version: ${{ needs.tagpr.outputs.tag }}
+
   docs:
     needs: [tagpr, maven-central]
     if: needs.tagpr.outputs.tag != ''

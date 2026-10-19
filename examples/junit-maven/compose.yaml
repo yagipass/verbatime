@@ -1,12 +1,9 @@
 services:
   test:
+    image: ghcr.io/yagipass/verbatime-example-junit-maven:main
     build:
       context: ../..
       dockerfile: examples/junit-maven/Dockerfile
     volumes:
       - ./recordings:/work/recordings
-      - m2:/root/.m2
     command: ["sh", "-c", "mvn -B -q -f /work/workload/pom.xml install -DskipTests && mvn -B test"]
-
-volumes:
-  m2:

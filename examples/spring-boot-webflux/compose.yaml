@@ -1,5 +1,6 @@
 services:
   app:
+    image: ghcr.io/yagipass/verbatime-example-spring-boot-webflux:main
     build:
       context: ../..
       dockerfile: examples/spring-boot-webflux/Dockerfile
