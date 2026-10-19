@@ -31,9 +31,15 @@ spec:
   - name: accessibility
     description: Barrier affecting people with disabilities
     color: f143ab
+  - name: agent
+    description: Pull requests that change the shipped agent code
+    color: 5319e7
   - name: bug
     description: Something isn't working
     color: d73a4a
+  - name: cli
+    description: Pull requests that change the shipped vbtm CLI code
+    color: 1d76db
   - name: dependencies
     description: Pull requests that update a dependency file
     color: 0366d6
@@ -67,9 +73,18 @@ spec:
   - name: javascript
     description: Pull requests that update javascript code
     color: "168700"
+  - name: jmc
+    description: Pull requests that change the shipped JMC plugin code
+    color: fbca04
+  - name: maintenance
+    description: Build, CI, and refactoring work that users do not see
+    color: c5def5
   - name: nix
     description: Pull requests that update nix code
     color: 3E6399
+  - name: performance
+    description: Makes something faster or lighter
+    color: 2cbe4e
   - name: question
     description: Further information is requested
     color: d876e3

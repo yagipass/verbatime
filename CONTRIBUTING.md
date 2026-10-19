@@ -9,6 +9,9 @@ pre-commit hooks, which CI also runs through `nix flake check`.
 
 - Write the title as a [Conventional Commit](https://www.conventionalcommits.org/), such as
   `fix(cli): ...`. Pull requests are squash merged, so the title becomes the commit on `main`.
+- Start the branch name with the same type, such as `fix/print-gc-pauses`. The type and the
+  changed files label the pull request, and the labels sort it into the sections of the
+  [changelog](CHANGELOG.md).
 - `mvn verify` fails on unformatted Java. Run `mvn spotless:apply` to format it.
 - If a change to a `pom.xml` or `flake.lock` makes `nix flake check` fail with a hash mismatch for
   `vbtm`, update the hash:

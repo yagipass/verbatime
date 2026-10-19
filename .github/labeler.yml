@@ -1,0 +1,21 @@
+enhancement:
+  - head-branch: ['^feat/']
+bug:
+  - head-branch: ['^fix/']
+performance:
+  - head-branch: ['^perf/']
+documentation:
+  - head-branch: ['^docs/']
+maintenance:
+  - head-branch: ['^(build|chore|ci|refactor|style|test)/']
+dependencies:
+  - head-branch: ['^dependabot/']
+agent:
+  - changed-files:
+      - any-glob-to-any-file: ['modules/agent/src/main/**']
+cli:
+  - changed-files:
+      - any-glob-to-any-file: ['modules/cli/src/main/**', 'modules/cli/install-cli.sh']
+jmc:
+  - changed-files:
+      - any-glob-to-any-file: ['modules/jmc/src/main/**', 'modules/jmc/plugin.xml', 'modules/jmc/icons/**']
