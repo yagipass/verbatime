@@ -12,6 +12,7 @@ services:
       retries: 30
 
   app:
+    image: ghcr.io/yagipass/verbatime-example-spring-batch:main
     build:
       context: ../..
       dockerfile: examples/spring-batch/Dockerfile

@@ -12,6 +12,7 @@ services:
       retries: 30
 
   app:
+    image: ghcr.io/yagipass/verbatime-example-r2dbc:main
     build:
       context: ../..
       dockerfile: examples/r2dbc/Dockerfile

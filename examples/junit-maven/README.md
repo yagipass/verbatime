@@ -22,8 +22,8 @@ recordings/junit-maven.vbtm
 ```
 
 The `closed at shutdown` line does not reach Maven's output, because Surefire stops forwarding the
-fork's output once the tests are reported, but the file is complete. `docker compose down -v` also
-removes the `m2` volume that caches the Maven repository.
+fork's output once the tests are reported, but the file is complete. The dependencies are
+downloaded when the image is built, so a run downloads nothing.
 
 ## Agent settings
 

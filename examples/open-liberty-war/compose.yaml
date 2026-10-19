@@ -1,5 +1,6 @@
 services:
   app:
+    image: ghcr.io/yagipass/verbatime-example-open-liberty-war:main
     build:
       context: ../..
       dockerfile: examples/open-liberty-war/Dockerfile

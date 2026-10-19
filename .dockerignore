@@ -9,4 +9,5 @@ bench
 docs
 **/.DS_Store
 **/build
+**/.gradle
 **/recordings
