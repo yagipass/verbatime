@@ -98,8 +98,7 @@ final class SessionWalker {
                 c.offset() + cursor.eventIndex(),
                 fault(Objects.requireNonNull(cursor.fault()), cursor.faultValue()));
             stopped = true;
-          } else if (e == EventCursor.Event.INCOMPLETE
-              && file.status == TraceFile.Status.COMPLETE) {
+          } else if (e == EventCursor.Event.INCOMPLETE && !c.cut()) {
             file.markCorrupt(c.offset() + cursor.eventIndex(), "chunk payload ends mid-event");
             stopped = true;
           }
