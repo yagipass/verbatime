@@ -27,7 +27,7 @@ final class TraceFile {
     CORRUPT
   }
 
-  record Chunk(long offset, int len, long baseTicks) {}
+  record Chunk(long offset, int len, long baseTicks, boolean cut) {}
 
   static final class Session {
 
@@ -362,11 +362,11 @@ final class TraceFile {
     }
     long end = pos + len;
     if (end > size) {
-      s.chunks.add(new Chunk(pos, (int) (size - pos), baseTicks));
+      s.chunks.add(new Chunk(pos, (int) (size - pos), baseTicks, true));
       status = Status.TRUNCATED;
       return false;
     }
-    s.chunks.add(new Chunk(pos, (int) len, baseTicks));
+    s.chunks.add(new Chunk(pos, (int) len, baseTicks, false));
     pos = end;
     if (endsSession) {
       s.ended = true;
