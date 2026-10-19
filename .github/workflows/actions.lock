@@ -16,6 +16,8 @@ workflows:
         - 'docker/login-action@v4.6.0'
         - 'docker/metadata-action@v6.2.0'
         - 'docker/setup-buildx-action@v4.4.1'
+    '.github/workflows/labeler.yml':
+        - 'actions/labeler@v7.0.0'
     '.github/workflows/mvn-hash.yml':
         - 'actions/checkout@v7.0.1'
         - 'cachix/install-nix-action@v31.11.1'
@@ -42,6 +44,11 @@ dependencies:
         commit: 'sha1-3d3c42e5aac5ba805825da76410c181273ba90b1'
         owner_id: 44036562
         repo_id: 197814629
+    'actions/labeler@v7.0.0':
+        ref: 'v7.0.0'
+        commit: 'sha1-bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13'
+        owner_id: 44036562
+        repo_id: 177139928
     'cachix/cachix-action@v17':
         ref: 'v17'
         commit: 'sha1-38b082610b782e7e93e209c35fd730d399dee866'

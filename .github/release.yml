@@ -2,3 +2,46 @@ changelog:
   exclude:
     labels:
       - tagpr
+  categories:
+    - title: Agent
+      labels:
+        - agent
+      exclude:
+        labels:
+          - documentation
+          - maintenance
+    - title: CLI
+      labels:
+        - cli
+      exclude:
+        labels:
+          - documentation
+          - maintenance
+    - title: JMC Plugin
+      labels:
+        - jmc
+      exclude:
+        labels:
+          - documentation
+          - maintenance
+    - title: New Features
+      labels:
+        - enhancement
+    - title: Bug Fixes
+      labels:
+        - bug
+    - title: Performance
+      labels:
+        - performance
+    - title: Documentation
+      labels:
+        - documentation
+    - title: Maintenance
+      labels:
+        - maintenance
+    - title: Dependencies
+      labels:
+        - dependencies
+    - title: Other Changes
+      labels:
+        - "*"
