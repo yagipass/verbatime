@@ -30,7 +30,7 @@ jobs:
       - env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: .github/scripts/delete-example-images.sh --dry-run pr "$PR_NUMBER"
+        run: .github/scripts/delete-example-images.sh pr "$PR_NUMBER"
 
   untagged:
     if: github.event_name != 'pull_request'
@@ -45,4 +45,4 @@ jobs:
           persist-credentials: false
       - env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: .github/scripts/delete-example-images.sh --dry-run untagged
+        run: .github/scripts/delete-example-images.sh untagged
