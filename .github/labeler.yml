@@ -19,3 +19,9 @@ cli:
 jmc:
   - changed-files:
       - any-glob-to-any-file: ['modules/jmc/src/main/**', 'modules/jmc/plugin.xml', 'modules/jmc/icons/**']
+examples:
+  - changed-files:
+      - any-glob-to-any-file: ['examples/**']
+benchmark:
+  - changed-files:
+      - any-glob-to-any-file: ['bench/**']
