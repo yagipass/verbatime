@@ -432,7 +432,7 @@ final class TraceFile {
   }
 
   private String string(long recordStart, long len) {
-    if (len < 0 || len > Integer.MAX_VALUE) {
+    if (len < 0 || len > Vbtm.MAX_STRING_BYTES) {
       throw new BadRecord(recordStart, "implausible string length " + len);
     }
     if (len > data.size() - pos) {
