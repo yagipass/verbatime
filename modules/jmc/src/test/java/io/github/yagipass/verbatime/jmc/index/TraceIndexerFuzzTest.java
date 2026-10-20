@@ -6,6 +6,7 @@ import com.code_intelligence.jazzer.api.FuzzedDataProvider;
 import com.code_intelligence.jazzer.junit.FuzzTest;
 import com.google.errorprone.annotations.Var;
 import io.github.yagipass.verbatime.format.ReferenceDecoder;
+import io.github.yagipass.verbatime.format.Seeds;
 import io.github.yagipass.verbatime.format.SpecCases;
 import io.github.yagipass.verbatime.format.Vbtm;
 import io.github.yagipass.verbatime.format.Verdict;
@@ -23,12 +24,25 @@ final class TraceIndexerFuzzTest {
 
   private static final int NO_COMPACTION = 1 << 30;
 
+  private static final List<byte[]> SEEDS = Seeds.recordings();
+
   @ParameterizedTest
   @MethodSource("io.github.yagipass.verbatime.format.SpecCases#all")
   void indexesEachSpecCaseAsDocumented(SpecCases.SpecCase c) throws IOException {
     assertEquals(c.expected(), indexWhole(c.bytes()));
   }
 
+  @ParameterizedTest
+  @MethodSource("io.github.yagipass.verbatime.format.Seeds#recordings")
+  void aSeedGrowingByteByByteIsIndexedLikeEachOfItsPrefixes(byte[] bytes) throws IOException {
+    int[] cuts = new int[bytes.length];
+    for (int i = 0; i < cuts.length; i++) {
+      cuts[i] = i + 1;
+    }
+    assertIndexedLikeEachPrefix(bytes, 1, cuts);
+  }
+
+  @MethodSource("io.github.yagipass.verbatime.format.Seeds#recordings")
   @FuzzTest
   void indexesAnyBytesLikeTheReference(byte[] bytes) throws IOException {
     assertEquals(ReferenceDecoder.verdict(bytes), indexWhole(bytes));
@@ -41,12 +55,17 @@ final class TraceIndexerFuzzTest {
     for (int i = 0; i < cuts.length - 1; i++) {
       cuts[i] = data.consumeInt(0, Integer.MAX_VALUE);
     }
-    byte[] bytes = data.consumeRemainingAsBytes();
+    byte[] bytes = data.consumeBoolean() ? data.pickValue(SEEDS) : data.consumeRemainingAsBytes();
     for (int i = 0; i < cuts.length - 1; i++) {
       cuts[i] %= bytes.length + 1;
     }
     cuts[cuts.length - 1] = bytes.length;
     Arrays.sort(cuts);
+    assertIndexedLikeEachPrefix(bytes, overviewBudget, cuts);
+  }
+
+  private static void assertIndexedLikeEachPrefix(byte[] bytes, int overviewBudget, int[] cuts)
+      throws IOException {
     Path file = Files.createTempFile("vbtm-fuzz", ".vbtm");
     TraceIndexer ix = TraceIndexer.open(file, overviewBudget);
     try {
