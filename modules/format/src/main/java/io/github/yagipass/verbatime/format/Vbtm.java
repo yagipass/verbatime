@@ -46,6 +46,8 @@ public final class Vbtm {
 
   public static final int MAX_GC_LABEL_BYTES = 256;
 
+  public static final int MAX_STRING_BYTES = Integer.MAX_VALUE;
+
   public static final int ANCHOR_BYTES = 1 + 8 + 4;
 
   public static final int HEADER_BYTES = ANCHOR_OFFSET + ANCHOR_BYTES;

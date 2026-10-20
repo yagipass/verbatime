@@ -224,6 +224,9 @@ public final class TraceReader {
     if (len < 0) {
       throw new CorruptTraceException(recStart, "negative string length " + len);
     }
+    if (len > Vbtm.MAX_STRING_BYTES) {
+      throw new CorruptTraceException(recStart, "implausible string length " + len);
+    }
     if (len > data.length - pos) {
       throw new Truncated();
     }

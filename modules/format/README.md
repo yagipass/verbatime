@@ -145,6 +145,7 @@ varint give the event kind.
 | method id, exception id | below 2^22 |
 | ticks | at most `Long.MAX_VALUE / 100` |
 | chunk payload | at most 2^28 bytes |
+| string | at most 2^31 - 1 bytes |
 | GC label | at most 256 bytes |
 | UTC offset | within ±18 hours |
 
