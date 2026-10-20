@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.errorprone.annotations.Var;
+import io.github.yagipass.verbatime.format.TraceBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -76,5 +77,44 @@ final class SessionsCommandTest {
     }
     assertEquals(7, fromSessions);
     assertEquals(fromSessions, fromThrows, "both count a propagating exception once");
+  }
+
+  @Test
+  void aSessionStartsAtItsFirstChunkEvenWhenThatChunkHoldsNoEvents() throws IOException {
+    String later =
+        sessionJson(
+            "later.vbtm",
+            mainThread().chunk(1, 0, new byte[0], false).chunk(1, 16, runCallingWork(16), true));
+    assertTrue(
+        later.contains("\"start_ms\":0.0000,\"dur_ms\":0.0019"),
+        "the session lasts from its empty first chunk, as the JMC plugin shows it: " + later);
+    String earlier =
+        sessionJson(
+            "earlier.vbtm",
+            mainThread().chunk(1, 16, new byte[0], false).chunk(1, 0, runCallingWork(0), true));
+    assertTrue(
+        earlier.contains("\"start_ms\":0.0016,\"dur_ms\":0.0003"),
+        "a chunk that goes back before the session start is moved up to it: " + earlier);
+  }
+
+  private static TraceBuilder mainThread() {
+    return new TraceBuilder(1_700_000_000_000L, 0)
+        .thread(1, "main")
+        .clazz(0, "a.Main", "run()V", "work()V");
+  }
+
+  private static byte[] runCallingWork(long at) {
+    return new TraceBuilder.Payload(at)
+        .enter(at, 0)
+        .enter(at + 1, 1)
+        .exit(at + 2)
+        .exit(at + 3)
+        .bytes();
+  }
+
+  private String sessionJson(String name, TraceBuilder w) throws IOException {
+    Cli.Result r = Cli.vbtm("sessions", TestTraces.write(dir, name, w.end().bytes()), "--json");
+    assertEquals(0, r.code(), r.err());
+    return r.line("{\"type\":\"session\"");
   }
 }
