@@ -39,7 +39,6 @@ jobs:
         uses: cachix/cachix-action@v17
         with:
           name: verbatime
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - if: steps.tagpr.outputs.tag != ''
         run: |
           nix develop .#jmc   --command mvn -B -pl modules/jmc   -am verify
@@ -80,7 +79,6 @@ jobs:
       - uses: cachix/cachix-action@v17
         with:
           name: verbatime
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - env:
           MAVEN_GPG_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
@@ -190,7 +188,6 @@ jobs:
       - uses: cachix/cachix-action@v17
         with:
           name: verbatime
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - run: nix develop .#docs --command sh -c 'cd docs && pnpm install --frozen-lockfile && pnpm run build'
       - env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
