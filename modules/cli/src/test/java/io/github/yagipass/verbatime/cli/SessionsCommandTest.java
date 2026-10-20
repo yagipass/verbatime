@@ -2,6 +2,7 @@ package io.github.yagipass.verbatime.cli;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.errorprone.annotations.Var;
 import io.github.yagipass.verbatime.format.TraceBuilder;
@@ -95,6 +96,45 @@ final class SessionsCommandTest {
     assertTrue(
         earlier.contains("\"start_ms\":0.0016,\"dur_ms\":0.0003"),
         "a chunk that goes back before the session start is moved up to it: " + earlier);
+  }
+
+  @Test
+  void noControlCharacterInARecordedNameReachesAnyOutput() throws IOException {
+    TraceBuilder w =
+        new TraceBuilder(1_700_000_000_000L, 0)
+            .thread(1, "w\u001b]0;title\u0007\u001b[2K\tx\n\u009b" + (char) 0x202E + "1")
+            .clazz(0, "a.Main", "r\u0001un()V", "work()V")
+            .chunk(1, 0, runCallingWork(0), true);
+    Path t = TestTraces.write(dir, "control.vbtm", w.end().bytes());
+    String shown = "w\\x1b]0;title\\x07\\x1b[2K\\x09x\\x0a\\x9b\\u202e1";
+
+    Cli.Result text = Cli.vbtm("sessions", t);
+    assertNoControlCharacter(text);
+    assertTrue(
+        text.line(" 1 ").contains(shown) && text.line(" 1 ").contains("Main.r\\x01un"),
+        "each character is shown, so names that differ only in them stay apart: " + text.out());
+    Cli.Result json = Cli.vbtm("sessions", t, "--json");
+    assertNoControlCharacter(json);
+    assertTrue(
+        json.out().contains("\"thread\":\"" + shown.replace("\\", "\\\\") + "\""),
+        "JSON shows the name as the text output does: " + json.out());
+    assertNoControlCharacter(Cli.vbtm("tree", t, "1"));
+    assertTrue(
+        Cli.vbtm("sessions", t, "--thread", shown).line(" 1 ").contains(shown),
+        "the name as printed selects its thread again");
+  }
+
+  private static void assertNoControlCharacter(Cli.Result r) {
+    String out = r.out();
+    for (int i = 0; i < out.length(); i++) {
+      char c = out.charAt(i);
+      if ((c < 0x20 && c != '\n')
+          || (c >= 0x7F && c <= 0x9F)
+          || (c >= 0x2028 && c <= 0x202E)
+          || (c >= 0x2066 && c <= 0x2069)) {
+        fail(String.format("U+%04X at %d would reach the terminal as it is:%n%s", (int) c, i, out));
+      }
+    }
   }
 
   private static TraceBuilder mainThread() {
