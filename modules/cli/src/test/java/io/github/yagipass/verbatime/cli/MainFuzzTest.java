@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.code_intelligence.jazzer.api.FuzzedDataProvider;
 import com.code_intelligence.jazzer.junit.FuzzTest;
+import io.github.yagipass.verbatime.format.Seeds;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 final class MainFuzzTest {
+
+  private static final List<byte[]> SEEDS = Seeds.recordings();
 
   private static final List<String> COMMANDS =
       List.of("sessions", "hot", "throws", "tree", "find", "callers");
@@ -68,7 +71,9 @@ final class MainFuzzTest {
     for (int k = 0; k < words; k++) {
       rest.add(data.consumeBoolean() ? data.pickValue(WORDS) : data.consumeString(16));
     }
-    Path file = TraceFileFuzzTest.write(data.consumeRemainingAsBytes());
+    Path file =
+        TraceFileFuzzTest.write(
+            data.consumeBoolean() ? data.pickValue(SEEDS) : data.consumeRemainingAsBytes());
     try {
       List<Object> argv = new ArrayList<>(List.of(command, file));
       if (json) {

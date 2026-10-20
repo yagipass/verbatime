@@ -58,6 +58,7 @@ final class TraceFileFuzzTest {
     }
   }
 
+  @MethodSource("io.github.yagipass.verbatime.format.Seeds#recordings")
   @FuzzTest
   void readsAnyBytesLikeTheReferenceAndSaysSoInItsExitCode(byte[] bytes) throws IOException {
     Verdict expected = ReferenceDecoder.verdict(bytes, ReferenceDecoder.SessionStart.AS_RECORDED);
