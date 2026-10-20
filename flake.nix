@@ -54,6 +54,7 @@
       perSystem =
         {
           config,
+          lib,
           pkgs,
           inputs',
           ...
@@ -124,7 +125,8 @@
 
           checks = {
             inherit (config.packages) vbtm;
-          };
+          }
+          // lib.mapAttrs' (name: lib.nameValuePair "devShell-${name}") config.devShells;
 
           treefmt = {
             projectRootFile = "flake.nix";
