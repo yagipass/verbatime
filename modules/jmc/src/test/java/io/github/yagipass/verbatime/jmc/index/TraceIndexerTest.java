@@ -347,10 +347,13 @@ final class TraceIndexerTest {
     TraceBuilder.Payload p = new TraceBuilder.Payload(100);
     p.enter(100, 1).exit(200);
     w.chunk(3, 100, p.bytes(), true);
-    long offset = w.bytes().length;
-    w.end().thread(5, "late");
+    long offset = w.end().bytes().length;
+    w.thread(5, "late");
     TraceSnapshot d = TestTraces.index(w);
-    assertEquals(offset, d.corruption.offset());
+    assertEquals(
+        offset,
+        d.corruption.offset(),
+        "the footer is whole, so the file goes wrong at the first byte after it, as vbtm reports");
     assertTrue(d.corruption.reason().contains("footer"));
     assertFalse(d.truncated);
     assertEquals(1, d.totalCalls);
@@ -581,6 +584,19 @@ final class TraceIndexerTest {
         d.corruption.offset(),
         "base ticks past MAX_TICKS would overflow the session start into negative nanoseconds");
     assertTrue(d.corruption.reason().contains("ticks"), d.corruption.reason());
+  }
+
+  @Test
+  void chunkPayloadLengthBeyondTheLimitIsCorruptAtItsRecord() throws IOException {
+    TraceBuilder w = TestTraces.writer().rawBytes(Vbtm.RECORD_CHUNK, 1, 0);
+    rawVarint(w, Vbtm.MAX_CHUNK_PAYLOAD_BYTES + 1);
+    TraceSnapshot d = TestTraces.index(w);
+    assertEquals(
+        Vbtm.HEADER_BYTES,
+        d.corruption.offset(),
+        "the length belongs to the CHUNK record, and no payload starts after it, as vbtm reports");
+    assertTrue(d.corruption.reason().contains("payload length"), d.corruption.reason());
+    assertFalse(d.truncated);
   }
 
   @Test

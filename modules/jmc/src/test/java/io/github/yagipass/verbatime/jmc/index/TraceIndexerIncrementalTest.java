@@ -110,7 +110,6 @@ final class TraceIndexerIncrementalTest {
     TraceBuilder.Payload p = new TraceBuilder.Payload(100);
     p.enter(100, 1).exit(200);
     w.chunk(3, 100, p.bytes(), true);
-    long footer = w.bytes().length;
     w.end();
     byte[] clean = w.bytes();
     w.thread(5, "late");
@@ -125,7 +124,7 @@ final class TraceIndexerIncrementalTest {
     ix.advance(ProgressListener.NONE);
     TraceSnapshot d = ix.snapshot();
     assertEquals(
-        footer,
+        clean.length,
         d.corruption.offset(),
         "the same finding as TraceIndexerTest.dataAfterFooterIsCorrupt");
     assertTrue(d.corruption.reason().contains("footer"));
