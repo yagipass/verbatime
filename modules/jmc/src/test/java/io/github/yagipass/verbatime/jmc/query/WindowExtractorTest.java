@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.errorprone.annotations.Var;
+import io.github.yagipass.verbatime.format.ReferenceDecoder;
 import io.github.yagipass.verbatime.jmc.index.Calls;
 import io.github.yagipass.verbatime.jmc.index.RandomTraces;
-import io.github.yagipass.verbatime.jmc.index.ReferenceDecoder;
 import io.github.yagipass.verbatime.jmc.index.TestTraces;
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
 import io.github.yagipass.verbatime.jmc.query.WindowExtractor.Window;

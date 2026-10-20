@@ -5,13 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.errorprone.annotations.Var;
+import io.github.yagipass.verbatime.format.ReferenceDecoder;
+import io.github.yagipass.verbatime.format.ReferenceDecoder.Call;
 import io.github.yagipass.verbatime.jmc.export.ParsedExport.BodyLine;
 import io.github.yagipass.verbatime.jmc.export.ParsedExport.HotRow;
 import io.github.yagipass.verbatime.jmc.export.ParsedExport.OutlineRow;
 import io.github.yagipass.verbatime.jmc.export.SessionExporter.Result;
 import io.github.yagipass.verbatime.jmc.index.RandomTraces;
-import io.github.yagipass.verbatime.jmc.index.ReferenceDecoder;
-import io.github.yagipass.verbatime.jmc.index.ReferenceDecoder.Call;
 import io.github.yagipass.verbatime.jmc.index.TestTraces;
 import io.github.yagipass.verbatime.jmc.index.TraceIndexer;
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;

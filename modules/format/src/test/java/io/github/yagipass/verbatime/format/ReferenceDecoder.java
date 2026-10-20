@@ -1,7 +1,6 @@
-package io.github.yagipass.verbatime.jmc.index;
+package io.github.yagipass.verbatime.format;
 
 import com.google.errorprone.annotations.Var;
-import io.github.yagipass.verbatime.format.Vbtm;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -29,44 +28,44 @@ public final class ReferenceDecoder {
     }
   }
 
-  static final class Session {
-    int seq;
+  public static final class Session {
+    public int seq;
 
-    long tid;
+    public long tid;
 
-    int rootMethodId = -1;
+    public int rootMethodId = -1;
 
-    long startNs;
+    public long startNs;
 
-    long endNs;
+    public long endNs;
 
-    boolean ended;
+    public boolean ended;
 
-    long callCount;
+    public long callCount;
   }
 
-  record GcPause(long startNs, long durNs, int action, String name, String cause) {}
+  public record GcPause(long startNs, long durNs, int action, String name, String cause) {}
 
   public static final class Result {
     public final List<Call> calls = new ArrayList<>();
 
-    final List<GcPause> gc = new ArrayList<>();
+    public final List<GcPause> gc = new ArrayList<>();
 
-    final Map<Long, String> threadNames = new LinkedHashMap<>();
+    public final Map<Long, String> threadNames = new LinkedHashMap<>();
 
-    final Map<Integer, String> methodNames = new LinkedHashMap<>();
+    public final Map<Integer, String> methodNames = new LinkedHashMap<>();
 
-    final Map<Integer, String> exceptionNames = new LinkedHashMap<>();
+    public final Map<Integer, String> exceptionNames = new LinkedHashMap<>();
 
-    final List<Session> sessions = new ArrayList<>();
+    public final List<Session> sessions = new ArrayList<>();
 
-    boolean truncated;
+    public boolean truncated;
 
-    long corruptOffset = -1;
+    public long corruptOffset = -1;
 
-    long startEpochMs;
+    public long startEpochMs;
 
-    int utcOffsetSeconds;
+    public int utcOffsetSeconds;
   }
 
   private static final class TruncatedException extends RuntimeException {

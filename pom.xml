@@ -60,6 +60,13 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
+        <groupId>io.github.yagipass</groupId>
+        <artifactId>verbatime-format</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
         <groupId>com.google.errorprone</groupId>
         <artifactId>error_prone_annotations</artifactId>
         <version>${errorprone.version}</version>
@@ -254,6 +261,7 @@
               <configuration>
                 <includeGroupIds>io.github.yagipass</includeGroupIds>
                 <includeArtifactIds>verbatime-format</includeArtifactIds>
+                <excludeTypes>test-jar</excludeTypes>
                 <excludes>META-INF/**,io/github/yagipass/verbatime/format/TraceReader*.class,io/github/yagipass/verbatime/format/TraceBuilder*.class,io/github/yagipass/verbatime/format/CorruptTraceException.class</excludes>
                 <outputDirectory>${project.build.outputDirectory}</outputDirectory>
                 <overWriteReleases>true</overWriteReleases>
