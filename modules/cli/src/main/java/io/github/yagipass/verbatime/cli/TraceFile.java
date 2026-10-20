@@ -291,11 +291,8 @@ final class TraceFile {
             return;
           }
           String cls = string(recordStart, varint());
-          if (count > size - pos) {
-            throw new Truncated();
-          }
-          String[] s = new String[(int) count];
-          for (int k = 0; k < s.length; k++) {
+          String[] s = new String[(int) Math.min(count, size - pos)];
+          for (int k = 0; k < count; k++) {
             s[k] = string(recordStart, varint());
           }
           declare((int) baseId, cls, s);

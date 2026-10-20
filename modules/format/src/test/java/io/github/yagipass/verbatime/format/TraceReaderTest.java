@@ -213,6 +213,29 @@ final class TraceReaderTest {
     assertTrue(e.getMessage().contains("implausible string length"), e.getMessage());
   }
 
+  @Test
+  void aClassWithMoreSignaturesThanBytesLeftIsACutUnlessOneBeforeTheEndIsBad() {
+    byte[] cut =
+        varint(trace().rawBytes(Vbtm.RECORD_CLASS, 2), 1000)
+            .rawBytes(1, 'B', 4, 'm', '(', ')', 'V')
+            .bytes();
+    assertEquals(
+        Outcome.TRUNCATED,
+        TraceReader.read(cut, new VisitLog()),
+        "a writer can still be writing the other signatures when the file ends");
+    TraceBuilder w = trace();
+    int record = w.bytes().length;
+    byte[] bad =
+        varint(varint(w.rawBytes(Vbtm.RECORD_CLASS, 2), 1000).rawBytes(1, 'B'), -1).bytes();
+    CorruptTraceException e =
+        assertThrows(
+            CorruptTraceException.class,
+            () -> TraceReader.read(bad, new VisitLog()),
+            "the bad signature comes before the end of the file, so more bytes cannot fix it");
+    assertEquals(record, e.offset());
+    assertTrue(e.getMessage().contains("negative string length"), e.getMessage());
+  }
+
   private static List<String> goldenCalls() {
     return List.of(
         "anchor " + EPOCH_MS + " " + UTC_OFFSET,
