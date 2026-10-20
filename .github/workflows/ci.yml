@@ -42,7 +42,6 @@ jobs:
       - uses: cachix/cachix-action@v17
         with:
           name: verbatime
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - uses: actions/cache@v6.1.0
         with:
           path: ~/.m2/repository
@@ -61,7 +60,6 @@ jobs:
       - uses: cachix/cachix-action@v17
         with:
           name: verbatime
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - uses: actions/cache@v6.1.0
         with:
           path: ~/.m2/repository
@@ -80,7 +78,6 @@ jobs:
       - uses: cachix/cachix-action@v17
         with:
           name: verbatime
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - uses: actions/cache@v6.1.0
         with:
           path: ~/.m2/repository
@@ -99,5 +96,4 @@ jobs:
       - uses: cachix/cachix-action@v17
         with:
           name: verbatime
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - run: nix develop .#docs --command sh -c 'cd docs && pnpm install --frozen-lockfile && pnpm run build && pnpm exec wrangler deploy --dry-run'
