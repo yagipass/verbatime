@@ -549,6 +549,28 @@ final class TraceIndexerTest {
   }
 
   @Test
+  void nameLongerThanAnyJavaArrayIsCorruptNotTruncated() throws IOException {
+    TraceBuilder w = TestTraces.writer().rawBytes(Vbtm.RECORD_THREAD, 7);
+    rawVarint(w, Vbtm.MAX_STRING_BYTES + 1L);
+    TraceSnapshot d = TestTraces.index(w);
+    assertEquals(Vbtm.HEADER_BYTES, d.corruption.offset());
+    assertTrue(d.corruption.reason().contains("implausible string length"), d.corruption.reason());
+    assertFalse(
+        d.truncated,
+        "no writer produces a name longer than a Java array, so it is corruption, not a recording"
+            + " cut short");
+  }
+
+  @Test
+  void nameOfTheLongestLengthPastTheEndIsTruncated() throws IOException {
+    TraceBuilder w = TestTraces.writer().rawBytes(Vbtm.RECORD_THREAD, 7);
+    rawVarint(w, Vbtm.MAX_STRING_BYTES);
+    TraceSnapshot d = TestTraces.index(w);
+    assertNull(d.corruption);
+    assertTrue(d.truncated, "a writer can still be writing a name this long when the file ends");
+  }
+
+  @Test
   void chunkBaseTicksBeyondTheLimitIsCorrupt() throws IOException {
     TraceBuilder w = TestTraces.writer().rawBytes(Vbtm.RECORD_CHUNK, 1);
     rawVarint(w, Vbtm.MAX_TICKS + 1);

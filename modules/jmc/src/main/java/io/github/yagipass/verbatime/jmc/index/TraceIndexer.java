@@ -827,6 +827,10 @@ public final class TraceIndexer {
       throw new CorruptException(
           recStart, "negative string length " + len + " at offset " + recStart);
     }
+    if (len > Vbtm.MAX_STRING_BYTES) {
+      throw new CorruptException(
+          recStart, "implausible string length " + len + " at offset " + recStart);
+    }
     if (len > size - pos) {
       throw TruncatedException.INSTANCE;
     }

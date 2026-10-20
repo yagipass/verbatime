@@ -194,6 +194,25 @@ final class TraceReaderTest {
     assertEquals("anchor " + EPOCH_MS + " " + -Vbtm.MAX_UTC_OFFSET_SECONDS, west.calls.get(0));
   }
 
+  @Test
+  void aStringPastTheEndIsACutUnlessNoJavaArrayCouldHoldIt() {
+    byte[] longest = varint(trace().rawBytes(Vbtm.RECORD_THREAD, 7), Vbtm.MAX_STRING_BYTES).bytes();
+    assertEquals(
+        Outcome.TRUNCATED,
+        TraceReader.read(longest, new VisitLog()),
+        "a writer can still be writing a string this long when the file ends");
+    TraceBuilder w = trace();
+    int record = w.bytes().length;
+    byte[] tooLong = varint(w.rawBytes(Vbtm.RECORD_THREAD, 7), Vbtm.MAX_STRING_BYTES + 1L).bytes();
+    CorruptTraceException e =
+        assertThrows(
+            CorruptTraceException.class,
+            () -> TraceReader.read(tooLong, new VisitLog()),
+            "no writer produces a string longer than a Java array, so it is not a cut");
+    assertEquals(record, e.offset());
+    assertTrue(e.getMessage().contains("implausible string length"), e.getMessage());
+  }
+
   private static List<String> goldenCalls() {
     return List.of(
         "anchor " + EPOCH_MS + " " + UTC_OFFSET,
