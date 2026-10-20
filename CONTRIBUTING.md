@@ -43,6 +43,9 @@ JAZZER_FUZZ=1 mvn -B -pl modules/format -am verify -Dsurefire.failIfNoSpecifiedT
   the test of that reader uses, not a looser comparison.
 - When adding a record type, add a recording that holds it to `Seeds`.
 
+The `fuzz` workflow fuzzes each of these tests for 20 minutes every night, starting from what the
+nights before found. When it finds an input, the run fails and the input is attached to it.
+
 ## Repository settings
 
 Labels, rulesets, and other repository settings are kept in [`.github/infra.yml`](.github/infra.yml).

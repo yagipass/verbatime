@@ -1,0 +1,79 @@
+name: fuzz
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: format
+            dev-shell: cli
+            module: modules/format
+            test: TraceReaderFuzzTest#readsAnyBytesLikeTheReference
+          - name: jmc
+            dev-shell: jmc
+            module: modules/jmc
+            test: TraceIndexerFuzzTest#indexesAnyBytesLikeTheReference
+          - name: jmc-growing
+            dev-shell: jmc
+            module: modules/jmc
+            test: TraceIndexerFuzzTest#aGrowingRecordingIsIndexedLikeEachOfItsPrefixes
+          - name: cli
+            dev-shell: cli
+            module: modules/cli
+            test: TraceFileFuzzTest#readsAnyBytesLikeTheReferenceAndSaysSoInItsExitCode
+          - name: cli-main
+            dev-shell: cli
+            module: modules/cli
+            test: MainFuzzTest#anyArgumentsOnAnyBytesEndWithADocumentedExitCodeAndJsonLines
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@v31.11.1
+      - uses: cachix/cachix-action@v17
+        with:
+          name: verbatime
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - uses: actions/cache@v6.1.0
+        with:
+          path: ~/.m2/repository
+          key: m2-${{ matrix.dev-shell }}-${{ hashFiles('pom.xml', 'modules/format/pom.xml', format('modules/{0}/pom.xml', matrix.dev-shell)) }}
+          restore-keys: m2-${{ matrix.dev-shell }}-
+      - uses: actions/cache@v6.1.0
+        with:
+          path: ${{ matrix.module }}/.cifuzz-corpus
+          key: fuzz-corpus-${{ matrix.name }}-${{ github.run_id }}
+          restore-keys: fuzz-corpus-${{ matrix.name }}-
+      - run: >-
+          nix develop ".#$DEV_SHELL" --command mvn -B -pl "$MODULE" -am verify
+          -Dspotless.check.skip=true -Dsurefire.failIfNoSpecifiedTests=false "-Dtest=$TEST"
+        env:
+          JAZZER_FUZZ: '1'
+          JAZZER_MAX_DURATION: 20m
+          DEV_SHELL: ${{ matrix.dev-shell }}
+          MODULE: ${{ matrix.module }}
+          TEST: ${{ matrix.test }}
+      - if: failure()
+        run: |
+          mkdir findings
+          find modules -path '*FuzzTestInputs/*' -type f -exec cp -t findings {} +
+      - if: failure()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: findings-${{ matrix.name }}
+          path: findings
+          if-no-files-found: ignore
