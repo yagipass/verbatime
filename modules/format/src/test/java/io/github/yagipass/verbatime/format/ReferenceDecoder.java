@@ -12,6 +12,11 @@ import java.util.Map;
 
 public final class ReferenceDecoder {
 
+  public enum SessionStart {
+    MOVED_UP_TO_THE_THREADS_LAST_TICK,
+    AS_RECORDED
+  }
+
   public record Call(
       long tid,
       int seq,
@@ -110,6 +115,10 @@ public final class ReferenceDecoder {
   private ReferenceDecoder() {}
 
   public static Result decode(byte[] data) {
+    return decode(data, SessionStart.MOVED_UP_TO_THE_THREADS_LAST_TICK);
+  }
+
+  public static Result decode(byte[] data, SessionStart sessionStart) {
     Result res = new Result();
     int n = data.length;
     long tick = Vbtm.NANOS_PER_TICK;
@@ -149,7 +158,7 @@ public final class ReferenceDecoder {
           long tid = varint(data, posBox);
           res.threadNames.put(tid, string(data, posBox, recStart));
         } else if (type == Vbtm.RECORD_CHUNK || type == Vbtm.RECORD_CHUNK_END) {
-          chunk(data, posBox, recStart, type == Vbtm.RECORD_CHUNK_END, res, states);
+          chunk(data, posBox, recStart, type == Vbtm.RECORD_CHUNK_END, res, states, sessionStart);
         } else if (type == Vbtm.RECORD_CLASS) {
           long baseId = varint(data, posBox);
           long count = varint(data, posBox);
@@ -223,9 +232,13 @@ public final class ReferenceDecoder {
   }
 
   public static Verdict verdict(byte[] data) {
+    return verdict(data, SessionStart.MOVED_UP_TO_THE_THREADS_LAST_TICK);
+  }
+
+  public static Verdict verdict(byte[] data, SessionStart sessionStart) {
     Result res;
     try {
-      res = decode(data);
+      res = decode(data, sessionStart);
     } catch (IllegalArgumentException notARecording) {
       return Verdict.NOT_A_RECORDING;
     }
@@ -252,7 +265,8 @@ public final class ReferenceDecoder {
       int recStart,
       boolean endsSession,
       Result res,
-      Map<Long, State> states) {
+      Map<Long, State> states,
+      SessionStart sessionStart) {
     int n = data.length;
     long tick = Vbtm.NANOS_PER_TICK;
     long tid = varint(data, posBox);
@@ -268,6 +282,9 @@ public final class ReferenceDecoder {
     boolean partial = end > n;
     int limit = (int) Math.min(end, n);
     State st = states.computeIfAbsent(tid, k -> new State());
+    if (st.session == null && sessionStart == SessionStart.AS_RECORDED) {
+      st.lastTicks = 0;
+    }
     long base = Math.max(baseTicks, st.lastTicks);
     if (st.session == null) {
       Session ns = new Session();
