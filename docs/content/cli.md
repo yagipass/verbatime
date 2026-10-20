@@ -62,10 +62,6 @@ Every output is capped and ends with the command that shows more.
 
 `vbtm --help` and `vbtm <command> --help` list all options.
 
-Names are printed as recorded, except that control characters and text direction overrides in them
-are shown as `\xHH` or `\uHHHH`, so a recording cannot change your terminal. Options such as
-`--thread` take a name as printed.
-
 ## JSON output
 
 Every command takes `--json`, which prints one JSON object per line. `vbtm` never prompts.
