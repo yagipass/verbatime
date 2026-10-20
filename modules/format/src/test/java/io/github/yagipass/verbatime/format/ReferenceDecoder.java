@@ -63,6 +63,8 @@ public final class ReferenceDecoder {
 
     public long corruptOffset = -1;
 
+    public boolean corruptInChunk;
+
     public long startEpochMs;
 
     public int utcOffsetSeconds;
@@ -84,9 +86,16 @@ public final class ReferenceDecoder {
 
     final long offset;
 
+    final boolean inChunk;
+
     CorruptException(long offset) {
+      this(offset, false);
+    }
+
+    CorruptException(long offset, boolean inChunk) {
       super(null, null, false, false);
       this.offset = offset;
+      this.inChunk = inChunk;
     }
   }
 
@@ -97,6 +106,8 @@ public final class ReferenceDecoder {
 
     final List<long[]> stack = new ArrayList<>();
   }
+
+  private ReferenceDecoder() {}
 
   public static Result decode(byte[] data) {
     Result res = new Result();
@@ -130,116 +141,15 @@ public final class ReferenceDecoder {
       posBox[0] = Vbtm.HEADER_BYTES;
       while (posBox[0] < n) {
         int recStart = posBox[0];
+        if (endSeen) {
+          throw new CorruptException(recStart);
+        }
         int type = data[posBox[0]++] & 0xFF;
         if (type == Vbtm.RECORD_THREAD) {
           long tid = varint(data, posBox);
-          int len = (int) varint(data, posBox);
-          if (len < 0) {
-            throw new CorruptException(recStart);
-          }
-          if (posBox[0] + len > n) {
-            throw TruncatedException.I;
-          }
-          res.threadNames.put(tid, new String(data, posBox[0], len, StandardCharsets.UTF_8));
-          posBox[0] += len;
+          res.threadNames.put(tid, string(data, posBox, recStart));
         } else if (type == Vbtm.RECORD_CHUNK || type == Vbtm.RECORD_CHUNK_END) {
-          long tid = varint(data, posBox);
-          long baseTicks = varint(data, posBox);
-          long payloadLen = varint(data, posBox);
-          if (baseTicks < 0 || baseTicks > Vbtm.MAX_TICKS) {
-            throw new CorruptException(recStart);
-          }
-          long end = posBox[0] + payloadLen;
-          boolean partial = end > n;
-          int limit = (int) Math.min(end, n);
-          State st = states.computeIfAbsent(tid, k -> new State());
-          if (st.session == null) {
-            Session ns = new Session();
-            ns.seq = res.sessions.size() + 1;
-            ns.tid = tid;
-            ns.startNs = baseTicks * tick;
-            st.session = ns;
-            st.lastTicks = baseTicks;
-            res.sessions.add(ns);
-          }
-          Session s = st.session;
-          @Var long ticks = baseTicks;
-          @Var boolean first = true;
-          @Var int decoded = 0;
-          while (posBox[0] < limit) {
-            int mark = posBox[0];
-            try {
-              long v = varint(data, posBox, limit);
-              if ((v & 1) == 0) {
-                if (!first) {
-                  if ((v >>> 1) > Vbtm.MAX_TICKS - ticks) {
-                    throw new CorruptException(mark);
-                  }
-                  ticks += v >>> 1;
-                }
-                long methodId = varint(data, posBox, limit);
-                if (s.rootMethodId < 0) {
-                  s.rootMethodId = (int) methodId;
-                }
-                st.stack.add(new long[] {ticks, 0, methodId});
-              } else {
-                @Var int exc = -1;
-                if ((v & 2) != 0) {
-                  long e = varint(data, posBox, limit);
-                  if (e >= Vbtm.EXCEPTION_ID_LIMIT) {
-                    throw new CorruptException(mark);
-                  }
-                  exc = (int) e;
-                }
-                if (!first) {
-                  if ((v >>> 2) > Vbtm.MAX_TICKS - ticks) {
-                    throw new CorruptException(mark);
-                  }
-                  ticks += v >>> 2;
-                }
-                if (st.stack.isEmpty()) {
-                  throw new CorruptException(mark);
-                }
-                long[] top = st.stack.remove(st.stack.size() - 1);
-                long startNs = top[0] * tick;
-                long durNs = ticks * tick - startNs;
-                long selfNs = Math.max(durNs - top[1], 0);
-                if (!st.stack.isEmpty()) {
-                  st.stack.get(st.stack.size() - 1)[1] += durNs;
-                }
-                s.callCount++;
-                res.calls.add(
-                    new Call(
-                        tid,
-                        s.seq,
-                        startNs,
-                        durNs,
-                        (int) top[2],
-                        st.stack.size(),
-                        selfNs,
-                        exc,
-                        false));
-              }
-              first = false;
-              decoded++;
-            } catch (TruncatedException t) {
-              posBox[0] = mark;
-              break;
-            }
-          }
-          if (decoded > 0) {
-            st.lastTicks = ticks;
-          }
-          if (partial) {
-            throw TruncatedException.I;
-          }
-          if (posBox[0] != end) {
-            throw new CorruptException(posBox[0]);
-          }
-          if (type == Vbtm.RECORD_CHUNK_END) {
-            s.ended = true;
-            drain(res, states, tid, tick);
-          }
+          chunk(data, posBox, recStart, type == Vbtm.RECORD_CHUNK_END, res, states);
         } else if (type == Vbtm.RECORD_CLASS) {
           long baseId = varint(data, posBox);
           long count = varint(data, posBox);
@@ -249,43 +159,16 @@ public final class ReferenceDecoder {
               || count > Vbtm.METHOD_ID_LIMIT - baseId) {
             throw new CorruptException(recStart);
           }
-          int clen = (int) varint(data, posBox);
-          if (clen < 0) {
-            throw new CorruptException(recStart);
-          }
-          if (posBox[0] + clen > n) {
-            throw TruncatedException.I;
-          }
-          String cls = new String(data, posBox[0], clen, StandardCharsets.UTF_8);
-          posBox[0] += clen;
+          String cls = string(data, posBox, recStart);
           for (int k = 0; k < count; k++) {
-            int slen = (int) varint(data, posBox);
-            if (slen < 0) {
-              throw new CorruptException(recStart);
-            }
-            if (posBox[0] + slen > n) {
-              throw TruncatedException.I;
-            }
-            res.methodNames.put(
-                (int) (baseId + k),
-                cls + "." + new String(data, posBox[0], slen, StandardCharsets.UTF_8));
-            posBox[0] += slen;
+            res.methodNames.put((int) (baseId + k), cls + "." + string(data, posBox, recStart));
           }
         } else if (type == Vbtm.RECORD_EXCEPTION) {
           long id = varint(data, posBox);
           if (id <= 0 || id >= Vbtm.EXCEPTION_ID_LIMIT) {
             throw new CorruptException(recStart);
           }
-          int len = (int) varint(data, posBox);
-          if (len < 0) {
-            throw new CorruptException(recStart);
-          }
-          if (posBox[0] + len > n) {
-            throw TruncatedException.I;
-          }
-          res.exceptionNames.put(
-              (int) id, new String(data, posBox[0], len, StandardCharsets.UTF_8));
-          posBox[0] += len;
+          res.exceptionNames.put((int) id, string(data, posBox, recStart));
         } else if (type == Vbtm.RECORD_GC) {
           long start = varint(data, posBox);
           long dur = varint(data, posBox);
@@ -312,9 +195,6 @@ public final class ReferenceDecoder {
           }
           res.gc.add(new GcPause(start * tick, dur * tick, (int) action, labels[0], labels[1]));
         } else if (type == Vbtm.RECORD_END) {
-          if (posBox[0] != n) {
-            throw new CorruptException(recStart);
-          }
           endSeen = true;
         } else {
           throw new CorruptException(recStart);
@@ -324,6 +204,7 @@ public final class ReferenceDecoder {
       res.truncated = true;
     } catch (CorruptException c) {
       res.corruptOffset = c.offset;
+      res.corruptInChunk = c.inChunk;
     }
     if (!endSeen && !res.truncated && res.corruptOffset < 0) {
       res.truncated = true;
@@ -339,6 +220,137 @@ public final class ReferenceDecoder {
       drain(res, states, e.getKey(), tick);
     }
     return res;
+  }
+
+  public static Verdict verdict(byte[] data) {
+    Result res;
+    try {
+      res = decode(data);
+    } catch (IllegalArgumentException notARecording) {
+      return Verdict.NOT_A_RECORDING;
+    }
+    if (res.corruptOffset >= 0) {
+      return Verdict.corrupt(res.corruptOffset);
+    }
+    List<Verdict.Session> sessions = new ArrayList<>();
+    for (Session s : res.sessions) {
+      sessions.add(
+          new Verdict.Session(
+              s.tid,
+              s.rootMethodId,
+              s.callCount,
+              s.ended,
+              s.startNs / Vbtm.NANOS_PER_TICK,
+              s.endNs / Vbtm.NANOS_PER_TICK));
+    }
+    return Verdict.readable(res.truncated, sessions);
+  }
+
+  private static void chunk(
+      byte[] data,
+      int[] posBox,
+      int recStart,
+      boolean endsSession,
+      Result res,
+      Map<Long, State> states) {
+    int n = data.length;
+    long tick = Vbtm.NANOS_PER_TICK;
+    long tid = varint(data, posBox);
+    long baseTicks = varint(data, posBox);
+    long payloadLen = varint(data, posBox);
+    if (baseTicks < 0 || baseTicks > Vbtm.MAX_TICKS) {
+      throw new CorruptException(recStart);
+    }
+    if (payloadLen < 0 || payloadLen > Vbtm.MAX_CHUNK_PAYLOAD_BYTES) {
+      throw new CorruptException(recStart);
+    }
+    long end = posBox[0] + payloadLen;
+    boolean partial = end > n;
+    int limit = (int) Math.min(end, n);
+    State st = states.computeIfAbsent(tid, k -> new State());
+    long base = Math.max(baseTicks, st.lastTicks);
+    if (st.session == null) {
+      Session ns = new Session();
+      ns.seq = res.sessions.size() + 1;
+      ns.tid = tid;
+      ns.startNs = base * tick;
+      st.session = ns;
+      st.lastTicks = base;
+      res.sessions.add(ns);
+    }
+    Session s = st.session;
+    @Var long ticks = base;
+    @Var boolean first = true;
+    @Var int decoded = 0;
+    while (posBox[0] < limit) {
+      int mark = posBox[0];
+      try {
+        long v = eventVarint(data, posBox, limit, mark);
+        if ((v & 1) == 0) {
+          if (!first) {
+            if ((v >>> 1) > Vbtm.MAX_TICKS - ticks) {
+              throw new CorruptException(mark, true);
+            }
+            ticks += v >>> 1;
+          }
+          long methodId = eventVarint(data, posBox, limit, mark);
+          if (methodId < 0 || methodId >= Vbtm.METHOD_ID_LIMIT) {
+            throw new CorruptException(mark, true);
+          }
+          if (s.rootMethodId < 0) {
+            s.rootMethodId = (int) methodId;
+          }
+          st.stack.add(new long[] {ticks, 0, methodId});
+        } else {
+          @Var int exc = -1;
+          if ((v & 2) != 0) {
+            long e = eventVarint(data, posBox, limit, mark);
+            if (e < 0 || e >= Vbtm.EXCEPTION_ID_LIMIT) {
+              throw new CorruptException(mark, true);
+            }
+            exc = (int) e;
+          }
+          if (!first) {
+            if ((v >>> 2) > Vbtm.MAX_TICKS - ticks) {
+              throw new CorruptException(mark, true);
+            }
+            ticks += v >>> 2;
+          }
+          if (st.stack.isEmpty()) {
+            throw new CorruptException(mark, true);
+          }
+          long[] top = st.stack.remove(st.stack.size() - 1);
+          long startNs = top[0] * tick;
+          long durNs = ticks * tick - startNs;
+          long selfNs = Math.max(durNs - top[1], 0);
+          if (!st.stack.isEmpty()) {
+            st.stack.get(st.stack.size() - 1)[1] += durNs;
+          }
+          s.callCount++;
+          res.calls.add(
+              new Call(
+                  tid, s.seq, startNs, durNs, (int) top[2], st.stack.size(), selfNs, exc, false));
+        }
+        first = false;
+        decoded++;
+      } catch (TruncatedException t) {
+        posBox[0] = mark;
+        break;
+      }
+    }
+    if (decoded > 0) {
+      st.lastTicks = ticks;
+    }
+    if (partial) {
+      throw TruncatedException.I;
+    }
+    if (posBox[0] != end) {
+      throw new CorruptException(posBox[0], true);
+    }
+    if (endsSession) {
+      s.ended = true;
+      drain(res, states, tid, tick);
+    }
   }
 
   private static void drain(Result res, Map<Long, State> states, long tid, long tick) {
@@ -361,11 +373,39 @@ public final class ReferenceDecoder {
     st.session = null;
   }
 
-  private static long varint(byte[] data, int[] pos) {
-    return varint(data, pos, data.length);
+  private static String string(byte[] data, int[] pos, int recStart) {
+    long len = varint(data, pos);
+    if (len < 0 || len > Vbtm.MAX_STRING_BYTES) {
+      throw new CorruptException(recStart);
+    }
+    if (len > data.length - pos[0]) {
+      throw TruncatedException.I;
+    }
+    String s = new String(data, pos[0], (int) len, StandardCharsets.UTF_8);
+    pos[0] += (int) len;
+    return s;
   }
 
-  private static long varint(byte[] data, int[] pos, int end) {
+  private static long varint(byte[] data, int[] pos) {
+    @Var long v = 0;
+    @Var int shift = 0;
+    while (true) {
+      if (pos[0] >= data.length) {
+        throw TruncatedException.I;
+      }
+      int b = data[pos[0]++] & 0xFF;
+      v |= (long) (b & 0x7F) << shift;
+      if ((b & 0x80) == 0) {
+        return v;
+      }
+      shift += 7;
+      if (shift > 63) {
+        throw new CorruptException(pos[0]);
+      }
+    }
+  }
+
+  private static long eventVarint(byte[] data, int[] pos, int end, int eventStart) {
     @Var long v = 0;
     @Var int shift = 0;
     while (true) {
@@ -379,7 +419,7 @@ public final class ReferenceDecoder {
       }
       shift += 7;
       if (shift > 63) {
-        throw new CorruptException(pos[0]);
+        throw new CorruptException(eventStart, true);
       }
     }
   }
