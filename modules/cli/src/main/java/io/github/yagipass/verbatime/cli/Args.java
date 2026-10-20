@@ -1,6 +1,7 @@
 package io.github.yagipass.verbatime.cli;
 
 import com.google.errorprone.annotations.Var;
+import io.github.yagipass.verbatime.format.Vbtm;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -74,12 +75,18 @@ final class Args {
     if (num.isEmpty() || nsPerUnit < 0) {
       throw notADuration(what, v);
     }
+    BigDecimal ticks;
     try {
       BigDecimal ns = new BigDecimal(num).multiply(BigDecimal.valueOf(nsPerUnit));
-      return ns.divide(BigDecimal.valueOf(100), 0, RoundingMode.CEILING).longValueExact();
-    } catch (NumberFormatException | ArithmeticException e) {
+      ticks = ns.divide(BigDecimal.valueOf(100), 0, RoundingMode.CEILING);
+    } catch (NumberFormatException e) {
       throw notADuration(what, v);
     }
+    if (ticks.compareTo(BigDecimal.valueOf(Vbtm.MAX_TICKS)) > 0) {
+      throw CliException.usage(
+          what + " must be no longer than a recording can hold, not '" + v + "'", null);
+    }
+    return ticks.longValueExact();
   }
 
   static String shellQuote(String s) {
