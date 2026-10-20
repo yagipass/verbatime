@@ -58,17 +58,14 @@ final class SessionWalker {
     halted = false;
     stack.clear();
     @Var long ordinal = 0;
-    @Var long last = -1;
     startTicks = s.chunks.isEmpty() ? 0 : s.chunks.get(0).baseTicks();
+    @Var long last = startTicks;
     for (TraceFile.Chunk c : s.chunks) {
       if (scratch.length < c.len()) {
         scratch = new byte[c.len()];
       }
       file.data.copy(c.offset(), scratch, c.len());
       long base = Math.max(c.baseTicks(), last);
-      if (last < 0) {
-        startTicks = base;
-      }
       cursor.reset(scratch, 0, c.len(), base);
       while (!stopped) {
         EventCursor.Event e = cursor.next();
@@ -112,7 +109,7 @@ final class SessionWalker {
         break;
       }
     }
-    endTicks = Math.max(last, startTicks);
+    endTicks = last;
     if (halted) {
       return;
     }
