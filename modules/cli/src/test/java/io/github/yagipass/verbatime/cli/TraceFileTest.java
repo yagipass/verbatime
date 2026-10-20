@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.yagipass.verbatime.format.TraceBuilder;
+import io.github.yagipass.verbatime.format.Varint;
+import io.github.yagipass.verbatime.format.Vbtm;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -64,6 +66,33 @@ final class TraceFileTest {
   }
 
   @Test
+  void aClassWithMoreSignaturesThanBytesLeftIsACutUnlessOneBeforeTheEndIsBad() throws IOException {
+    TraceBuilder cut =
+        varint(TestTraces.builder().rawBytes(Vbtm.RECORD_CLASS, 2), 1000)
+            .rawBytes(1, 'B', 4, 'm', '(', ')', 'V');
+    Cli.Result truncated =
+        Cli.vbtm("sessions", TestTraces.write(dir, "cut-class.vbtm", cut.bytes()));
+    assertEquals(
+        0,
+        truncated.code(),
+        "a writer can still be writing the other signatures: " + truncated.out() + truncated.err());
+    assertTrue(truncated.out().contains("status: truncated"), truncated.out());
+
+    TraceBuilder w = TestTraces.builder();
+    int record = w.bytes().length;
+    varint(varint(w.rawBytes(Vbtm.RECORD_CLASS, 2), 1000).rawBytes(1, 'B'), -1);
+    Cli.Result corrupt = Cli.vbtm("sessions", TestTraces.write(dir, "bad-class.vbtm", w.bytes()));
+    assertEquals(
+        3,
+        corrupt.code(),
+        "the bad signature comes before the end of the file, so this is not a cut: "
+            + corrupt.out());
+    assertTrue(
+        corrupt.out().contains("corrupt at offset " + record + ": implausible string length -1"),
+        corrupt.out());
+  }
+
+  @Test
   void anUnreadableFileExitsWithTwo() throws IOException {
     assertEquals(2, Cli.vbtm("sessions", dir.resolve("missing.vbtm")).code());
     Cli.Result r =
@@ -75,5 +104,14 @@ final class TraceFileTest {
   private static byte[] enterWithoutItsMethodId() {
     byte[] whole = new TraceBuilder.Payload(3000).enter(3000, 0).enter(3001, 1).bytes();
     return Arrays.copyOf(whole, whole.length - 1);
+  }
+
+  private static TraceBuilder varint(TraceBuilder w, long v) {
+    byte[] b = new byte[Varint.MAX_BYTES];
+    int n = Varint.put(b, 0, v);
+    for (int i = 0; i < n; i++) {
+      w.rawBytes(b[i] & 0xFF);
+    }
+    return w;
   }
 }

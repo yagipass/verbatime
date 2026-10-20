@@ -145,11 +145,8 @@ public final class TraceReader {
               throw new CorruptTraceException(recStart, "method ids exceed the 2^22 format limit");
             }
             String cls = string(recStart);
-            if (count > data.length - pos) {
-              throw new Truncated();
-            }
-            String[] sigs = new String[(int) count];
-            for (int k = 0; k < sigs.length; k++) {
+            String[] sigs = new String[(int) Math.min(count, data.length - pos)];
+            for (int k = 0; k < count; k++) {
               sigs[k] = string(recStart);
             }
             v.clazz(baseId, cls, sigs);
