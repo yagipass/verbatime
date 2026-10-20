@@ -444,7 +444,7 @@ public final class TraceIndexer {
   private void scan(MappedTrace in, boolean partialOk, ProgressListener progress, long start) {
     while (pos < size) {
       if (endSeen) {
-        corrupt(endOffset, "data after the end-of-recording footer at offset " + endOffset);
+        corrupt(pos, "data after the end-of-recording footer at offset " + endOffset);
         return;
       }
       if ((++recordCounter & 255) == 0 && progress.report(pos - start, size - start)) {
@@ -575,7 +575,7 @@ public final class TraceIndexer {
       return false;
     }
     if (payloadLen < 0 || payloadLen > Vbtm.MAX_CHUNK_PAYLOAD_BYTES) {
-      corrupt(payloadStart, "implausible chunk payload length " + payloadLen);
+      corrupt(recStart, "implausible chunk payload length " + payloadLen);
       return false;
     }
     long end = payloadStart + payloadLen;
