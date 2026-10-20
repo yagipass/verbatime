@@ -19,6 +19,7 @@ final class TraceReaderFuzzTest {
     assertReadsLikeTheReference(c.bytes());
   }
 
+  @MethodSource("io.github.yagipass.verbatime.format.Seeds#recordings")
   @FuzzTest
   void readsAnyBytesLikeTheReference(byte[] bytes) {
     assertReadsLikeTheReference(bytes);

@@ -47,7 +47,8 @@ public final class SpecCases {
         aStringLongerThanAnyJavaArrayIsCorruptNotCut(),
         dataAfterTheEndRecordIsCorruptFromItsFirstByte(),
         anImplausibleChunkLengthIsReportedAtTheStartOfItsRecord(),
-        aMalformedSignatureIsCorruptEvenWhenTheClassDeclaresMoreThanTheBytesLeft());
+        aMalformedSignatureIsCorruptEvenWhenTheClassDeclaresMoreThanTheBytesLeft(),
+        aSessionStartsAtItsFirstChunkEvenWhenThatChunkHoldsNoEvents());
   }
 
   private static SpecCase aRecordingThatEndsWithTheEndRecordIsComplete() {
@@ -135,6 +136,14 @@ public final class SpecCases {
             + " are left",
         varint(w, -1).bytes(),
         Verdict.corrupt(record));
+  }
+
+  private static SpecCase aSessionStartsAtItsFirstChunkEvenWhenThatChunkHoldsNoEvents() {
+    byte[] later = new TraceBuilder.Payload(16).enter(16, 0).enter(21, 1).exit(31).exit(36).bytes();
+    return new SpecCase(
+        "a session starts at its first chunk even when that chunk holds no events",
+        trace().chunk(1, 0, new byte[0], false).chunk(1, 16, later, true).end().bytes(),
+        Verdict.readable(false, List.of(new Verdict.Session(1, 0, 2, true, 0, 36))));
   }
 
   private static TraceBuilder trace() {
