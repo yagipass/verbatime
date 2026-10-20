@@ -22,6 +22,27 @@ pre-commit hooks, which CI also runs through `nix flake check`.
 
 - After adding or updating an action in a workflow, run `gh actions-lock`.
 
+## Fuzzing
+
+The `*FuzzTest` classes use [Jazzer](https://github.com/CodeIntelligenceTesting/jazzer). Those of
+the readers of recordings compare each reader with `ReferenceDecoder` in the format module's tests,
+starting from the recordings in `Seeds`, which `mvn verify` replays too.
+
+After changing a reader, `EventCursor`, or `ReferenceDecoder`, fuzz the tests of the readers it
+affects for 5 minutes each before opening a pull request:
+
+```sh
+JAZZER_FUZZ=1 mvn -B -pl modules/format -am verify -Dsurefire.failIfNoSpecifiedTests=false \
+  -Dtest='TraceReaderFuzzTest#readsAnyBytesLikeTheReference'
+```
+
+- A failing input is saved as `crash-*` in `src/test/resources/<package>/<Class>Inputs/<method>/`,
+  which git ignores, and `mvn verify` replays it while it is there. Turn it into a case in
+  `SpecCases`, or into a test of that reader, then delete it.
+- A difference between the readers that is meant to stay becomes a mode of `ReferenceDecoder` that
+  the test of that reader uses, not a looser comparison.
+- When adding a record type, add a recording that holds it to `Seeds`.
+
 ## Repository settings
 
 Labels, rulesets, and other repository settings are kept in [`.github/infra.yml`](.github/infra.yml).
