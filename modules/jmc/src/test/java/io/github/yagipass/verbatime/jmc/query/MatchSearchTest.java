@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.yagipass.verbatime.format.ReferenceDecoder;
+import io.github.yagipass.verbatime.format.ReferenceDecoder.Call;
 import io.github.yagipass.verbatime.jmc.index.RandomTraces;
-import io.github.yagipass.verbatime.jmc.index.ReferenceDecoder;
-import io.github.yagipass.verbatime.jmc.index.ReferenceDecoder.Call;
 import io.github.yagipass.verbatime.jmc.index.TestTraces;
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot;
 import java.io.IOException;

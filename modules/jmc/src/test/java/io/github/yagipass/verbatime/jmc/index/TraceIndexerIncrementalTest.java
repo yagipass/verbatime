@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.errorprone.annotations.Var;
+import io.github.yagipass.verbatime.format.ReferenceDecoder;
 import io.github.yagipass.verbatime.format.TraceBuilder;
 import io.github.yagipass.verbatime.format.Vbtm;
 import io.github.yagipass.verbatime.jmc.index.TraceIndexer.ProgressListener;

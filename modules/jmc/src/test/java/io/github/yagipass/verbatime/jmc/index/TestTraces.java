@@ -3,6 +3,7 @@ package io.github.yagipass.verbatime.jmc.index;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import io.github.yagipass.verbatime.format.ReferenceDecoder;
 import io.github.yagipass.verbatime.format.TraceBuilder;
 import java.io.IOException;
 import java.nio.file.Files;
