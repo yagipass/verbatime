@@ -2,6 +2,7 @@ package io.github.yagipass.verbatime.agent;
 
 import com.google.errorprone.annotations.Var;
 import io.github.yagipass.verbatime.agent.probe.Log;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -183,18 +184,23 @@ public record Config(
 
   private static long parseWaitStart(String value) {
     String digits = value.endsWith("s") ? value.substring(0, value.length() - 1) : value;
-    long seconds;
+    BigInteger seconds;
     try {
-      seconds = Long.parseLong(digits);
+      seconds = new BigInteger(digits);
     } catch (NumberFormatException e) {
       throw new IllegalArgumentException(
           "waitstart= needs a number of seconds such as waitstart=60s, got '" + value + "'");
     }
-    if (seconds <= 0) {
+    if (seconds.signum() <= 0) {
       throw new IllegalArgumentException(
           "waitstart= needs a positive number of seconds, got '" + value + "'");
     }
-    return seconds * 1000L;
+    long maxSeconds = Long.MAX_VALUE / 1000L;
+    if (seconds.compareTo(BigInteger.valueOf(maxSeconds)) > 0) {
+      throw new IllegalArgumentException(
+          "waitstart= can be at most " + maxSeconds + "s, got '" + value + "'");
+    }
+    return seconds.longValueExact() * 1000L;
   }
 
   private static boolean addPrefixesReportingIgnored(

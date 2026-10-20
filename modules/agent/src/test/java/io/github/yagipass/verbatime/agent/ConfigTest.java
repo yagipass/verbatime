@@ -58,6 +58,19 @@ public final class ConfigTest {
     expectFailure("waitstart=0", "zero waitstart");
     expectFailure("waitstart=-1s", "negative waitstart");
     expectFailure("waitstart=abc", "non-numeric waitstart");
+    long longest = Long.MAX_VALUE / 1000;
+    Check.eq(
+        longest * 1000,
+        Config.parse("waitstart=" + longest + "s").waitStartMs(),
+        "the longest waitstart the agent can wait for");
+    expectFailure(
+        "waitstart=" + (longest + 1) + "s",
+        "a waitstart in milliseconds past a long, which would wrap to a short wait or none",
+        "at most " + longest + "s");
+    expectFailure(
+        "waitstart=99999999999999999999s",
+        "a waitstart in seconds past a long, which is still a number of seconds",
+        "at most " + longest + "s");
     expectFailure("foo=1", "unknown key");
     expectFailure("out=", "empty out");
     expectFailure("spool=", "empty spool");
