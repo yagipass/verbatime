@@ -24,7 +24,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GH_PAT }}
-      - uses: cachix/install-nix-action@v31.11.1
+      - uses: cachix/install-nix-action@v31.11.2
       - run: nix run --inputs-from . nixpkgs#nix-update -- --flake vbtm --version skip
       - run: |
           git diff --quiet && exit 0
