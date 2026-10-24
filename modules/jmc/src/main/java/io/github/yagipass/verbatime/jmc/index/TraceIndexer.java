@@ -3,6 +3,8 @@ package io.github.yagipass.verbatime.jmc.index;
 import com.google.errorprone.annotations.Var;
 import io.github.yagipass.verbatime.format.EventCursor;
 import io.github.yagipass.verbatime.format.FrameStack;
+import io.github.yagipass.verbatime.format.ReadLimitException;
+import io.github.yagipass.verbatime.format.ReaderBudget;
 import io.github.yagipass.verbatime.format.Vbtm;
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot.SessionState;
 import io.github.yagipass.verbatime.jmc.index.TraceSnapshot.ThreadIndex;
@@ -60,6 +62,10 @@ public final class TraceIndexer {
 
     private int maxDepth;
 
+    private int reservedDepth;
+
+    private int reservedCalls;
+
     private long totalCalls;
 
     private final ChunkTable chunks;
@@ -79,6 +85,8 @@ public final class TraceIndexer {
       lastTicks = src.lastTicks;
       stack = src.stack.copy();
       maxDepth = src.maxDepth;
+      reservedDepth = src.reservedDepth;
+      reservedCalls = src.reservedCalls;
       totalCalls = src.totalCalls;
       chunks = src.chunks.copy();
       overview = src.overview.copy();
@@ -122,6 +130,8 @@ public final class TraceIndexer {
 
   private final int overviewBudget;
 
+  private final ReaderBudget budget;
+
   private final Object lock = new Object();
 
   private boolean closed;
@@ -139,6 +149,8 @@ public final class TraceIndexer {
   private Map<Long, ThreadState> states;
 
   private byte[] scratch = new byte[1 << 16];
+
+  private int reservedScratchCapacity = scratch.length;
 
   private final EventCursor eventCursor = new EventCursor();
 
@@ -164,19 +176,24 @@ public final class TraceIndexer {
 
   private boolean anchorRead;
 
+  private @Nullable ReadLimitException readLimit;
+
   private byte @Nullable [] header;
 
   private final Map<String, String> gcLabels = new HashMap<>();
 
-  private TraceIndexer(Path path, int overviewBudget) {
+  private TraceIndexer(Path path, int overviewBudget, ReaderBudget budget) {
     this.path = path;
     this.overviewBudget = Math.max(overviewBudget, 1);
+    this.budget = budget;
     reset();
   }
 
   private TraceIndexer(TraceIndexer src) {
     path = src.path;
     overviewBudget = src.overviewBudget;
+    budget = src.budget.copy();
+    reservedScratchCapacity = src.reservedScratchCapacity;
     size = src.size;
     pos = src.pos;
     data = src.data.copy();
@@ -195,10 +212,11 @@ public final class TraceIndexer {
     magicChecked = src.magicChecked;
     versionChecked = src.versionChecked;
     anchorRead = src.anchorRead;
+    readLimit = src.readLimit;
   }
 
   public static TraceIndexer open(Path path, int overviewBudget) {
-    return new TraceIndexer(path, overviewBudget);
+    return open(path, overviewBudget, new ReaderBudget());
   }
 
   public void close() {
@@ -225,6 +243,9 @@ public final class TraceIndexer {
           reset();
         }
       }
+      if (readLimit != null) {
+        throw readLimit;
+      }
       if (data.corruption != null) {
         return;
       }
@@ -242,6 +263,9 @@ public final class TraceIndexer {
       } catch (CorruptException c) {
         corrupt(c.offset, c.reason);
       }
+    } catch (ReadLimitException e) {
+      readLimit = e;
+      throw e;
     } finally {
       if (guard != null) {
         guard.release();
@@ -255,12 +279,22 @@ public final class TraceIndexer {
       throw new IllegalStateException("advance() before snapshot()");
     }
     try {
+      if (readLimit != null) {
+        throw readLimit;
+      }
       TraceIndexer c = new TraceIndexer(this);
       c.complete(guard);
       return c.data.build(guard);
+    } catch (ReadLimitException e) {
+      readLimit = e;
+      throw e;
     } finally {
       guard.release();
     }
+  }
+
+  static TraceIndexer open(Path path, int overviewBudget, ReaderBudget budget) {
+    return new TraceIndexer(path, overviewBudget, budget);
   }
 
   static TraceSnapshot index(Path path) throws IOException {
@@ -289,6 +323,12 @@ public final class TraceIndexer {
   }
 
   private void reset() {
+    budget.reset();
+    if (scratch.length > 1 << 16) {
+      scratch = new byte[1 << 16];
+    }
+    reservedScratchCapacity = scratch.length;
+    eventCursor.reset(scratch, 0, 0, 0);
     data = new TraceSnapshot.Builder(path);
     data.generation = GENERATIONS.incrementAndGet();
     durationHistogram = new long[DurationHistogram.SIZE];
@@ -304,6 +344,7 @@ public final class TraceIndexer {
     magicChecked = false;
     versionChecked = false;
     anchorRead = false;
+    readLimit = null;
   }
 
   private @Nullable MappedTrace acquire() {
@@ -457,6 +498,9 @@ public final class TraceIndexer {
           case Vbtm.RECORD_THREAD -> {
             long tid = varint(in);
             String name = string(in, recStart, varint(in));
+            if (!data.threadNames.containsKey(tid) && !states.containsKey(tid)) {
+              budget.reserve(ReaderBudget.THREAD_BYTES, "threads");
+            }
             data.threadNames.put(tid, name);
           }
           case Vbtm.RECORD_CHUNK, Vbtm.RECORD_CHUNK_END -> {
@@ -585,18 +629,28 @@ public final class TraceIndexer {
     }
     long limit = Math.min(end, size);
 
-    ThreadState st = states.computeIfAbsent(tid, ThreadState::new);
+    ThreadState st =
+        states.computeIfAbsent(
+            tid,
+            id -> {
+              if (!data.threadNames.containsKey(id)) {
+                budget.reserve(ReaderBudget.THREAD_BYTES, "threads");
+              }
+              return new ThreadState(id);
+            });
     @Var long base = baseTicks;
     if (base < st.lastTicks) {
       base = st.lastTicks;
     }
     @Var SessionState s = st.session;
     if (s == null) {
+      budget.reserve(ReaderBudget.SESSION_BYTES, "sessions");
       s = st.session = new SessionState(data.sessions.size() + 1, tid, base * Vbtm.NANOS_PER_TICK);
       data.sessions.add(s);
       s.firstChunk = st.chunks.count;
       st.lastTicks = base;
     }
+    budget.reserve(ReaderBudget.CHUNK_BYTES, "chunks");
     long stop = decodePayload(in, st, s, payloadStart, (int) (limit - payloadStart), base);
     int ci = st.chunks.count - 1;
     s.lastChunk = ci;
@@ -623,6 +677,11 @@ public final class TraceIndexer {
   private long decodePayload(
       MappedTrace in, ThreadState st, SessionState s, long fileOffset, int len, long baseTicks) {
     if (scratch.length < len) {
+      int capacity = Integer.highestOneBit(len) * 2;
+      if (capacity > reservedScratchCapacity) {
+        budget.reserve((capacity - (long) reservedScratchCapacity) * 2, "chunk decode buffer");
+        reservedScratchCapacity = capacity;
+      }
       scratch = DecodeScratch.allocate(len);
     }
     in.copy(fileOffset, scratch, len);
@@ -633,6 +692,12 @@ public final class TraceIndexer {
     while (true) {
       EventCursor.Event e = cur.next();
       if (e == EventCursor.Event.ENTER) {
+        int depth = stack.depth() + 1;
+        if (depth > st.reservedDepth) {
+          budget.reserve(
+              (depth - (long) st.reservedDepth) * ReaderBudget.FRAME_BYTES, "call depth");
+          st.reservedDepth = depth;
+        }
         if (s.rootMethodId < 0) {
           s.rootMethodId = cur.methodId();
         }
@@ -738,6 +803,20 @@ public final class TraceIndexer {
       int depth,
       boolean unclosed,
       int exc) {
+    if (st.overview.count == st.reservedCalls) {
+      try {
+        budget.reserve(ReaderBudget.CALL_BYTES, "overview calls");
+        st.reservedCalls++;
+      } catch (ReadLimitException e) {
+        compact();
+        if (!unclosed && durNs < overviewThresholdNs) {
+          return;
+        }
+        if (st.overview.count == st.reservedCalls) {
+          throw e;
+        }
+      }
+    }
     st.overview.add(startNs, durNs, selfNs, methodId, depth, unclosed, exc);
     if (++overviewTotal > compactTrigger) {
       compact();
