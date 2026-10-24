@@ -1,6 +1,7 @@
 package io.github.yagipass.verbatime.cli;
 
 import com.google.errorprone.annotations.Var;
+import io.github.yagipass.verbatime.format.ReaderBudget;
 import io.github.yagipass.verbatime.format.Vbtm;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -87,6 +88,8 @@ final class TraceFile {
 
   final MappedTrace data;
 
+  final ReaderBudget budget;
+
   final List<GcPause> gcPauses = new ArrayList<>();
 
   final List<Session> sessions = new ArrayList<>();
@@ -111,9 +114,10 @@ final class TraceFile {
 
   private long pos;
 
-  private TraceFile(Path path, MappedTrace data) {
+  private TraceFile(Path path, MappedTrace data, ReaderBudget budget) {
     this.path = path;
     this.data = data;
+    this.budget = budget;
   }
 
   static TraceFile open(String arg) {
@@ -125,6 +129,10 @@ final class TraceFile {
   }
 
   static TraceFile open(Path path) {
+    return open(path, new ReaderBudget());
+  }
+
+  static TraceFile open(Path path, ReaderBudget budget) {
     if (!Files.isRegularFile(path)) {
       throw new CliException(
           CliException.UNREADABLE, "no such file: " + path, "pass the path of a .vbtm recording");
@@ -139,7 +147,7 @@ final class TraceFile {
       throw new CliException(
           CliException.UNREADABLE, "cannot read " + path + ": " + e.getMessage(), null);
     }
-    TraceFile f = new TraceFile(path, data);
+    TraceFile f = new TraceFile(path, data, budget);
     f.scan();
     return f;
   }
@@ -273,6 +281,9 @@ final class TraceFile {
       switch (type) {
         case Vbtm.RECORD_THREAD -> {
           long tid = varint();
+          if (!threads.containsKey(tid)) {
+            budget.reserve(ReaderBudget.THREAD_NAME_BYTES, "threads");
+          }
           threads.put(tid, string(recordStart, varint()));
         }
         case Vbtm.RECORD_CHUNK, Vbtm.RECORD_CHUNK_END -> {
@@ -353,11 +364,13 @@ final class TraceFile {
     }
     @Var Session s = open.get(tid);
     if (s == null) {
+      budget.reserve(ReaderBudget.SESSION_BYTES, "sessions");
       s = new Session(sessions.size() + 1, tid);
       sessions.add(s);
       open.put(tid, s);
     }
     long end = pos + len;
+    budget.reserve(ReaderBudget.CHUNK_BYTES, "chunks");
     if (end > size) {
       s.chunks.add(new Chunk(pos, (int) (size - pos), baseTicks, true));
       status = Status.TRUNCATED;

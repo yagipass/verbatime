@@ -62,6 +62,10 @@ file. Select a session to show its flame chart, then click a call.
 
 When a recording opens, JDK Mission Control switches to the Verbatime perspective.
 
+The reader uses a memory budget of half JDK Mission Control's maximum heap, with
+conservative estimates for indexing and decoding. Recordings that exceed it fail to load with a
+`reader memory budget` error. Use a smaller recording or increase JDK Mission Control's `-Xmx`.
+
 | View | Shows |
 |---|---|
 | Verbatime Call Details | The selected call and its callers, root first. |

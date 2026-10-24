@@ -1,5 +1,6 @@
 package io.github.yagipass.verbatime.cli;
 
+import io.github.yagipass.verbatime.format.ReadLimitException;
 import java.io.BufferedOutputStream;
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
@@ -10,7 +11,7 @@ import java.util.List;
 
 public final class Main {
 
-  private interface Runner {
+  interface Runner {
 
     int run(List<String> argv, PrintStream stdout);
   }
@@ -56,7 +57,8 @@ public final class Main {
             For many repeated calls such as loops and N+1 queries, vbtm tree --merge and vbtm callers are shorter
             than a plain tree.
 
-            Exit status: 0 success, 1 bad arguments, 2 the file cannot be read or is not a .vbtm recording,
+            Exit status: 0 success, 1 bad arguments, 2 the file cannot be read, is not a .vbtm recording or
+            exceeds the reader memory budget,
             3 the file is corrupt. What could be read is still printed, followed by a "# status:" line.
             """;
 
@@ -76,21 +78,12 @@ public final class Main {
   }
 
   static int run(List<String> args, PrintStream stdout, PrintStream stderr) {
+    return run(args, stdout, stderr, Main::dispatch);
+  }
+
+  static int run(List<String> args, PrintStream stdout, PrintStream stderr, Runner runner) {
     try {
-      if (args.isEmpty()
-          || args.get(0).equals("--help")
-          || args.get(0).equals("-h")
-          || args.get(0).equals("help")) {
-        stdout.print(HELP);
-        return 0;
-      }
-      Command command = command(args.get(0));
-      List<String> rest = args.subList(1, args.size());
-      if (rest.contains("--help") || rest.contains("-h")) {
-        stdout.print(command.help());
-        return 0;
-      }
-      return command.runner().run(rest, stdout);
+      return runner.run(args, stdout);
     } catch (CliException e) {
       stdout.flush();
       stderr.println("vbtm: " + e.getMessage());
@@ -98,7 +91,28 @@ public final class Main {
         stderr.println("hint: " + e.hint());
       }
       return e.exitCode();
+    } catch (ReadLimitException e) {
+      stdout.flush();
+      stderr.println("vbtm: " + e.getMessage());
+      return CliException.UNREADABLE;
     }
+  }
+
+  private static int dispatch(List<String> args, PrintStream stdout) {
+    if (args.isEmpty()
+        || args.get(0).equals("--help")
+        || args.get(0).equals("-h")
+        || args.get(0).equals("help")) {
+      stdout.print(HELP);
+      return 0;
+    }
+    Command command = command(args.get(0));
+    List<String> rest = args.subList(1, args.size());
+    if (rest.contains("--help") || rest.contains("-h")) {
+      stdout.print(command.help());
+      return 0;
+    }
+    return command.runner().run(rest, stdout);
   }
 
   private static Command command(String name) {

@@ -3,6 +3,7 @@ package io.github.yagipass.verbatime.cli;
 import com.google.errorprone.annotations.Var;
 import io.github.yagipass.verbatime.format.EventCursor;
 import io.github.yagipass.verbatime.format.FrameStack;
+import io.github.yagipass.verbatime.format.ReaderBudget;
 import io.github.yagipass.verbatime.format.Vbtm;
 import java.util.Arrays;
 import java.util.Objects;
@@ -36,6 +37,8 @@ final class SessionWalker {
 
   private byte[] scratch = new byte[0];
 
+  private int budgetedDepth;
+
   private boolean stopped;
 
   private boolean halted;
@@ -62,6 +65,7 @@ final class SessionWalker {
     @Var long last = startTicks;
     for (TraceFile.Chunk c : s.chunks) {
       if (scratch.length < c.len()) {
+        file.budget.reserve(2L * (c.len() - scratch.length), "chunk payload buffer");
         scratch = new byte[c.len()];
       }
       file.data.copy(c.offset(), scratch, c.len());
@@ -72,6 +76,10 @@ final class SessionWalker {
         if (e == EventCursor.Event.ENTER) {
           last = cursor.ticks();
           int depth = stack.depth();
+          if (depth == budgetedDepth) {
+            file.budget.reserve(ReaderBudget.FRAME_BYTES, "call depth");
+            budgetedDepth++;
+          }
           if (depth == ordinals.length) {
             ordinals = Arrays.copyOf(ordinals, depth * 2);
           }

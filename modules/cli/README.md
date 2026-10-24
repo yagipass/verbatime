@@ -57,6 +57,11 @@ vbtm tree rec.vbtm --at 7.57         # one call and everything under it
 
 `vbtm --help` and `vbtm <command> --help` list all options.
 
+The reader uses a memory budget of half the maximum heap, with conservative estimates
+for indexing and decoding. If a recording exceeds it, the command exits with status 2 and a
+`reader memory budget` error. Use a smaller recording or increase the heap, for example
+`vbtm -Xmx2g sessions rec.vbtm`. `--limit` controls output rows only.
+
 ### With an AI agent
 
 [`skills/vbtm/`](../../skills/vbtm/SKILL.md) is an agent skill that investigates a recording with
