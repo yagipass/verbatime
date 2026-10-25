@@ -103,6 +103,20 @@ final class TraceIndexerResourceLimitTest {
   }
 
   @Test
+  void everyMethodNameIsChargedForTheClassNameItRepeats() throws IOException {
+    String cls = "A".repeat(1000);
+    long bytes = 2L * (ReaderBudget.METHOD_NAME_BYTES + 2L * (cls.length() + ".a()V".length()));
+    TraceSnapshot d = index(TestTraces.writer().clazz(0, cls, "a()V", "b()V").end(), bytes);
+    try {
+      assertEquals(cls + ".b()V", d.methodName(1), "a recording at the budget boundary keeps them");
+    } finally {
+      d.release();
+    }
+    TraceBuilder w = TestTraces.writer().clazz(0, cls, "a()V", "b()V", "c()V").end();
+    assertLimit(w, bytes, "method names");
+  }
+
+  @Test
   void depthGrowthIsLimitedAcrossChunkBoundaries() throws IOException {
     TraceBuilder w = TestTraces.writer();
     byte[] enter = new TraceBuilder.Payload(0).enter(0, 0).bytes();

@@ -924,6 +924,9 @@ public final class TraceIndexer {
     ensureMethodNames((int) (baseId + count));
     for (int k = 0; k < n; k++) {
       int id = (int) baseId + k;
+      budget.reserve(
+          ReaderBudget.METHOD_NAME_BYTES + 2L * (cls.length() + 1L + sigs[k].length()),
+          "method names");
       if (data.methodNames[id] == null) {
         data.totalMethods++;
       }
