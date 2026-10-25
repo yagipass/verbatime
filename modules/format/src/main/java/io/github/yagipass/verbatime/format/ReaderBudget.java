@@ -14,6 +14,8 @@ public final class ReaderBudget {
 
   public static final int CALL_BYTES = 256;
 
+  public static final int GC_BYTES = 256;
+
   private final long limitBytes;
 
   private long usedBytes;

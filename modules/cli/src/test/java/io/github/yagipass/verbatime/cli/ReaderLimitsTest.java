@@ -78,6 +78,24 @@ final class ReaderLimitsTest {
   }
 
   @Test
+  void gcPausesCannotAccumulatePastTheBudgetInARecordingWithoutSessions() throws IOException {
+    TraceBuilder trace = new TraceBuilder(0, 0).gc(0, 1, 0, "", "").gc(1, 1, 0, "", "");
+    TraceFile file =
+        TraceFile.open(
+            write("two-gc-pauses.vbtm", trace), new ReaderBudget(2L * ReaderBudget.GC_BYTES));
+    assertEquals(2, file.gcPauses.size(), "a recording at the budget boundary keeps every pause");
+    Path excessive = write("three-gc-pauses.vbtm", trace.gc(2, 1, 0, "", ""));
+    ReadLimitException failure =
+        assertThrows(
+            ReadLimitException.class,
+            () -> TraceFile.open(excessive, new ReaderBudget(2L * ReaderBudget.GC_BYTES)));
+    assertTrue(
+        failure.getMessage().contains("gc pauses"),
+        "every pause is retained, so six-byte GC records alone could exhaust the heap: "
+            + failure.getMessage());
+  }
+
+  @Test
   void aNewThreadForEverySessionCostsOnlyItsNameAsWithVirtualThreads() throws IOException {
     TraceBuilder trace = new TraceBuilder(0, 0);
     for (int tid = 1; tid <= 4; tid++) {

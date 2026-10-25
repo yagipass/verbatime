@@ -91,6 +91,18 @@ final class TraceIndexerResourceLimitTest {
   }
 
   @Test
+  void gcPausesAreLimitedBecauseCompactionNeverDropsThem() throws IOException {
+    TraceSnapshot d = index(TestTraces.writer().gc(0, 1, 0, "", "").end(), ReaderBudget.GC_BYTES);
+    try {
+      assertEquals(1, d.gc.count, "a recording at the budget boundary keeps its pause");
+    } finally {
+      d.release();
+    }
+    TraceBuilder w = TestTraces.writer().gc(0, 1, 0, "", "").gc(1, 1, 0, "", "").end();
+    assertLimit(w, ReaderBudget.GC_BYTES, "gc pauses");
+  }
+
+  @Test
   void depthGrowthIsLimitedAcrossChunkBoundaries() throws IOException {
     TraceBuilder w = TestTraces.writer();
     byte[] enter = new TraceBuilder.Payload(0).enter(0, 0).bytes();

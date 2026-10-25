@@ -583,6 +583,7 @@ public final class TraceIndexer {
               return;
             }
             String cause = gcLabel(string(in, recStart, causeLen));
+            budget.reserve(ReaderBudget.GC_BYTES, "gc pauses");
             data.gc.append(
                 gcStart * Vbtm.NANOS_PER_TICK,
                 durTicks * Vbtm.NANOS_PER_TICK,

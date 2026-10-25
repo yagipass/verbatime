@@ -335,6 +335,7 @@ final class TraceFile {
           }
           String collector = gcLabel(recordStart);
           String cause = gcLabel(recordStart);
+          budget.reserve(ReaderBudget.GC_BYTES, "gc pauses");
           gcPauses.add(new GcPause(start, dur, (int) action, collector, cause));
         }
         case Vbtm.RECORD_END -> endSeen = true;
