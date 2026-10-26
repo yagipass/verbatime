@@ -63,15 +63,13 @@ final class ReaderLimitsTest {
   @Test
   void redeclaringAThreadDoesNotConsumeTheAllowanceForAnotherThread() throws IOException {
     TraceBuilder trace = new TraceBuilder(0, 0).thread(1, "first").thread(1, "renamed");
-    TraceFile file =
-        TraceFile.open(
-            write("renamed-thread.vbtm", trace), new ReaderBudget(ReaderBudget.THREAD_NAME_BYTES));
+    long limit = ReaderBudget.THREAD_NAME_BYTES + ascii("first") + ascii("renamed");
+    TraceFile file = TraceFile.open(write("renamed-thread.vbtm", trace), new ReaderBudget(limit));
     assertEquals("renamed", file.threadName(1));
     Path excessive = write("two-threads.vbtm", trace.thread(2, "second"));
     ReadLimitException failure =
         assertThrows(
-            ReadLimitException.class,
-            () -> TraceFile.open(excessive, new ReaderBudget(ReaderBudget.THREAD_NAME_BYTES)));
+            ReadLimitException.class, () -> TraceFile.open(excessive, new ReaderBudget(limit)));
     assertTrue(
         failure.getMessage().contains("threads"),
         "new thread names retain map entries even without sessions: " + failure.getMessage());
@@ -80,15 +78,13 @@ final class ReaderLimitsTest {
   @Test
   void gcPausesCannotAccumulatePastTheBudgetInARecordingWithoutSessions() throws IOException {
     TraceBuilder trace = new TraceBuilder(0, 0).gc(0, 1, 0, "", "").gc(1, 1, 0, "", "");
-    TraceFile file =
-        TraceFile.open(
-            write("two-gc-pauses.vbtm", trace), new ReaderBudget(2L * ReaderBudget.GC_BYTES));
+    long limit = 2L * ReaderBudget.GC_BYTES + ascii("");
+    TraceFile file = TraceFile.open(write("two-gc-pauses.vbtm", trace), new ReaderBudget(limit));
     assertEquals(2, file.gcPauses.size(), "a recording at the budget boundary keeps every pause");
     Path excessive = write("three-gc-pauses.vbtm", trace.gc(2, 1, 0, "", ""));
     ReadLimitException failure =
         assertThrows(
-            ReadLimitException.class,
-            () -> TraceFile.open(excessive, new ReaderBudget(2L * ReaderBudget.GC_BYTES)));
+            ReadLimitException.class, () -> TraceFile.open(excessive, new ReaderBudget(limit)));
     assertTrue(
         failure.getMessage().contains("gc pauses"),
         "every pause is retained, so six-byte GC records alone could exhaust the heap: "
@@ -96,16 +92,82 @@ final class ReaderLimitsTest {
   }
 
   @Test
-  void everyMethodIsChargedForTheClassNameItsNameRepeats() throws IOException {
-    String cls = "A".repeat(1000);
-    long limit = 2L * (ReaderBudget.METHOD_NAME_BYTES + 2L * (cls.length() + ".a()V".length()));
-    TraceBuilder trace = new TraceBuilder(0, 0).clazz(0, cls, "a()V", "b()V");
-    TraceFile file = TraceFile.open(write("two-methods.vbtm", trace), new ReaderBudget(limit));
-    assertEquals(2, file.methodCount, "a recording at the budget boundary keeps every method");
-    Path excessive = write("three-methods.vbtm", trace.clazz(2, cls, "c()V"));
+  void gcLabelsAreChargedOnceForEachDistinctLabel() throws IOException {
+    String collector = "G1 Young Generation";
+    String cause = "G1 Evacuation Pause";
+    TraceBuilder trace = new TraceBuilder(0, 0).gc(0, 1, 1, collector, cause);
+    long limit = 2L * ReaderBudget.GC_BYTES + ascii(collector) + ascii(cause);
+    TraceFile file =
+        TraceFile.open(
+            write("repeated-labels.vbtm", trace.gc(1, 1, 1, collector, cause)),
+            new ReaderBudget(limit));
+    assertEquals(
+        2,
+        file.gcPauses.size(),
+        "a recording repeats a few labels in every pause, so a repeat must cost nothing more");
+    Path distinct =
+        write(
+            "distinct-labels.vbtm",
+            new TraceBuilder(0, 0).gc(0, 1, 1, collector, cause).gc(1, 1, 1, collector, "x"));
     ReadLimitException failure =
         assertThrows(
-            ReadLimitException.class, () -> TraceFile.open(excessive, new ReaderBudget(limit)));
+            ReadLimitException.class, () -> TraceFile.open(distinct, new ReaderBudget(limit)));
+    assertTrue(
+        failure.getMessage().contains("gc pauses"),
+        "a recording can give every pause new labels of up to 256 bytes: " + failure.getMessage());
+  }
+
+  @Test
+  void aThreadNameIsChargedForItsEscapedFormBeforeItIsDecoded() throws IOException {
+    String name = "\u0001".repeat(1000);
+    Path path = write("control-characters.vbtm", new TraceBuilder(0, 0).thread(1, name));
+    long limit = ReaderBudget.THREAD_NAME_BYTES + escaped(name);
+    assertEquals(
+        "\\x01".repeat(1000),
+        TraceFile.open(path, new ReaderBudget(limit)).threadName(1),
+        "vbtm keeps names with control characters escaped, at four times their encoded size");
+    ReadLimitException failure =
+        assertThrows(
+            ReadLimitException.class, () -> TraceFile.open(path, new ReaderBudget(limit - 1)));
+    assertTrue(
+        failure.getMessage().contains("thread names"),
+        "a thread's fixed charge cannot bound a name that the format lets grow to 2 GB: "
+            + failure.getMessage());
+  }
+
+  @Test
+  void exceptionNamesAreChargedForTheirLength() throws IOException {
+    String name = "E".repeat(1000);
+    Path path = write("long-exception.vbtm", new TraceBuilder(0, 0).exception(1, name));
+    long limit = ascii(name);
+    assertEquals(
+        name,
+        TraceFile.open(path, new ReaderBudget(limit)).exceptionName(1),
+        "printable ASCII names, as Java class names are, are kept as they are and cost only their"
+            + " copy and their string, not the escaped worst case");
+    ReadLimitException failure =
+        assertThrows(
+            ReadLimitException.class, () -> TraceFile.open(path, new ReaderBudget(limit - 1)));
+    assertTrue(
+        failure.getMessage().contains("exception names"),
+        "exception names have no fixed charge, so their length is all that bounds them: "
+            + failure.getMessage());
+  }
+
+  @Test
+  void everyMethodIsChargedForTheClassNameItsNameRepeats() throws IOException {
+    String cls = "A".repeat(1000);
+    Path path = write("two-methods.vbtm", new TraceBuilder(0, 0).clazz(0, cls, "a()V", "b()V"));
+    long limit =
+        ascii(cls)
+            + ascii("a()V")
+            + ascii("b()V")
+            + 2L * (ReaderBudget.METHOD_NAME_BYTES + 2L * (cls.length() + ".a()V".length()));
+    TraceFile file = TraceFile.open(path, new ReaderBudget(limit));
+    assertEquals(2, file.methodCount, "a recording at the budget boundary keeps every method");
+    ReadLimitException failure =
+        assertThrows(
+            ReadLimitException.class, () -> TraceFile.open(path, new ReaderBudget(limit - 1)));
     assertTrue(
         failure.getMessage().contains("method names"),
         "commands name every method after its class, so a class name declared once in the file"
@@ -122,6 +184,7 @@ final class ReaderLimitsTest {
     long limit =
         4L
             * (ReaderBudget.THREAD_NAME_BYTES
+                + ascii("virtual-1")
                 + ReaderBudget.SESSION_BYTES
                 + ReaderBudget.CHUNK_BYTES);
     assertEquals(
@@ -225,6 +288,16 @@ final class ReaderLimitsTest {
     assertTrue(error.startsWith("vbtm: recording exceeds the reader memory budget"), error);
     assertTrue(error.contains("sessions"), error);
     assertEquals(1, error.lines().count(), "the CLI must not print a Java exception stack trace");
+  }
+
+  private static long ascii(String s) {
+    return ReaderBudget.STRING_BYTES + (long) ReaderBudget.ASCII_STRING_BYTES_PER_BYTE * s.length();
+  }
+
+  private static long escaped(String s) {
+    return ReaderBudget.STRING_BYTES
+        + (long) ReaderBudget.ESCAPED_STRING_BYTES_PER_BYTE
+            * s.getBytes(StandardCharsets.UTF_8).length;
   }
 
   private static byte[] enters(int count) {

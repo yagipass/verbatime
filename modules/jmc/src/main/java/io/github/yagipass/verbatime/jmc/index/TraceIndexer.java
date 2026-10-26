@@ -324,6 +324,7 @@ public final class TraceIndexer {
 
   private void reset() {
     budget.reset();
+    gcLabels.clear();
     if (scratch.length > 1 << 16) {
       scratch = new byte[1 << 16];
     }
@@ -492,16 +493,16 @@ public final class TraceIndexer {
         throw new CancelledException();
       }
       long recStart = pos;
+      long usedAtRecordStart = budget.used();
       int type = in.byteAt(pos++);
       try {
         switch (type) {
           case Vbtm.RECORD_THREAD -> {
             long tid = varint(in);
-            String name = string(in, recStart, varint(in));
             if (!data.threadNames.containsKey(tid) && !states.containsKey(tid)) {
               budget.reserve(ReaderBudget.THREAD_BYTES, "threads");
             }
-            data.threadNames.put(tid, name);
+            data.threadNames.put(tid, string(in, recStart, varint(in), "thread names"));
           }
           case Vbtm.RECORD_CHUNK, Vbtm.RECORD_CHUNK_END -> {
             if (!readChunk(in, recStart, type == Vbtm.RECORD_CHUNK_END, partialOk)) {
@@ -521,12 +522,12 @@ public final class TraceIndexer {
               corrupt(recStart, "method ids exceed the 2^22 format limit");
               return;
             }
-            String cls = string(in, recStart, varint(in));
+            String cls = string(in, recStart, varint(in), "class names");
             String[] sigs = new String[(int) Math.min(count, size - pos)];
             @Var int parsed = 0;
             try {
               for (; parsed < count; parsed++) {
-                sigs[parsed] = string(in, recStart, varint(in));
+                sigs[parsed] = string(in, recStart, varint(in), "method names");
               }
             } catch (TruncatedException t) {
               if (partialOk) {
@@ -549,7 +550,7 @@ public final class TraceIndexer {
                       + recStart);
               return;
             }
-            String name = string(in, recStart, varint(in));
+            String name = string(in, recStart, varint(in), "exception names");
             ensureExceptionNames((int) id + 1);
             if (data.exceptionNames[(int) id] == null) {
               data.totalExceptions++;
@@ -576,20 +577,24 @@ public final class TraceIndexer {
               corrupt(recStart, "GC collector name of " + nameLen + " bytes at offset " + recStart);
               return;
             }
-            String name = gcLabel(string(in, recStart, nameLen));
+            checkLength(recStart, nameLen);
+            long nameCost = cost(in, nameLen);
+            String name = decode(in, nameLen);
             long causeLen = varint(in);
             if (causeLen > Vbtm.MAX_GC_LABEL_BYTES) {
               corrupt(recStart, "GC cause of " + causeLen + " bytes at offset " + recStart);
               return;
             }
-            String cause = gcLabel(string(in, recStart, causeLen));
+            checkLength(recStart, causeLen);
+            long causeCost = cost(in, causeLen);
+            String cause = decode(in, causeLen);
             budget.reserve(ReaderBudget.GC_BYTES, "gc pauses");
             data.gc.append(
                 gcStart * Vbtm.NANOS_PER_TICK,
                 durTicks * Vbtm.NANOS_PER_TICK,
                 (int) action,
-                name,
-                cause);
+                gcLabel(name, nameCost),
+                gcLabel(cause, causeCost));
           }
           case Vbtm.RECORD_END -> {
             endSeen = true;
@@ -604,6 +609,7 @@ public final class TraceIndexer {
         if (partialOk) {
           throw t;
         }
+        budget.restore(usedAtRecordStart);
         pos = recStart;
         return;
       }
@@ -902,7 +908,22 @@ public final class TraceIndexer {
     }
   }
 
-  private String string(MappedTrace in, long recStart, long len) {
+  private String string(MappedTrace in, long recStart, long len, String resource) {
+    checkLength(recStart, len);
+    budget.reserve(cost(in, len), resource);
+    return decode(in, len);
+  }
+
+  private long cost(MappedTrace in, long len) {
+    for (long i = pos; i < pos + len; i++) {
+      if (in.byteAt(i) >= 0x80) {
+        return ReaderBudget.STRING_BYTES + ReaderBudget.DECODED_STRING_BYTES_PER_BYTE * len;
+      }
+    }
+    return ReaderBudget.STRING_BYTES + ReaderBudget.ASCII_STRING_BYTES_PER_BYTE * len;
+  }
+
+  private void checkLength(long recStart, long len) {
     if (len < 0) {
       throw new CorruptException(
           recStart, "negative string length " + len + " at offset " + recStart);
@@ -914,6 +935,9 @@ public final class TraceIndexer {
     if (len > size - pos) {
       throw TruncatedException.INSTANCE;
     }
+  }
+
+  private String decode(MappedTrace in, long len) {
     byte[] b = new byte[(int) len];
     in.copy(pos, b, (int) len);
     pos += len;
@@ -940,9 +964,14 @@ public final class TraceIndexer {
     }
   }
 
-  private String gcLabel(String s) {
-    String seen = gcLabels.putIfAbsent(s, s);
-    return seen != null ? seen : s;
+  private String gcLabel(String s, long cost) {
+    String seen = gcLabels.get(s);
+    if (seen != null) {
+      return seen;
+    }
+    budget.reserve(cost, "gc pauses");
+    gcLabels.put(s, s);
+    return s;
   }
 
   private void ensureExceptionNames(int n) {

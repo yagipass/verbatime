@@ -18,6 +18,14 @@ public final class ReaderBudget {
 
   public static final int GC_BYTES = 256;
 
+  public static final int STRING_BYTES = 64;
+
+  public static final int ASCII_STRING_BYTES_PER_BYTE = 2;
+
+  public static final int DECODED_STRING_BYTES_PER_BYTE = 6;
+
+  public static final int ESCAPED_STRING_BYTES_PER_BYTE = 20;
+
   private final long limitBytes;
 
   private long usedBytes;
@@ -41,6 +49,17 @@ public final class ReaderBudget {
 
   public void reset() {
     usedBytes = 0;
+  }
+
+  public long used() {
+    return usedBytes;
+  }
+
+  public void restore(long used) {
+    if (used < 0 || used > usedBytes) {
+      throw new IllegalArgumentException("only an earlier usage can be restored");
+    }
+    usedBytes = used;
   }
 
   public void reserve(long bytes, String resource) {
