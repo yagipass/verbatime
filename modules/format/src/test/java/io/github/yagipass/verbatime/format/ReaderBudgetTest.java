@@ -43,6 +43,23 @@ final class ReaderBudgetTest {
   }
 
   @Test
+  void restoringAnEarlierUsageReturnsOnlyWhatWasReservedSince() {
+    ReaderBudget budget = new ReaderBudget(1024);
+    budget.reserve(256, "threads");
+    long used = budget.used();
+    budget.reserve(768, "thread names");
+    budget.restore(used);
+    assertDoesNotThrow(
+        () -> budget.reserve(768, "thread names"), "a record read again is charged once");
+    assertThrows(
+        ReadLimitException.class,
+        () -> budget.reserve(1, "threads"),
+        "reservations made before the restored usage are kept");
+    assertThrows(IllegalArgumentException.class, () -> budget.restore(-1));
+    assertThrows(IllegalArgumentException.class, () -> budget.restore(budget.used() + 1));
+  }
+
+  @Test
   void largeReservationsCannotOverflowAndBypassTheLimit() {
     ReaderBudget budget = new ReaderBudget(Long.MAX_VALUE);
     budget.reserve(Long.MAX_VALUE - 1, "sessions");

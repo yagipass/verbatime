@@ -106,6 +106,8 @@ final class TraceFile {
 
   private final Map<Long, String> threads = new HashMap<>();
 
+  private final Map<String, String> gcLabels = new HashMap<>();
+
   private String[] classNames = new String[256];
 
   private String[] sigs = new String[256];
@@ -284,7 +286,7 @@ final class TraceFile {
           if (!threads.containsKey(tid)) {
             budget.reserve(ReaderBudget.THREAD_NAME_BYTES, "threads");
           }
-          threads.put(tid, string(recordStart, varint()));
+          threads.put(tid, string(recordStart, varint(), "thread names"));
         }
         case Vbtm.RECORD_CHUNK, Vbtm.RECORD_CHUNK_END -> {
           if (!readChunk(recordStart, type == Vbtm.RECORD_CHUNK_END, open, size)) {
@@ -301,10 +303,10 @@ final class TraceFile {
             markCorrupt(recordStart, "method ids exceed the 2^22 format limit");
             return;
           }
-          String cls = string(recordStart, varint());
+          String cls = string(recordStart, varint(), "class names");
           String[] s = new String[(int) Math.min(count, size - pos)];
           for (int k = 0; k < count; k++) {
-            s[k] = string(recordStart, varint());
+            s[k] = string(recordStart, varint(), "method names");
           }
           declare((int) baseId, cls, s);
         }
@@ -315,7 +317,7 @@ final class TraceFile {
                 recordStart, "exception id " + id + " outside 1.." + (Vbtm.EXCEPTION_ID_LIMIT - 1));
             return;
           }
-          String name = string(recordStart, varint());
+          String name = string(recordStart, varint(), "exception names");
           if (id >= exceptions.length) {
             exceptions = Arrays.copyOf(exceptions, (int) Math.max(id + 1, exceptions.length * 2L));
           }
@@ -426,7 +428,16 @@ final class TraceFile {
     if (len > Vbtm.MAX_GC_LABEL_BYTES) {
       throw new BadRecord(recordStart, "GC label of " + len + " bytes");
     }
-    return string(recordStart, len);
+    checkLength(recordStart, len);
+    long cost = cost(len);
+    String label = decode(len);
+    String seen = gcLabels.get(label);
+    if (seen != null) {
+      return seen;
+    }
+    budget.reserve(cost, "gc pauses");
+    gcLabels.put(label, label);
+    return label;
   }
 
   private long varint() {
@@ -448,13 +459,32 @@ final class TraceFile {
     }
   }
 
-  private String string(long recordStart, long len) {
+  private String string(long recordStart, long len, String resource) {
+    checkLength(recordStart, len);
+    budget.reserve(cost(len), resource);
+    return decode(len);
+  }
+
+  private long cost(long len) {
+    for (long i = pos; i < pos + len; i++) {
+      int b = data.byteAt(i);
+      if (b < 0x20 || b > 0x7E) {
+        return ReaderBudget.STRING_BYTES + ReaderBudget.ESCAPED_STRING_BYTES_PER_BYTE * len;
+      }
+    }
+    return ReaderBudget.STRING_BYTES + ReaderBudget.ASCII_STRING_BYTES_PER_BYTE * len;
+  }
+
+  private void checkLength(long recordStart, long len) {
     if (len < 0 || len > Vbtm.MAX_STRING_BYTES) {
       throw new BadRecord(recordStart, "implausible string length " + len);
     }
     if (len > data.size() - pos) {
       throw new Truncated();
     }
+  }
+
+  private String decode(long len) {
     byte[] b = new byte[(int) len];
     data.copy(pos, b, b.length);
     pos += len;
