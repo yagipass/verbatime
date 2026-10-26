@@ -47,7 +47,7 @@ final class SessionsCommand {
     int limit = args.positiveInt("limit", 20);
     MethodPattern root =
         args.has("root")
-            ? MethodPattern.resolve(file, names, Objects.requireNonNull(args.value("root")), true)
+            ? MethodPattern.resolveAll(file, names, Objects.requireNonNull(args.value("root")))
             : null;
     String thread = args.value("thread");
 

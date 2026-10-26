@@ -161,22 +161,32 @@ final class Args {
         o.put(pairs[i], pairs[i + 1]);
       }
     }
+    return commandLine(positionals, o);
+  }
+
+  String commandWithPositional(int i, String value) {
+    List<String> p = new ArrayList<>(positionals);
+    p.set(i, value);
+    return commandLine(p, options);
+  }
+
+  private static CliException notADuration(String what, String v) {
+    return CliException.usage(
+        what + " must be a duration such as 500us, 1ms or 2s, not '" + v + "'", null);
+  }
+
+  private String commandLine(List<String> ps, Map<String, String> os) {
     StringBuilder sb = new StringBuilder("vbtm ").append(command);
-    for (String p : positionals) {
+    for (String p : ps) {
       sb.append(' ').append(shellQuote(p));
     }
-    for (Map.Entry<String, String> e : o.entrySet()) {
+    for (Map.Entry<String, String> e : os.entrySet()) {
       sb.append(" --").append(e.getKey());
       if (!e.getValue().isEmpty()) {
         sb.append(' ').append(shellQuote(e.getValue()));
       }
     }
     return sb.toString();
-  }
-
-  private static CliException notADuration(String what, String v) {
-    return CliException.usage(
-        what + " must be a duration such as 500us, 1ms or 2s, not '" + v + "'", null);
   }
 
   private int integer(String name, int def, int min, String what) {

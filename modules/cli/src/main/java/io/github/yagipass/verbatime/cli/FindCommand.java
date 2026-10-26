@@ -162,9 +162,7 @@ final class FindCommand {
     TraceFile file = TraceFile.open(args.positional(0, "the .vbtm file"));
     Out out = new Out(stdout, args.has("json"));
     Names names = new Names(file);
-    MethodPattern pattern =
-        MethodPattern.resolve(
-            file, names, args.positional(1, "the method PATTERN"), args.has("all"));
+    MethodPattern pattern = MethodPattern.resolve(file, names, args, 1);
     Scope scope = Scope.of(file, args.value("session"));
     long minTicks = args.ticks("min", 0);
     String sort = args.choice("sort", "dur", "dur", "start");
