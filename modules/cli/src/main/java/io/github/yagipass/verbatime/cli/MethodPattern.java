@@ -28,18 +28,17 @@ final class MethodPattern {
     this.methodIds = List.copyOf(list);
   }
 
-  static MethodPattern resolve(TraceFile file, Names names, String pattern, boolean acceptSeveral) {
-    BitSet ids = match(file, names, pattern);
-    if (ids.isEmpty()) {
-      throw CliException.usage(
-          "no method matches '" + pattern + "'",
-          "use Class::method, pkg.Class::method, the name as printed such as Class.method, "
-              + "or part of the class and method name");
-    }
-    if (!acceptSeveral) {
-      rejectSeveral(file, pattern, ids);
+  static MethodPattern resolve(TraceFile file, Names names, Args args, int position) {
+    String pattern = args.positional(position, "the method PATTERN");
+    BitSet ids = matchSome(file, names, pattern);
+    if (!args.has("all")) {
+      rejectSeveral(file, names, args, position, ids);
     }
     return new MethodPattern(pattern, ids);
+  }
+
+  static MethodPattern resolveAll(TraceFile file, Names names, String pattern) {
+    return new MethodPattern(pattern, matchSome(file, names, pattern));
   }
 
   boolean matches(int methodId) {
@@ -75,27 +74,54 @@ final class MethodPattern {
         : String.join(", ", seen.subList(0, 3)) + ", +" + (seen.size() - 3) + " more";
   }
 
-  private static void rejectSeveral(TraceFile file, String pattern, BitSet ids) {
-    Map<String, Integer> groups = new LinkedHashMap<>();
+  private static BitSet matchSome(TraceFile file, Names names, String pattern) {
+    BitSet ids = match(file, names, pattern);
+    if (ids.isEmpty()) {
+      throw CliException.usage(
+          "no method matches '" + pattern + "'",
+          "use Class::method, pkg.Class::method, the name as printed such as Class.method, "
+              + "or part of the class and method name");
+    }
+    return ids;
+  }
+
+  private static void rejectSeveral(
+      TraceFile file, Names names, Args args, int position, BitSet ids) {
+    Map<String, BitSet> groups = new LinkedHashMap<>();
     for (int id = ids.nextSetBit(0); id >= 0; id = ids.nextSetBit(id + 1)) {
       TraceFile.MethodRef m = Objects.requireNonNull(file.method(id));
-      groups.merge(m.className() + "." + Names.methodName(m.sig()), 1, Integer::sum);
+      groups
+          .computeIfAbsent(m.className() + "::" + Names.methodName(m.sig()), k -> new BitSet())
+          .set(id);
     }
     if (groups.size() <= 1) {
       return;
     }
     StringBuilder sb = new StringBuilder();
-    sb.append("'").append(pattern).append("' matches ").append(groups.size()).append(" methods:");
+    sb.append("'")
+        .append(args.positional(position, "the method PATTERN"))
+        .append("' matches ")
+        .append(groups.size())
+        .append(" methods:");
     @Var int shown = 0;
-    for (String g : groups.keySet()) {
+    for (Map.Entry<String, BitSet> g : groups.entrySet()) {
       if (shown++ == CANDIDATES_SHOWN) {
         sb.append("\n  ... ").append(groups.size() - CANDIDATES_SHOWN).append(" more");
         break;
       }
-      sb.append("\n  ").append(g);
+      sb.append("\n  ");
+      if (match(file, names, g.getKey()).equals(g.getValue())) {
+        sb.append(args.commandWithPositional(position, g.getKey()));
+      } else {
+        TraceFile.MethodRef m = Objects.requireNonNull(file.method(g.getValue().nextSetBit(0)));
+        sb.append(m.className())
+            .append('.')
+            .append(Names.methodName(m.sig()))
+            .append(" (no pattern names it alone)");
+      }
     }
     throw CliException.usage(
-        sb.toString(), "narrow it to one, e.g. pkg.Class::method, or add --all");
+        sb.toString(), "run one of these commands, or add --all to count them together");
   }
 
   private static BitSet match(TraceFile file, Names names, String pattern) {
