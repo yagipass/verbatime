@@ -10,6 +10,8 @@ public final class ReaderBudget {
 
   public static final int THREAD_NAME_BYTES = 256;
 
+  public static final int METHOD_NAME_BYTES = 256;
+
   public static final int FRAME_BYTES = 256;
 
   public static final int CALL_BYTES = 256;

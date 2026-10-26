@@ -404,6 +404,9 @@ final class TraceFile {
       sigs = Arrays.copyOf(sigs, n);
     }
     for (int k = 0; k < names.length; k++) {
+      budget.reserve(
+          ReaderBudget.METHOD_NAME_BYTES + 2L * (cls.length() + 1L + names[k].length()),
+          "method names");
       classNames[baseId + k] = cls;
       sigs[baseId + k] = names[k];
     }

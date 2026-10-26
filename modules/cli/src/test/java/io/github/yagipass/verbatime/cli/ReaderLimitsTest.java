@@ -96,6 +96,24 @@ final class ReaderLimitsTest {
   }
 
   @Test
+  void everyMethodIsChargedForTheClassNameItsNameRepeats() throws IOException {
+    String cls = "A".repeat(1000);
+    long limit = 2L * (ReaderBudget.METHOD_NAME_BYTES + 2L * (cls.length() + ".a()V".length()));
+    TraceBuilder trace = new TraceBuilder(0, 0).clazz(0, cls, "a()V", "b()V");
+    TraceFile file = TraceFile.open(write("two-methods.vbtm", trace), new ReaderBudget(limit));
+    assertEquals(2, file.methodCount, "a recording at the budget boundary keeps every method");
+    Path excessive = write("three-methods.vbtm", trace.clazz(2, cls, "c()V"));
+    ReadLimitException failure =
+        assertThrows(
+            ReadLimitException.class, () -> TraceFile.open(excessive, new ReaderBudget(limit)));
+    assertTrue(
+        failure.getMessage().contains("method names"),
+        "commands name every method after its class, so a class name declared once in the file"
+            + " is held once per method: "
+            + failure.getMessage());
+  }
+
+  @Test
   void aNewThreadForEverySessionCostsOnlyItsNameAsWithVirtualThreads() throws IOException {
     TraceBuilder trace = new TraceBuilder(0, 0);
     for (int tid = 1; tid <= 4; tid++) {
