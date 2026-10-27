@@ -165,7 +165,15 @@
               };
             };
 
-            actionlint.enable = true;
+            jactionlint = {
+              enable = true;
+              name = "jactionlint";
+              description = "Linter for GitHub Actions workflow files and Dependabot configuration";
+              package = pkgs.jactionlint;
+              entry = "${lib.getExe pkgs.jactionlint} --shellcheck=${lib.getExe pkgs.shellcheck}";
+              files = "^\\.github/";
+              pass_filenames = false;
+            };
           };
 
           devShells = rec {
