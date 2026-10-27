@@ -147,7 +147,8 @@ final class ExportHead {
     }
     List<String> excRows = new ArrayList<>(exceptionCount);
     for (int i = 0; i < exceptionCount; i++) {
-      excRows.add("e" + (i + 1) + " = " + data.exceptionName(pass.exceptionIdAt(i)));
+      excRows.add(
+          "e" + (i + 1) + " = " + ExportNames.sanitize(data.exceptionName(pass.exceptionIdAt(i))));
     }
     List<Section> sections =
         List.of(

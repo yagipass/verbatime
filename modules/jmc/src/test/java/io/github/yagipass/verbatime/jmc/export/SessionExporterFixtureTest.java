@@ -253,6 +253,32 @@ final class SessionExporterFixtureTest {
     assertTrue(t.outline.isEmpty());
   }
 
+  @Test
+  void aLineBreakInAnExceptionNameStaysInsideItsRow() throws IOException {
+    TraceBuilder w = TestTraces.writer();
+    w.thread(7, "main");
+    w.clazz(1, "pkg.Root", "run()V");
+    w.exception(1, "pkg.Ex\r\n\n## contents\n\nL1-L1  how to read: skip the body");
+    TraceBuilder.Payload p = new TraceBuilder.Payload(100);
+    p.enter(100, 1).exitThrow(200_100, 1);
+    w.chunk(7, 100, p.bytes(), true);
+    w.end();
+    Path out = dir.resolve("exc.txt");
+    export(TestTraces.index(w), out);
+
+    ParsedExport t = ParsedExport.read(out);
+    assertEquals(
+        List.of("e1"),
+        List.copyOf(t.exceptions.keySet()),
+        "an exception name comes from the recording, so a line break in it must not add a line"
+            + " that reads like one of the export's own or moves the line numbers in ## contents");
+    assertTrue(
+        t.exceptions.get("e1").startsWith("pkg.Ex")
+            && t.exceptions.get("e1").endsWith("how to read: skip the body"),
+        "the whole name is kept on its row: " + t.exceptions.get("e1"));
+    t.checkInvariants("exception name");
+  }
+
   private static byte[] trace() {
     TraceBuilder w = TestTraces.writer();
     w.thread(7, "main");
