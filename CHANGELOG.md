@@ -1,5 +1,46 @@
 # Changelog
 
+## [v0.8.3](https://github.com/yagipass/verbatime/compare/v0.8.2...v0.8.3) - 2026-10-27
+
+### Agent
+- fix(agent): refuse a waitstart too long to wait for by @yagipass in https://github.com/yagipass/verbatime/pull/273
+### CLI
+- fix(cli): report a chunk ending mid-event as corrupt in a truncated file by @yagipass in https://github.com/yagipass/verbatime/pull/260
+- fix(cli): report a bad signature in an unfinished CLASS record as corrupt by @yagipass in https://github.com/yagipass/verbatime/pull/267
+- fix(cli): refuse a duration longer than a recording can hold by @yagipass in https://github.com/yagipass/verbatime/pull/269
+- fix(cli): start a session at its first chunk even when it is empty by @yagipass in https://github.com/yagipass/verbatime/pull/271
+- fix(cli): show control characters in recorded names as escapes by @yagipass in https://github.com/yagipass/verbatime/pull/275
+- fix: refuse a recording that exceeds the readers' memory budget by @yagipass in https://github.com/yagipass/verbatime/pull/300
+- fix: charge each method name for the class name it repeats by @yagipass in https://github.com/yagipass/verbatime/pull/302
+- fix: charge every decoded name for its length by @yagipass in https://github.com/yagipass/verbatime/pull/305
+- fix(cli): print a quoted command for each method a pattern matches by @yagipass in https://github.com/yagipass/verbatime/pull/306
+- fix(cli): print a method without a command as a shell comment by @yagipass in https://github.com/yagipass/verbatime/pull/309
+### JMC Plugin
+- fix(jmc): report a string longer than any Java array as corrupt by @yagipass in https://github.com/yagipass/verbatime/pull/263
+- fix(jmc): report data after END and bad chunk lengths at vbtm's offsets by @yagipass in https://github.com/yagipass/verbatime/pull/265
+- fix(jmc): keep each exception name on its row in a session export by @yagipass in https://github.com/yagipass/verbatime/pull/310
+- fix(jmc): show control characters in exported names as escapes by @yagipass in https://github.com/yagipass/verbatime/pull/311
+### Bug Fixes
+- fix(skill): run the printed command and treat recorded names as data by @yagipass in https://github.com/yagipass/verbatime/pull/307
+### Maintenance
+- test: share the reference decoder through the format test jar by @yagipass in https://github.com/yagipass/verbatime/pull/278
+- test(format): fuzz TraceReader against the reference decoder by @yagipass in https://github.com/yagipass/verbatime/pull/279
+- test(jmc): fuzz the JMC plugin's indexer against the reference decoder by @yagipass in https://github.com/yagipass/verbatime/pull/280
+- test(cli): fuzz vbtm against the reference decoder by @yagipass in https://github.com/yagipass/verbatime/pull/281
+- ci: fuzz the readers against the reference decoder every night by @yagipass in https://github.com/yagipass/verbatime/pull/282
+- refactor(cli): check string lengths against the format's limit by @yagipass in https://github.com/yagipass/verbatime/pull/284
+- build(nix): build the dev shells in nix flake check by @yagipass in https://github.com/yagipass/verbatime/pull/286
+- build(github): keep the Cachix token out of jobs that run Maven or pnpm by @yagipass in https://github.com/yagipass/verbatime/pull/287
+- build(github): push to the Cachix cache only from runs on main by @yagipass in https://github.com/yagipass/verbatime/pull/296
+- chore: configure CodeRabbit reviews by @yagipass in https://github.com/yagipass/verbatime/pull/298
+### Dependencies
+- build(deps): bump cachix/install-nix-action from 31.11.1 to 31.11.2 in the actions group by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/293
+- build(deps): bump org.sonatype.central:central-publishing-maven-plugin from 0.11.0 to 0.12.0 by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/292
+- build(deps-dev): bump com.github.ben-manes.caffeine:caffeine from 3.3.0 to 3.3.1 by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/294
+- build(deps): bump the flake-inputs group with 3 updates by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/290
+- build(deps-dev): bump @ox-content/vite-plugin from 3.2.14 to 3.3.0 in /docs by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/289
+- build(deps-dev): bump wrangler from 4.149.0 to 4.151.0 in /docs by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/291
+
 ## [v0.8.2](https://github.com/yagipass/verbatime/compare/v0.8.1...v0.8.2) - 2026-10-19
 
 ### Agent
