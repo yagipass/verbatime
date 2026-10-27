@@ -109,7 +109,7 @@
               JAVA_HOME = jdk.home;
 
               shellHook = ''
-                ${config.pre-commit.installationScript}
+                ${config.pre-commit.shellHook}
                 ${skillsHook}
                 export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
                 echo "[verbatime-${name}] JAVA_HOME=$JAVA_HOME"
@@ -181,7 +181,7 @@
               ++ config.pre-commit.settings.enabledPackages;
 
               shellHook = ''
-                ${config.pre-commit.installationScript}
+                ${config.pre-commit.shellHook}
                 echo "[verbatime-docs] node $(node --version)"
               '';
             };
