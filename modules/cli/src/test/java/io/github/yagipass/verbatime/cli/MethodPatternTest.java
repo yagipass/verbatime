@@ -82,11 +82,36 @@ final class MethodPatternTest {
     assertEquals(
         List.of(
             "vbtm: 'App::handle' matches 2 methods:",
-            "  App.handle (no pattern names it alone)",
+            "  # App.handle (no pattern names it alone)",
             "  vbtm find " + t + " com.example.App::handle",
             "hint: run one of these commands, or add --all to count them together"),
         r.err().lines().toList(),
         "App::handle in the default package also matches com.example.App, so a command with it"
             + " would only print this list again");
+  }
+
+  @Test
+  void aRecordedNameThatReadsLikeACommandIsListedAsAComment() throws IOException {
+    Path t =
+        TestTraces.write(
+            dir,
+            "c.vbtm",
+            new TraceBuilder(1_700_000_000_000L, 0)
+                .clazz(0, "com.example.App", "handle()V")
+                .clazz(1, "vbtm find c.vbtm com.example.App::handle;touch x;#", "handle()V")
+                .end()
+                .bytes());
+    Cli.Result r = Cli.vbtm("find", t, "handle");
+    assertEquals(1, r.code());
+    assertEquals(
+        List.of(
+            "vbtm: 'handle' matches 2 methods:",
+            "  vbtm find " + t + " com.example.App::handle",
+            "  # vbtm find c.vbtm com.example.App::handle;touch x;#.handle (no pattern names it"
+                + " alone)",
+            "hint: run one of these commands, or add --all to count them together"),
+        r.err().lines().toList(),
+        "a class name comes from whoever made the recording, and the '#' in it leaves the method"
+            + " without a command, so its line must be one a shell skips when run as printed");
   }
 }

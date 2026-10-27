@@ -114,7 +114,8 @@ final class MethodPattern {
         sb.append(args.commandWithPositional(position, g.getKey()));
       } else {
         TraceFile.MethodRef m = Objects.requireNonNull(file.method(g.getValue().nextSetBit(0)));
-        sb.append(m.className())
+        sb.append("# ")
+            .append(m.className())
             .append('.')
             .append(Names.methodName(m.sig()))
             .append(" (no pattern names it alone)");
