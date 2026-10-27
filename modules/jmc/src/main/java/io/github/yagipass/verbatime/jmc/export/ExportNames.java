@@ -40,10 +40,25 @@ public final class ExportNames {
   }
 
   static String sanitize(String s) {
-    if (s.indexOf('\n') < 0 && s.indexOf('\r') < 0) {
+    @Var int i = 0;
+    while (i < s.length() && !needsEscape(s.charAt(i))) {
+      i++;
+    }
+    if (i == s.length()) {
       return s;
     }
-    return s.replace("\r", "").replace("\n", " ");
+    StringBuilder b = new StringBuilder(s.length() + 16).append(s, 0, i);
+    for (; i < s.length(); i++) {
+      char c = s.charAt(i);
+      if (!needsEscape(c)) {
+        b.append(c);
+      } else if (c <= 0xFF) {
+        b.append(String.format("\\x%02x", (int) c));
+      } else {
+        b.append(String.format("\\u%04x", (int) c));
+      }
+    }
+    return b.toString();
   }
 
   String fullName(int methodId) {
@@ -78,6 +93,15 @@ public final class ExportNames {
 
   int registeredIdAt(int i) {
     return order[i];
+  }
+
+  private static boolean needsEscape(char c) {
+    return c < 0x20
+        || (c >= 0x7F && c <= 0x9F)
+        || c == 0x2028
+        || c == 0x2029
+        || (c >= 0x202A && c <= 0x202E)
+        || (c >= 0x2066 && c <= 0x2069);
   }
 
   private void ensureCapacity(int methodId) {
