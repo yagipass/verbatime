@@ -64,8 +64,6 @@ public interface UiThread {
 
   void post(Runnable r);
 
-  void postAfter(int delayMs, Runnable r);
-
   default void post(BooleanSupplier stillWanted, Runnable r) {
     post(
         () -> {
@@ -74,4 +72,6 @@ public interface UiThread {
           }
         });
   }
+
+  void postAfter(int delayMs, Runnable r);
 }

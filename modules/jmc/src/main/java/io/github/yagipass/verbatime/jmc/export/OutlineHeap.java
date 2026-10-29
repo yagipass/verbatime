@@ -158,6 +158,22 @@ final class OutlineHeap {
     v[b] = t;
   }
 
+  private void swap(int a, int b) {
+    swap(dur, a, b);
+    swap(seq, a, b);
+    swap(line, a, b);
+    swap(start, a, b);
+    swap(self, a, b);
+    swap(children, a, b);
+    swap(subLines, a, b);
+    swap(depth, a, b);
+    swap(methodId, a, b);
+    swap(excNo, a, b);
+    byte f = flags[a];
+    flags[a] = flags[b];
+    flags[b] = f;
+  }
+
   private boolean less(int a, int b) {
     return dur[a] < dur[b] || (dur[a] == dur[b] && seq[a] < seq[b]);
   }
@@ -189,21 +205,5 @@ final class OutlineHeap {
       swap(i, m);
       i = m;
     }
-  }
-
-  private void swap(int a, int b) {
-    swap(dur, a, b);
-    swap(seq, a, b);
-    swap(line, a, b);
-    swap(start, a, b);
-    swap(self, a, b);
-    swap(children, a, b);
-    swap(subLines, a, b);
-    swap(depth, a, b);
-    swap(methodId, a, b);
-    swap(excNo, a, b);
-    byte f = flags[a];
-    flags[a] = flags[b];
-    flags[b] = f;
   }
 }
