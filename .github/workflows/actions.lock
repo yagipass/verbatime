@@ -33,7 +33,7 @@ workflows:
         - 'cachix/cachix-action@v17'
         - 'cachix/install-nix-action@v31.11.2'
         - 'graalvm/setup-graalvm@v1.6.7'
-        - 'songmu/tagpr@v1.21.2'
+        - 'songmu/tagpr@v1.21.3'
 dependencies:
     'actions/attest@v4.2.2':
         ref: 'v4.2.2'
@@ -95,8 +95,8 @@ dependencies:
         commit: 'sha1-27b360dbb857524eaf0b4c4cef364d38e5b4f173'
         owner_id: 10176827
         repo_id: 443997241
-    'songmu/tagpr@v1.21.2':
-        ref: 'v1.21.2'
-        commit: 'sha1-0c4eb5a3b0862693702acea436a7c68bd586530d'
+    'songmu/tagpr@v1.21.3':
+        ref: 'v1.21.3'
+        commit: 'sha1-1fcd7292d1fe8ea9a8313eef46b8d80b7a15d227'
         owner_id: 177122
         repo_id: 524603982
