@@ -41,6 +41,10 @@ final class TopDownModel implements AggregateTreeView.AggregateTreeModel<TopDown
     return root;
   }
 
+  Row root() {
+    return root;
+  }
+
   @Override
   public boolean hasChildren(Row r) {
     return r.childCount() > 0;
@@ -56,6 +60,10 @@ final class TopDownModel implements AggregateTreeView.AggregateTreeModel<TopDown
     return child(r.node(), i);
   }
 
+  Row child(int node, int i) {
+    return rowFor(sorted(node)[i]);
+  }
+
   @Override
   public @Nullable Row parent(Row r) {
     int p = agg.parent(r.node());
@@ -66,20 +74,12 @@ final class TopDownModel implements AggregateTreeView.AggregateTreeModel<TopDown
     return new TopDownModel(a, d);
   }
 
-  Row root() {
-    return root;
-  }
-
   int size() {
     return agg.nodeCount();
   }
 
   boolean truncated() {
     return agg.truncated();
-  }
-
-  Row child(int node, int i) {
-    return rowFor(sorted(node)[i]);
   }
 
   double pct(long ns) {

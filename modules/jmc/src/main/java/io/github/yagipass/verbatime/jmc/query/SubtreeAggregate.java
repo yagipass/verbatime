@@ -364,6 +364,23 @@ public final class SubtreeAggregate {
     return compute(data, tid, startNs, durNs, depth, methodId, MAX_NODES);
   }
 
+  static SubtreeAggregate compute(
+      TraceSnapshot data,
+      long tid,
+      long startNs,
+      long durNs,
+      int depth,
+      int methodId,
+      int maxNodes) {
+    Collector b = new Collector(data, startNs, durNs, depth, methodId, maxNodes);
+    ThreadIndex m = data.thread(tid);
+    if (m != null) {
+      ChunkWalker.walkRange(data, m, startNs, startNs + durNs, b);
+      b.sessionEnd();
+    }
+    return new SubtreeAggregate(b);
+  }
+
   public boolean found() {
     return found;
   }
@@ -428,22 +445,5 @@ public final class SubtreeAggregate {
 
   public long methodSelfNs(int methodId) {
     return methodId < 0 || methodId >= methodCalls.length ? 0 : methodSelfNs[methodId];
-  }
-
-  static SubtreeAggregate compute(
-      TraceSnapshot data,
-      long tid,
-      long startNs,
-      long durNs,
-      int depth,
-      int methodId,
-      int maxNodes) {
-    Collector b = new Collector(data, startNs, durNs, depth, methodId, maxNodes);
-    ThreadIndex m = data.thread(tid);
-    if (m != null) {
-      ChunkWalker.walkRange(data, m, startNs, startNs + durNs, b);
-      b.sessionEnd();
-    }
-    return new SubtreeAggregate(b);
   }
 }

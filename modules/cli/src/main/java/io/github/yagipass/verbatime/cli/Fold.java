@@ -46,6 +46,10 @@ final class Fold {
     return sb.toString();
   }
 
+  String methodsText(Names names, int max) {
+    return methodsText(Objects.requireNonNull(countByMethod), names, max);
+  }
+
   void add(int methodId, long startTicks, long durTicks, long subtreeCalls, boolean threw) {
     count++;
     nested += subtreeCalls;
@@ -80,9 +84,5 @@ final class Fold {
     firstStartTicks = Long.MAX_VALUE;
     byDepth = false;
     countByMethod = null;
-  }
-
-  String methodsText(Names names, int max) {
-    return methodsText(Objects.requireNonNull(countByMethod), names, max);
   }
 }

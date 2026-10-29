@@ -79,13 +79,6 @@ public final class SessionExporter {
     return export(data, session, floorNs, dest, progress, OUTLINE_LIMIT, WRITE_BUFFER_BYTES);
   }
 
-  public static String floorLabel(long floorNs) {
-    if (floorNs <= 0) {
-      return "none";
-    }
-    return floorNs % 1000 == 0 ? floorNs / 1000 + " µs" : floorNs + " ns";
-  }
-
   static Result export(
       TraceSnapshot data,
       Session session,
@@ -97,6 +90,13 @@ public final class SessionExporter {
       throws IOException {
     return new SessionExporter(data, session, floorNs, dest, progress, outlineNodes, bufferBytes)
         .run();
+  }
+
+  public static String floorLabel(long floorNs) {
+    if (floorNs <= 0) {
+      return "none";
+    }
+    return floorNs % 1000 == 0 ? floorNs / 1000 + " µs" : floorNs + " ns";
   }
 
   static String floorLabelCompact(long floorNs) {

@@ -219,6 +219,10 @@ public final class TraceIndexer {
     return open(path, overviewBudget, new ReaderBudget());
   }
 
+  static TraceIndexer open(Path path, int overviewBudget, ReaderBudget budget) {
+    return new TraceIndexer(path, overviewBudget, budget);
+  }
+
   public void close() {
     MappedTrace b;
     synchronized (lock) {
@@ -291,10 +295,6 @@ public final class TraceIndexer {
     } finally {
       guard.release();
     }
-  }
-
-  static TraceIndexer open(Path path, int overviewBudget, ReaderBudget budget) {
-    return new TraceIndexer(path, overviewBudget, budget);
   }
 
   static TraceSnapshot index(Path path) throws IOException {
