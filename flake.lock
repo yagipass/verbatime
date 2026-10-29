@@ -36,11 +36,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791861451,
-        "narHash": "sha256-SzaUOcWMoa9MbFhc9dS8BphJz2iwbMKrlqzvD4eFPUc=",
+        "lastModified": 1792540714,
+        "narHash": "sha256-UwwjzvAU70AR02CKqIvBUSQDM3AZ2XF3QguYh8hll/o=",
         "owner": "yagipass",
         "repo": "ajmx",
-        "rev": "9c6242a6aba07f15ca89ee36d044e8c5eaa0893b",
+        "rev": "f6882f9e53739ab229655159b3965034fb8a8122",
         "type": "github"
       },
       "original": {
