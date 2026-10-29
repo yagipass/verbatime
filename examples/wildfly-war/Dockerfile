@@ -20,7 +20,7 @@ COPY examples/tomcat-war examples/tomcat-war
 RUN --mount=type=cache,id=verbatime-m2,target=/root/.m2/repository,sharing=locked \
     mvn -B -f examples/tomcat-war/pom.xml package -DskipTests
 
-FROM quay.io/wildfly/wildfly:41.0.1.Final-jdk25
+FROM quay.io/wildfly/wildfly:42.0.0.Final-jdk25
 COPY --from=agent --chown=jboss:root /src/modules/agent/target/verbatime-agent.jar /opt/jboss/wildfly/verbatime-agent.jar
 COPY --from=app --chown=jboss:root /src/examples/tomcat-war/target/ROOT.war /opt/jboss/wildfly/standalone/deployments/ROOT.war
 RUN set -eu; B=/opt/jboss/wildfly/modules/system/layers/base; \
