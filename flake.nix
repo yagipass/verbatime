@@ -47,8 +47,8 @@
 
       systems = [
         "aarch64-darwin"
-        "x86_64-linux"
         "aarch64-linux"
+        "x86_64-linux"
       ];
 
       perSystem =
@@ -101,7 +101,6 @@
                 jdk
                 (pkgs.maven.override { jdk_headless = jdk; })
                 pkgs.mvnd
-                pkgs.git
                 inputs'.ajmx.packages.ajmx
               ]
               ++ config.pre-commit.settings.enabledPackages;
@@ -111,7 +110,7 @@
               shellHook = ''
                 ${config.pre-commit.shellHook}
                 ${skillsHook}
-                export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+                export SOURCE_DATE_EPOCH="$(${lib.getExe pkgs.git} log -1 --format=%ct)"
                 echo "[verbatime-${name}] JAVA_HOME=$JAVA_HOME"
                 echo "[verbatime-${name}] $(java -version 2>&1 | head -n1)"
               '';
@@ -130,28 +129,39 @@
 
           treefmt = {
             projectRootFile = "flake.nix";
+            flakeCheck = false;
             programs.nixfmt.enable = true;
           };
 
           pre-commit.settings.hooks = {
-            treefmt = {
-              enable = true;
-              package = config.treefmt.build.wrapper;
-            };
+            treefmt.enable = true;
 
             gitleaks.enable = true;
 
             convco.enable = true;
 
-            end-of-file-fixer.enable = true;
-            trim-trailing-whitespace.enable = true;
-            check-merge-conflicts.enable = true;
-            check-added-large-files.enable = true;
+            end-of-file-fixer = {
+              enable = true;
+              excludes = [ "^CHANGELOG\\.md$" ];
+            };
+            trim-trailing-whitespace = {
+              enable = true;
+              excludes = [ "^CHANGELOG\\.md$" ];
+            };
+            check-merge-conflicts = {
+              enable = true;
+              args = [ "--assume-in-merge" ];
+            };
+            check-added-large-files = {
+              enable = true;
+              args = [ "--enforce-all" ];
+            };
             detect-private-keys.enable = true;
 
             typos = {
               enable = true;
               files = "\\.md$";
+              excludes = [ "^CHANGELOG\\.md$" ];
             };
             markdownlint = {
               enable = true;
@@ -167,11 +177,9 @@
 
             jactionlint = {
               enable = true;
-              name = "jactionlint";
-              description = "Linter for GitHub Actions workflow files and Dependabot configuration";
               package = pkgs.jactionlint;
-              entry = "${lib.getExe pkgs.jactionlint} --shellcheck=${lib.getExe pkgs.shellcheck}";
-              files = "^\\.github/";
+              entry = "${lib.getExe pkgs.jactionlint} --shellcheck=${lib.getExe pkgs.shellcheck} --pyflakes=${lib.getExe pkgs.python3Packages.pyflakes}";
+              files = "^\\.github/|(^|/)action\\.ya?ml$";
               pass_filenames = false;
             };
           };
@@ -180,11 +188,10 @@
             agent = mkJavaShell "agent" pkgs.jdk25;
             jmc = mkJavaShell "jmc" pkgs.jdk21;
             cli = mkJavaShell "cli" pkgs.graalvmPackages.graalvm-ce;
-            docs = pkgs.mkShell {
+            docs = pkgs.mkShellNoCC {
               packages = [
                 pkgs.nodejs_26
                 pkgs.pnpm
-                pkgs.git
               ]
               ++ config.pre-commit.settings.enabledPackages;
 

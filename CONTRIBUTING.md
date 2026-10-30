@@ -30,7 +30,8 @@ docs shell.
 | `nix flake check` | build the `vbtm` package and the dev shells, and run the git hooks over every tracked file |
 
 CI also runs the agent build with `-Pcorpus-full`, `nix flake check` on Linux x86_64, Linux arm64
-and macOS, and `pnpm exec wrangler deploy --dry-run` for the docs site.
+and macOS, `gitleaks git` over every commit, and `pnpm exec wrangler deploy --dry-run` for the docs
+site.
 
 ### Agent corpus
 
