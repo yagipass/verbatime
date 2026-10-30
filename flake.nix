@@ -140,8 +140,14 @@
 
             convco.enable = true;
 
-            end-of-file-fixer.enable = true;
-            trim-trailing-whitespace.enable = true;
+            end-of-file-fixer = {
+              enable = true;
+              excludes = [ "^CHANGELOG\\.md$" ];
+            };
+            trim-trailing-whitespace = {
+              enable = true;
+              excludes = [ "^CHANGELOG\\.md$" ];
+            };
             check-merge-conflicts = {
               enable = true;
               args = [ "--assume-in-merge" ];
@@ -155,6 +161,7 @@
             typos = {
               enable = true;
               files = "\\.md$";
+              excludes = [ "^CHANGELOG\\.md$" ];
             };
             markdownlint = {
               enable = true;
