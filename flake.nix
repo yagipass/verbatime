@@ -133,46 +133,49 @@
             programs.nixfmt.enable = true;
           };
 
-          pre-commit.settings.hooks = {
-            treefmt = {
-              enable = true;
-              package = config.treefmt.build.wrapper;
-            };
+          pre-commit = {
+            settings.excludes = [ "^CHANGELOG\\.md$" ];
 
-            gitleaks.enable = true;
-
-            convco.enable = true;
-
-            end-of-file-fixer.enable = true;
-            trim-trailing-whitespace.enable = true;
-            check-merge-conflicts.enable = true;
-            check-added-large-files.enable = true;
-            detect-private-keys.enable = true;
-
-            typos = {
-              enable = true;
-              files = "\\.md$";
-            };
-            markdownlint = {
-              enable = true;
-              excludes = [ "^CHANGELOG\\.md$" ];
-              settings.configuration = {
-                default = true;
-                MD013 = false;
-                MD031.list_items = false;
-                MD033 = false;
-                MD060 = false;
+            settings.hooks = {
+              treefmt = {
+                enable = true;
+                package = config.treefmt.build.wrapper;
               };
-            };
 
-            jactionlint = {
-              enable = true;
-              name = "jactionlint";
-              description = "Linter for GitHub Actions workflow files and Dependabot configuration";
-              package = pkgs.jactionlint;
-              entry = "${lib.getExe pkgs.jactionlint} --shellcheck=${lib.getExe pkgs.shellcheck}";
-              files = "^\\.github/";
-              pass_filenames = false;
+              gitleaks.enable = true;
+
+              convco.enable = true;
+
+              end-of-file-fixer.enable = true;
+              trim-trailing-whitespace.enable = true;
+              check-merge-conflicts.enable = true;
+              check-added-large-files.enable = true;
+              detect-private-keys.enable = true;
+
+              typos = {
+                enable = true;
+                files = "\\.md$";
+              };
+              markdownlint = {
+                enable = true;
+                settings.configuration = {
+                  default = true;
+                  MD013 = false;
+                  MD031.list_items = false;
+                  MD033 = false;
+                  MD060 = false;
+                };
+              };
+
+              jactionlint = {
+                enable = true;
+                name = "jactionlint";
+                description = "Linter for GitHub Actions workflow files and Dependabot configuration";
+                package = pkgs.jactionlint;
+                entry = "${lib.getExe pkgs.jactionlint} --shellcheck=${lib.getExe pkgs.shellcheck}";
+                files = "^\\.github/";
+                pass_filenames = false;
+              };
             };
           };
 
