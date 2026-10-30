@@ -7,7 +7,7 @@ workflows:
         - 'actions/cache@v6.1.0'
         - 'actions/checkout@v7.0.1'
         - 'cachix/cachix-action@v17'
-        - 'cachix/install-nix-action@v31.11.2'
+        - 'cachix/install-nix-action@v31.11.3'
     '.github/workflows/examples-cleanup.yml':
         - 'actions/checkout@v7.0.1'
     '.github/workflows/examples.yml':
@@ -21,17 +21,17 @@ workflows:
         - 'actions/checkout@v7.0.1'
         - 'actions/upload-artifact@v7.0.2'
         - 'cachix/cachix-action@v17'
-        - 'cachix/install-nix-action@v31.11.2'
+        - 'cachix/install-nix-action@v31.11.3'
     '.github/workflows/labeler.yml':
         - 'actions/labeler@v7.0.0'
     '.github/workflows/mvn-hash.yml':
         - 'actions/checkout@v7.0.1'
-        - 'cachix/install-nix-action@v31.11.2'
+        - 'cachix/install-nix-action@v31.11.3'
     '.github/workflows/release.yml':
         - 'actions/attest@v4.2.2'
         - 'actions/checkout@v7.0.1'
         - 'cachix/cachix-action@v17'
-        - 'cachix/install-nix-action@v31.11.2'
+        - 'cachix/install-nix-action@v31.11.3'
         - 'graalvm/setup-graalvm@v1.6.7'
         - 'songmu/tagpr@v1.21.3'
 dependencies:
@@ -65,9 +65,9 @@ dependencies:
         commit: 'sha1-38b082610b782e7e93e209c35fd730d399dee866'
         owner_id: 36824654
         repo_id: 211717886
-    'cachix/install-nix-action@v31.11.2':
-        ref: 'v31.11.2'
-        commit: 'sha1-448cde739abec1eaf0646249e3d25bb8d9bc7702'
+    'cachix/install-nix-action@v31.11.3':
+        ref: 'v31.11.3'
+        commit: 'sha1-75c75c31ebece974e48ebc36b4ad125bd97bd97b'
         owner_id: 36824654
         repo_id: 212301524
     'docker/build-push-action@v7.4.0':
