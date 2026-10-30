@@ -126,7 +126,8 @@ The jars, `install-cli.sh` and the `vbtm` binaries get build provenance attestat
 the agent's deployment by hand in the
 [Central Portal](https://central.sonatype.com/publishing/deployments).
 
-This needs Actions to be allowed to create pull requests, and these secrets:
+This needs the "Allow GitHub Actions to create and approve pull requests" setting, which
+`.github/infra.yml` turns on, and these secrets:
 
 - in the environment `maven-central`: `MAVEN_CENTRAL_TOKEN_USERNAME` and
   `MAVEN_CENTRAL_TOKEN_PASSWORD` (a Central Portal user token), and `MAVEN_GPG_PRIVATE_KEY` and
