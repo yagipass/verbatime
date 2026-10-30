@@ -133,50 +133,47 @@
             programs.nixfmt.enable = true;
           };
 
-          pre-commit = {
-            settings.excludes = [ "^CHANGELOG\\.md$" ];
+          pre-commit.settings.hooks = {
+            treefmt.enable = true;
 
-            settings.hooks = {
-              treefmt.enable = true;
+            gitleaks.enable = true;
 
-              gitleaks.enable = true;
+            convco.enable = true;
 
-              convco.enable = true;
+            end-of-file-fixer.enable = true;
+            trim-trailing-whitespace.enable = true;
+            check-merge-conflicts = {
+              enable = true;
+              args = [ "--assume-in-merge" ];
+            };
+            check-added-large-files = {
+              enable = true;
+              args = [ "--enforce-all" ];
+            };
+            detect-private-keys.enable = true;
 
-              end-of-file-fixer.enable = true;
-              trim-trailing-whitespace.enable = true;
-              check-merge-conflicts = {
-                enable = true;
-                args = [ "--assume-in-merge" ];
+            typos = {
+              enable = true;
+              files = "\\.md$";
+            };
+            markdownlint = {
+              enable = true;
+              excludes = [ "^CHANGELOG\\.md$" ];
+              settings.configuration = {
+                default = true;
+                MD013 = false;
+                MD031.list_items = false;
+                MD033 = false;
+                MD060 = false;
               };
-              check-added-large-files = {
-                enable = true;
-                args = [ "--enforce-all" ];
-              };
-              detect-private-keys.enable = true;
+            };
 
-              typos = {
-                enable = true;
-                files = "\\.md$";
-              };
-              markdownlint = {
-                enable = true;
-                settings.configuration = {
-                  default = true;
-                  MD013 = false;
-                  MD031.list_items = false;
-                  MD033 = false;
-                  MD060 = false;
-                };
-              };
-
-              jactionlint = {
-                enable = true;
-                package = pkgs.jactionlint;
-                entry = "${lib.getExe pkgs.jactionlint} --shellcheck=${lib.getExe pkgs.shellcheck} --pyflakes=${lib.getExe pkgs.python3Packages.pyflakes}";
-                files = "^\\.github/|(^|/)action\\.ya?ml$";
-                pass_filenames = false;
-              };
+            jactionlint = {
+              enable = true;
+              package = pkgs.jactionlint;
+              entry = "${lib.getExe pkgs.jactionlint} --shellcheck=${lib.getExe pkgs.shellcheck} --pyflakes=${lib.getExe pkgs.python3Packages.pyflakes}";
+              files = "^\\.github/|(^|/)action\\.ya?ml$";
+              pass_filenames = false;
             };
           };
 
