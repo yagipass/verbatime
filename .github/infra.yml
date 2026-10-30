@@ -96,6 +96,8 @@ spec:
     color: d876e3
   - name: tagpr
     color: ededed
+  - name: tagpr:major
+    color: ededed
   - name: tagpr:minor
     color: 7BA492
   - name: wontfix
