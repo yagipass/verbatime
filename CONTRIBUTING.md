@@ -97,9 +97,9 @@ such as a typo, can go straight to a pull request. Report a vulnerability as
 
 A pull request:
 
-- references its issue (`Closes #N`).
-- adds tests. A bug fix adds a test that reproduces the bug.
-- passes the builds of the modules it changes and `nix flake check`.
+- references its issue (`Closes #N`), if it has one.
+- adds tests when it changes behavior. A bug fix adds a test that reproduces the bug.
+- passes the builds of the modules and the docs site it changes, and `nix flake check`.
 - has a title written as a Conventional Commit, such as `fix(cli): ...`. Pull requests are squash
   merged, so the title becomes the commit on `main`.
 
