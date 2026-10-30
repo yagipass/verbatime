@@ -1,5 +1,41 @@
 # Changelog
 
+## [v0.8.4](https://github.com/yagipass/verbatime/compare/v0.8.3...v0.8.4) - 2026-10-30
+
+### CLI
+- build(deps): bump io.github.yagipass:spotless-member-order from 0.2.0 to 0.3.0 by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/341
+### Examples
+- build(deps): bump io.github.yagipass:spotless-member-order from 0.2.0 to 0.3.0 in /examples by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/332
+- build(deps): bump io.micronaut.platform:micronaut-parent from 5.2.2 to 5.2.3 in /examples by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/326
+- build(deps): bump quarkus.platform.version from 3.40.1 to 3.40.1.1 in /examples by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/327
+- build(deps): bump wildfly/wildfly from 41.0.1.Final-jdk25 to 42.0.0.Final-jdk25 in /examples/wildfly-war in the images group across 1 directory by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/331
+### Maintenance
+- build(nix): put pre-commit on PATH in the dev shells by @yagipass in https://github.com/yagipass/verbatime/pull/314
+- build(nix): update nixpkgs by @yagipass in https://github.com/yagipass/verbatime/pull/317
+- build(nix): check the workflows with jactionlint instead of actionlint by @yagipass in https://github.com/yagipass/verbatime/pull/318
+- build(docs): preview the docs site for each pull request by @yagipass in https://github.com/yagipass/verbatime/pull/320
+- chore: configure cubic reviews by @yagipass in https://github.com/yagipass/verbatime/pull/323
+- chore: keep CodeRabbit's summary out of pull request descriptions by @yagipass in https://github.com/yagipass/verbatime/pull/324
+- build(nix): move the docs shell to Node.js 26 by @yagipass in https://github.com/yagipass/verbatime/pull/343
+- chore: declare the tagpr:major label by @yagipass in https://github.com/yagipass/verbatime/pull/347
+### Dependencies
+- build(deps): bump dompurify from 3.4.16 to 3.4.17 in /docs by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/312
+- build(deps-dev): bump the jackson group with 2 updates by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/325
+- build(deps): bump Songmu/tagpr from 1.21.2 to 1.21.3 in the actions group by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/340
+- build(deps-dev): bump org.graalvm.buildtools:native-maven-plugin from 1.1.14 to 1.1.16 by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/338
+- build(deps): bump ajmx from `9c6242a` to `f6882f9` in the flake-inputs group by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/330
+- build(deps-dev): bump org.jgroups:jgroups from 5.5.7.Final to 5.5.8.Final by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/334
+- build(deps-dev): bump org.scala-lang.modules:scala-asm from 9.10.1-scala-1 to 9.11.1-scala-1 by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/337
+- build(deps-dev): bump net.sf.saxon:Saxon-HE from 13.0 to 13.1 by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/336
+- build(deps-dev): bump vite from 8.3.4 to 8.3.5 in /docs by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/335
+- build(deps-dev): bump org.apache.poi:poi-ooxml-lite from 5.5.1 to 6.0.0 by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/339
+- build(deps-dev): bump wrangler from 4.151.0 to 4.151.3 in /docs by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/333
+- build(deps-dev): bump @ox-content/vite-plugin from 3.3.0 to 3.4.0 in /docs by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/328
+- build(deps): bump satori from 0.33.4 to 0.33.5 in /docs by @dependabot[bot] in https://github.com/yagipass/verbatime/pull/344
+### Other Changes
+- docs: move build and release instructions into the contributing guide by @yagipass in https://github.com/yagipass/verbatime/pull/346
+- build: catch secrets, conflict markers and large files in nix flake check and CI by @yagipass in https://github.com/yagipass/verbatime/pull/349
+
 ## [v0.8.3](https://github.com/yagipass/verbatime/compare/v0.8.2...v0.8.3) - 2026-10-27
 
 ### Agent
