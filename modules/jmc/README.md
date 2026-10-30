@@ -79,19 +79,9 @@ conservative estimates for indexing and decoding. Recordings that exceed it fail
 Under `Window > Preferences > Mission Control > Verbatime`, you can change the directory where
 recordings are saved.
 
-## Build
+## Development
 
-From the repository root, as described in [Build](../../README.md#build):
-
-```sh
-nix develop .#jmc --command mvn -B -pl modules/jmc -am verify
-```
-
-This writes `target/verbatime-jmc-plugin.jar` and runs the unit tests.
-
-To work on the plugin in the Eclipse IDE, use a package that includes PDE, such as Eclipse IDE for
-RCP and RAP Developers, and import this directory with
-`File > Import > General > Existing Projects into Workspace`.
+See [CONTRIBUTING.md](../../CONTRIBUTING.md).
 
 ## License
 

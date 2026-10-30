@@ -64,21 +64,9 @@ several values, separate them with `+`.
 
 A mistake in the options stops the JVM at startup with a message that says what to fix.
 
-## Build
+## Development
 
-From the repository root, as described in [Build](../../README.md#build):
-
-```sh
-nix develop .#agent --command mvn -B -pl modules/agent -am verify
-```
-
-This writes `target/verbatime-agent.jar` and runs the unit tests and end-to-end runs of the
-packaged jar. [`../../bench/`](../../bench/) measures the agent's overhead and is run by hand.
-
-The build also instruments about 50 real-world jars in `target/corpus` and fails if a class links
-with its original bytes but not with the instrumented ones. It also checks that code that finds
-its caller on the stack, such as log4j2's `LogManager.getLogger()`, sees the same caller with the
-agent. `-Pcorpus-full` checks about 120,000 classes and downloads another 180 MB.
+See [CONTRIBUTING.md](../../CONTRIBUTING.md).
 
 ## License
 

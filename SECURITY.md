@@ -1,13 +1,14 @@
-# Security policy
-
-## Supported versions
-
-Only the latest release gets security fixes.
+# Security
 
 ## Reporting a vulnerability
 
-Do not open a public issue. Send a private report from
-[Report a vulnerability](https://github.com/yagipass/verbatime/security/advisories/new).
+Report vulnerabilities privately through
+[GitHub's private vulnerability reporting](https://github.com/yagipass/verbatime/security/advisories/new).
+Do not open a public issue.
+
+## Supported versions
+
+Only the latest release receives security fixes.
 
 ## Scope
 
