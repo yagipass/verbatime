@@ -47,8 +47,8 @@
 
       systems = [
         "aarch64-darwin"
-        "x86_64-linux"
         "aarch64-linux"
+        "x86_64-linux"
       ];
 
       perSystem =
@@ -101,7 +101,6 @@
                 jdk
                 (pkgs.maven.override { jdk_headless = jdk; })
                 pkgs.mvnd
-                pkgs.git
                 inputs'.ajmx.packages.ajmx
               ]
               ++ config.pre-commit.settings.enabledPackages;
@@ -185,11 +184,10 @@
             agent = mkJavaShell "agent" pkgs.jdk25;
             jmc = mkJavaShell "jmc" pkgs.jdk21;
             cli = mkJavaShell "cli" pkgs.graalvmPackages.graalvm-ce;
-            docs = pkgs.mkShell {
+            docs = pkgs.mkShellNoCC {
               packages = [
                 pkgs.nodejs_26
                 pkgs.pnpm
-                pkgs.git
               ]
               ++ config.pre-commit.settings.enabledPackages;
 
