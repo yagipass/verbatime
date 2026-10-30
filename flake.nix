@@ -130,6 +130,7 @@
 
           treefmt = {
             projectRootFile = "flake.nix";
+            flakeCheck = false;
             programs.nixfmt.enable = true;
           };
 
@@ -137,10 +138,7 @@
             settings.excludes = [ "^CHANGELOG\\.md$" ];
 
             settings.hooks = {
-              treefmt = {
-                enable = true;
-                package = config.treefmt.build.wrapper;
-              };
+              treefmt.enable = true;
 
               gitleaks.enable = true;
 
