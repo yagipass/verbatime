@@ -110,7 +110,7 @@
               shellHook = ''
                 ${config.pre-commit.shellHook}
                 ${skillsHook}
-                export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+                export SOURCE_DATE_EPOCH="$(${lib.getExe pkgs.git} log -1 --format=%ct)"
                 echo "[verbatime-${name}] JAVA_HOME=$JAVA_HOME"
                 echo "[verbatime-${name}] $(java -version 2>&1 | head -n1)"
               '';
