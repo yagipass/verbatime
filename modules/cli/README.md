@@ -73,14 +73,9 @@ npx skills add yagipass/verbatime --skill vbtm
 apm install yagipass/verbatime/skills/vbtm
 ```
 
-## Build
+## Development
 
-From the repository root, as described in [Build](../../README.md#build):
-
-```sh
-nix develop .#cli --command mvn -B -pl modules/cli -am verify
-nix develop .#cli --command mvn -B -pl modules/cli -am -Pnative -DskipTests package
-```
+See [CONTRIBUTING.md](../../CONTRIBUTING.md).
 
 ## License
 

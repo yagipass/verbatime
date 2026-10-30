@@ -109,17 +109,9 @@ See the [CLI README](modules/cli/README.md).
 | [`modules/format/`](modules/format/) | Reading and writing `.vbtm` files from Java |
 | [`examples/`](examples/) | Example applications to try |
 
-## Build
+## Development
 
-```sh
-nix develop .#agent --command mvn -B -pl modules/agent -am verify
-nix develop .#jmc   --command mvn -B -pl modules/jmc   -am verify
-nix develop .#cli   --command mvn -B -pl modules/cli   -am verify
-```
-
-```sh
-nix develop .#docs --command sh -c 'cd docs && pnpm install --frozen-lockfile && pnpm run build'
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
