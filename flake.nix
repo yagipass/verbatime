@@ -148,8 +148,14 @@
 
               end-of-file-fixer.enable = true;
               trim-trailing-whitespace.enable = true;
-              check-merge-conflicts.enable = true;
-              check-added-large-files.enable = true;
+              check-merge-conflicts = {
+                enable = true;
+                args = [ "--assume-in-merge" ];
+              };
+              check-added-large-files = {
+                enable = true;
+                args = [ "--enforce-all" ];
+              };
               detect-private-keys.enable = true;
 
               typos = {
