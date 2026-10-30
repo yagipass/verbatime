@@ -175,11 +175,9 @@
 
               jactionlint = {
                 enable = true;
-                name = "jactionlint";
-                description = "Linter for GitHub Actions workflow files and Dependabot configuration";
                 package = pkgs.jactionlint;
-                entry = "${lib.getExe pkgs.jactionlint} --shellcheck=${lib.getExe pkgs.shellcheck}";
-                files = "^\\.github/";
+                entry = "${lib.getExe pkgs.jactionlint} --shellcheck=${lib.getExe pkgs.shellcheck} --pyflakes=${lib.getExe pkgs.python3Packages.pyflakes}";
+                files = "^\\.github/|(^|/)action\\.ya?ml$";
                 pass_filenames = false;
               };
             };
