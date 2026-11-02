@@ -3,6 +3,8 @@ kind: Repository
 metadata:
   name: verbatime
   owner: yagipass
+reconcile:
+  deployment_branch_policies: authoritative
 spec:
   description: Java method tracing profiler. Records every method call under the methods you choose, with nothing sampled, and shows each run as a flame chart in JDK Mission Control.
   homepage: https://verbatime.yagipass.com
@@ -186,3 +188,18 @@ spec:
     workflow_permissions: read
     can_approve_pull_requests: true
     fork_pr_approval: first_time_contributors
+  environments:
+  - name: Cloudflare
+    wait_timer: 0
+    can_admins_bypass: true
+    reviewers: []
+    deployment_branch_policy:
+      custom_branch_policies:
+      - name: main
+  - name: maven-central
+    wait_timer: 0
+    can_admins_bypass: true
+    reviewers: []
+    deployment_branch_policy:
+      custom_branch_policies:
+      - name: main
