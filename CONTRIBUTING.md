@@ -138,14 +138,14 @@ This needs the "Allow GitHub Actions to create and approve pull requests" settin
 
 ## Repository settings
 
-The repository settings, labels, rulesets, and Actions permissions are managed with
+The repository settings, labels, rulesets, environments, and Actions permissions are managed with
 [gh-infra](https://github.com/babarot/gh-infra) in [`.github/infra.yml`](.github/infra.yml). To
 change them, edit the file in a pull request, review the difference with
 `gh infra plan .github/infra.yml`, and apply it with `gh infra apply .github/infra.yml` after the
 merge. Applying needs admin access to the repository.
 
-`apply` does not delete labels or rulesets removed from the file. Renaming a job in `ci.yml` also
-needs the same change under `required_status_checks`, or pull requests cannot merge.
+`apply` does not delete labels, rulesets, or environments removed from the file, but it does delete
+deployment branch patterns removed from it. Renaming a job in `ci.yml` also needs the same change
+under `required_status_checks`, or pull requests cannot merge.
 
-Environments and secrets are not managed by gh-infra. Change them in the repository settings on
-GitHub.
+Secrets are not managed by gh-infra. Change them in the repository settings on GitHub.
