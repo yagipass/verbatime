@@ -240,7 +240,8 @@ final class CorpusSelfTest {
 
   private static boolean loads(ClassLoader loader, String name) {
     try {
-      return Class.forName(name, false, loader) != null;
+      Class.forName(name, false, loader);
+      return true;
     } catch (ClassNotFoundException | LinkageError e) {
       return false;
     }
