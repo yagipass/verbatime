@@ -76,3 +76,12 @@ jobs:
           name: findings-${{ matrix.name }}
           path: findings
           if-no-files-found: ignore
+      - if: failure()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: jvm-logs-${{ matrix.name }}
+          path: |
+            modules/*/hs_err_pid*.log
+            modules/*/target/surefire-reports/*.dump
+            modules/*/target/surefire-reports/*.dumpstream
+          if-no-files-found: ignore
