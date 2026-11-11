@@ -43,7 +43,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <errorprone.version>2.51.0</errorprone.version>
+    <errorprone.version>2.52.0</errorprone.version>
     <errorprone.flags></errorprone.flags>
     <nullaway.version>0.14.3</nullaway.version>
     <errorprone-tidy.version>0.1.0</errorprone-tidy.version>
