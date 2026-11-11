@@ -16,7 +16,7 @@
     <kotlin.version>2.4.21</kotlin.version>
     <kotlin.compiler.jvmTarget>25</kotlin.compiler.jvmTarget>
     <coroutines.version>1.11.0</coroutines.version>
-    <ktor.version>3.6.0</ktor.version>
+    <ktor.version>3.6.1</ktor.version>
   </properties>
 
   <dependencies>
