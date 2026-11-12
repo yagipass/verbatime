@@ -19,18 +19,40 @@ jobs:
     if: github.event.pull_request.user.login == 'dependabot[bot]' && github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      mvn-hash: ${{ steps.hash.outputs.mvn-hash }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
       - uses: cachix/install-nix-action@v31.11.3
       - run: nix run --inputs-from . nixpkgs#nix-update -- --flake vbtm --version skip
-      - env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+      - id: hash
         run: |
           git diff --quiet && exit 0
+          echo "mvn-hash=$(sed -n 's/^ *mvnHash = "\(.*\)";$/\1/p' nix/vbtm.nix)" >> "$GITHUB_OUTPUT"
+
+  push:
+    needs: update
+    if: needs.update.outputs.mvn-hash != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          MVN_HASH: ${{ needs.update.outputs.mvn-hash }}
+        run: |
+          if [[ ! $MVN_HASH =~ ^sha256-[A-Za-z0-9+/]{43}=$ ]]; then
+            echo '::error::the update job did not output an SRI SHA-256 hash'
+            exit 1
+          fi
+          sed -i "s|^\( *mvnHash = \)\"[^\"]*\";$|\1\"$MVN_HASH\";|" nix/vbtm.nix
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -am 'build(nix): update vbtm mvnHash'
-          git -c credential.helper= -c "credential.helper=!f() { echo username=x-access-token; echo password=\$GH_PAT; }; f" push
+          git -c credential.helper= -c "credential.https://github.com.helper=!f() { echo username=x-access-token; echo password=\$GH_PAT; }; f" push origin "HEAD:refs/heads/$GITHUB_HEAD_REF"
