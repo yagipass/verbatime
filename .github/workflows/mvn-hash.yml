@@ -45,6 +45,7 @@ jobs:
           persist-credentials: false
       - env:
           GH_PAT: ${{ secrets.GH_PAT }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           MVN_HASH: ${{ needs.update.outputs.mvn-hash }}
         run: |
           if [[ ! $MVN_HASH =~ ^sha256-[A-Za-z0-9+/]{43}=$ ]]; then
@@ -55,4 +56,4 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -am 'build(nix): update vbtm mvnHash'
-          git -c credential.helper= -c "credential.https://github.com.helper=!f() { echo username=x-access-token; echo password=\$GH_PAT; }; f" push origin "HEAD:refs/heads/$GITHUB_HEAD_REF"
+          git -c credential.helper= -c "credential.https://github.com.helper=!f() { echo username=x-access-token; echo password=\$GH_PAT; }; f" push --force-with-lease="refs/heads/$GITHUB_HEAD_REF:$HEAD_SHA" origin "HEAD:refs/heads/$GITHUB_HEAD_REF"
