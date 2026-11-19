@@ -38,7 +38,7 @@ services:
       start_period: 90s
 
   load:
-    image: ghcr.io/hatoo/oha:1.16
+    image: ghcr.io/hatoo/oha:1.17
     profiles: [load]
     depends_on:
       app:
