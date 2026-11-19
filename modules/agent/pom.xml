@@ -120,9 +120,9 @@
                 <artifactItem><groupId>org.antlr</groupId><artifactId>antlr4-runtime</artifactId><version>4.13.2</version></artifactItem>
                 <artifactItem><groupId>org.apache.lucene</groupId><artifactId>lucene-core</artifactId><version>10.6.0</version></artifactItem>
 
-                <artifactItem><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-core</artifactId><version>2.22.4</version></artifactItem>
-                <artifactItem><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId><version>2.22.4</version></artifactItem>
-                <artifactItem><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-annotations</artifactId><version>2.22</version></artifactItem>
+                <artifactItem><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-core</artifactId><version>2.23.0</version></artifactItem>
+                <artifactItem><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId><version>2.23.0</version></artifactItem>
+                <artifactItem><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-annotations</artifactId><version>2.23</version></artifactItem>
                 <artifactItem><groupId>com.google.guava</groupId><artifactId>guava</artifactId><version>33.8.0-jre</version></artifactItem>
                 <artifactItem><groupId>com.google.guava</groupId><artifactId>failureaccess</artifactId><version>1.0.3</version></artifactItem>
                 <artifactItem><groupId>org.springframework</groupId><artifactId>spring-core</artifactId><version>7.0.10</version></artifactItem>
