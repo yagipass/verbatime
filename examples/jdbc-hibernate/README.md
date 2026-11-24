@@ -1,7 +1,7 @@
 # jdbc-hibernate
 
 Spring Boot 4.1 MVC with Spring Data JPA: Hibernate ORM 7.4, HikariCP, and the PostgreSQL driver
-against a `postgres:18` container.
+against a `postgres:19` container.
 
 ## Run
 

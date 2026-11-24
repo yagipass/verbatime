@@ -1,7 +1,7 @@
 # r2dbc
 
 Spring Boot 4.1 WebFlux with Spring Data R2DBC and the reactive PostgreSQL driver, packaged as a
-fat jar and run with `java -jar` against a `postgres:18` container. It is the reactive counterpart
+fat jar and run with `java -jar` against a `postgres:19` container. It is the reactive counterpart
 of [`jdbc-hibernate`](../jdbc-hibernate/). The request, the workload, and the insert are one
 reactive pipeline, and the database round trip completes on whatever thread the driver resumes
 on, so a request is more than one tree.
