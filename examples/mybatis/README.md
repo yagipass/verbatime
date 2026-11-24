@@ -1,7 +1,7 @@
 # mybatis
 
 Spring Boot 4.1 MVC with MyBatis through `mybatis-spring-boot-starter` 4.1, packaged as a fat jar
-and run with `java -jar` against a `postgres:18` container. It is the SQL-mapper counterpart of
+and run with `java -jar` against a `postgres:19` container. It is the SQL-mapper counterpart of
 [`jdbc-hibernate`](../jdbc-hibernate/): the same endpoints and the same `orders` table. The
 persistence path is a mapper interface with annotated SQL instead of an ORM, so the tree between
 the service and the JDBC driver is much shallower.
