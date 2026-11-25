@@ -79,7 +79,7 @@ nights before found. When it finds an input, the run fails and the input is atta
   `vbtm`, update the hash:
 
   ```sh
-  nix run --inputs-from . nixpkgs#nix-update -- --flake vbtm --version skip
+  nix run .#nix-update -- --flake vbtm --version skip
   ```
 
 - After adding or updating an action in a workflow, run `gh actions-lock`.

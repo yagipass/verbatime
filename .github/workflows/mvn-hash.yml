@@ -27,7 +27,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
       - uses: cachix/install-nix-action@v31.11.4
-      - run: nix run --inputs-from . nixpkgs#nix-update -- --flake vbtm --version skip
+      - run: nix run .#nix-update -- --flake vbtm --version skip
       - id: hash
         run: |
           git diff --quiet && exit 0
