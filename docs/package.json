@@ -11,6 +11,6 @@
   "devDependencies": {
     "@ox-content/vite-plugin": "3.8.2",
     "vite": "8.3.8",
-    "wrangler": "4.160.1"
+    "wrangler": "4.164.0"
   }
 }
