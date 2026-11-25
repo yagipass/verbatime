@@ -122,6 +122,8 @@
             default = vbtm;
           };
 
+          legacyPackages.nix-update = pkgs.nix-update.override { nix = pkgs.nixVersions.nix_2_34; };
+
           checks = {
             inherit (config.packages) vbtm;
           }
