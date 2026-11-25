@@ -94,13 +94,21 @@
             quiet = true;
           };
 
+          mvnd =
+            if pkgs.stdenv.hostPlatform.isDarwin then
+              pkgs.mvnd.overrideAttrs (old: {
+                buildInputs = (old.buildInputs or [ ]) ++ [ pkgs.graalvmPackages.graalvm-ce ];
+              })
+            else
+              pkgs.mvnd;
+
           mkJavaShell =
             name: jdk:
             pkgs.mkShell {
               packages = [
                 jdk
                 (pkgs.maven.override { jdk_headless = jdk; })
-                pkgs.mvnd
+                mvnd
                 inputs'.ajmx.packages.ajmx
               ]
               ++ config.pre-commit.settings.enabledPackages;
