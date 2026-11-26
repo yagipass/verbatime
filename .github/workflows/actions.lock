@@ -7,7 +7,7 @@ workflows:
         - 'actions/cache@v6.1.0'
         - 'actions/checkout@v7.0.1'
         - 'cachix/cachix-action@v17'
-        - 'cachix/install-nix-action@v31.11.4'
+        - 'cachix/install-nix-action@v31.11.5'
     '.github/workflows/examples-cleanup.yml':
         - 'actions/checkout@v7.0.1'
     '.github/workflows/examples.yml':
@@ -21,18 +21,18 @@ workflows:
         - 'actions/checkout@v7.0.1'
         - 'actions/upload-artifact@v7.0.2'
         - 'cachix/cachix-action@v17'
-        - 'cachix/install-nix-action@v31.11.4'
+        - 'cachix/install-nix-action@v31.11.5'
     '.github/workflows/labeler.yml':
         - 'actions/labeler@v7.0.0'
     '.github/workflows/mvn-hash.yml':
         - 'actions/checkout@v7.0.1'
-        - 'cachix/install-nix-action@v31.11.4'
+        - 'cachix/install-nix-action@v31.11.5'
     '.github/workflows/release.yml':
         - 'actions/attest@v4.2.2'
         - 'actions/checkout@v7.0.1'
         - 'cachix/cachix-action@v17'
-        - 'cachix/install-nix-action@v31.11.4'
-        - 'graalvm/setup-graalvm@v1.6.8'
+        - 'cachix/install-nix-action@v31.11.5'
+        - 'graalvm/setup-graalvm@v1.6.10'
         - 'songmu/tagpr@v1.22.0'
 dependencies:
     'actions/attest@v4.2.2':
@@ -65,9 +65,9 @@ dependencies:
         commit: 'sha1-38b082610b782e7e93e209c35fd730d399dee866'
         owner_id: 36824654
         repo_id: 211717886
-    'cachix/install-nix-action@v31.11.4':
-        ref: 'v31.11.4'
-        commit: 'sha1-91f6a0f59e94dfb2cfed0f4000f36a68ead1d20c'
+    'cachix/install-nix-action@v31.11.5':
+        ref: 'v31.11.5'
+        commit: 'sha1-3dc140bfc76c49fbd4dd958429132e3746bcb086'
         owner_id: 36824654
         repo_id: 212301524
     'docker/build-push-action@v7.4.0':
@@ -90,9 +90,9 @@ dependencies:
         commit: 'sha1-f87e5991a6d7451dcb8d9637bfbc97413f497069'
         owner_id: 5429470
         repo_id: 288485773
-    'graalvm/setup-graalvm@v1.6.8':
-        ref: 'v1.6.8'
-        commit: 'sha1-f70bc8032f90a104502824a54bcb94b6f01715bc'
+    'graalvm/setup-graalvm@v1.6.10':
+        ref: 'v1.6.10'
+        commit: 'sha1-60e76998d25690099182b796e99b8804da582d90'
         owner_id: 10176827
         repo_id: 443997241
     'songmu/tagpr@v1.22.0':

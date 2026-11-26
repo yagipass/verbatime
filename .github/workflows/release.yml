@@ -34,7 +34,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - if: steps.tagpr.outputs.tag != ''
-        uses: cachix/install-nix-action@v31.11.4
+        uses: cachix/install-nix-action@v31.11.5
       - if: steps.tagpr.outputs.tag != ''
         uses: cachix/cachix-action@v17
         with:
@@ -75,7 +75,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: cachix/install-nix-action@v31.11.4
+      - uses: cachix/install-nix-action@v31.11.5
       - uses: cachix/cachix-action@v17
         with:
           name: verbatime
@@ -115,7 +115,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: graalvm/setup-graalvm@v1.6.8
+      - uses: graalvm/setup-graalvm@v1.6.10
         with:
           java-version: "25"
           distribution: graalvm-community
@@ -185,7 +185,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: cachix/install-nix-action@v31.11.4
+      - uses: cachix/install-nix-action@v31.11.5
       - uses: cachix/cachix-action@v17
         with:
           name: verbatime
