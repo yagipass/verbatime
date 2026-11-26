@@ -26,7 +26,7 @@ let
         ../modules/cli/src/main
       ];
     };
-    mvnHash = "sha256-bOOI6eb3Xav/DmKuwYFQkPfiSoDVoeEEvPdDHK+FTac=";
+    mvnHash = "sha256-VCSz+sjodF3hdk1hidOkvw562v69c/FAn/SaxMMX8Dk=";
     mvnParameters = "-pl modules/cli -am";
     doCheck = false;
     installPhase = ''
